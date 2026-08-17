@@ -1,0 +1,73 @@
+services:
+#  postgres
+  postgres:
+    image: postgres:14
+    container_name: postgres
+    environment:
+      POSTGRES_USER: ticket
+      POSTGRES_PASSWORD: ticket123
+      POSTGRES_DB: ticket_user_db
+    ports:
+      - "5432:5432"
+    networks:
+      - ticket-networks
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL" , "pg_isready -U ticket -d ticket_user_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+ #redis
+  redis:
+    image: redis:7-alpine
+    container_name: redis
+    ports:
+      - "6379:6379"
+    networks: [ticket-networks]
+    volumes: [redisdata:/data]
+  #zookeeper
+  zookeeper:
+    image: confluentinc/cp-zookeeper:7.5.0
+    container_name: zookeeper
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+    ports: ["2181:2181"]
+    networks: [ticket-networks]
+  #kafka
+  kafka:
+    image: confluentinc/cp-kafka:7.5.0
+    container_name: kafka
+    depends_on:
+      - zookeeper
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:9092
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://localhost:9092
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+    ports:
+      - "9092:9092"
+    networks: [ticket-networks]
+    volumes: [kafka_data:/var/lib/kafka/data]
+
+  #zipkin
+  zipkin:
+    image: openzipkin/zipkin:latest
+    container_name: zipkin
+    environment:
+      STORAGE_TYPE: mem
+    ports: ["9411:9411"]
+    networks: [ticket-networks]
+networks:
+  ticket-networks:
+    driver: bridge
+
+volumes:
+  postgres_data:
+  redisdata:
+  kafka_data:
+
+
