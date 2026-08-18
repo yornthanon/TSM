@@ -11,7 +11,7 @@ import java.util.Set;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class CreatePermissionRequestDTO {
+public class PermissionRequest {
 
     @NotBlank(message = "Permission name is required")
     @JsonProperty("name")

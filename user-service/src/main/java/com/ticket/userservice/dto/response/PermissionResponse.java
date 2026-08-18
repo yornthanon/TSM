@@ -7,14 +7,14 @@ import lombok.Setter;
 
 @Getter
 @Setter
-public class CreatePermissionResponseDTO extends BasedDTO {
+public class PermissionResponse extends BasedDTO {
     private Long id;
     private String name;
     private String description;
     private String status;
 
-    public static CreatePermissionResponseDTO from(Permission permission) {
-        CreatePermissionResponseDTO dto = new CreatePermissionResponseDTO();
+    public static PermissionResponse from(Permission permission) {
+        PermissionResponse dto = new PermissionResponse();
         dto.setId(permission.getId());
         dto.setName(permission.getName());
         dto.setDescription(permission.getDescription());
