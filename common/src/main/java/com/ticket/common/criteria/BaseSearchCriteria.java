@@ -1,60 +1,44 @@
 package com.ticket.common.criteria;
 
-import jakarta.persistence.criteria.CriteriaBuilder;
-import jakarta.persistence.criteria.CriteriaQuery;
-import jakarta.persistence.criteria.Predicate;
-import jakarta.persistence.criteria.Root;
-
 import java.util.ArrayList;
 import java.util.List;
 
-public class BaseSearchCriteria<T> {
+public class BaseSearchCriteria {
 
-    private final Root<T> root;
-    private final CriteriaQuery<?> query;
-    private final CriteriaBuilder criteriaBuilder;
-    private final List<Predicate> predicates = new ArrayList<>();
+    private final List<SearchCriteria> searchCriteria = new ArrayList<>();
+    private final List<SearchCriteria> searchOrCriteria = new ArrayList<>();
+    private final List<JoinCriteria> joinCriteria = new ArrayList<>();
 
-    public BaseSearchCriteria(Root<T> root, CriteriaQuery<?> query, CriteriaBuilder criteriaBuilder) {
-        this.root = root;
-        this.query = query;
-        this.criteriaBuilder = criteriaBuilder;
+    public BaseSearchCriteria() {
     }
 
-    public void addCriteria(SearchCriteria searchCriteria) {
-        switch (searchCriteria.getOperation()) {
-            case EQUAL:
-                predicates.add(criteriaBuilder.equal(root.get(searchCriteria.getKey()), searchCriteria.getValue()));
-                break;
-            case NOT_EQUAL:
-                predicates.add(criteriaBuilder.notEqual(root.get(searchCriteria.getKey()), searchCriteria.getValue()));
-                break;
-            case LIKE:
-                predicates.add(criteriaBuilder.like(root.get(searchCriteria.getKey()), "%" + searchCriteria.getValue() + "%"));
-                break;
-            case GREATER_THAN:
-                predicates.add(criteriaBuilder.greaterThan(root.get(searchCriteria.getKey()), (Comparable) searchCriteria.getValue()));
-                break;
-            case LESS_THAN:
-                predicates.add(criteriaBuilder.lessThan(root.get(searchCriteria.getKey()), (Comparable) searchCriteria.getValue()));
-                break;
-            case GREATER_THAN_EQUAL:
-                predicates.add(criteriaBuilder.greaterThanOrEqualTo(root.get(searchCriteria.getKey()), (Comparable) searchCriteria.getValue()));
-                break;
-            case LESS_THAN_EQUAL:
-                predicates.add(criteriaBuilder.lessThanOrEqualTo(root.get(searchCriteria.getKey()), (Comparable) searchCriteria.getValue()));
-                break;
-            case IN:
-                predicates.add(root.get(searchCriteria.getKey()).in(searchCriteria.getValue()));
-                break;
-            case BETWEEN:
-                Object[] values = (Object[]) searchCriteria.getValue();
-                predicates.add(criteriaBuilder.between(root.get(searchCriteria.getKey()), (Comparable) values[0], (Comparable) values[1]));
-                break;
+    public void addCriteria(SearchCriteria criteria) {
+        if (criteria != null) {
+            searchCriteria.add(criteria);
         }
     }
 
-    public Predicate getPredicate() {
-        return criteriaBuilder.and(predicates.toArray(new Predicate[0]));
+    public void addOrCriteria(SearchCriteria criteria) {
+        if (criteria != null) {
+            searchOrCriteria.add(criteria);
+        }
+    }
+
+    public void addJoin(JoinCriteria criteria) {
+        if (criteria != null) {
+            joinCriteria.add(criteria);
+        }
+    }
+
+    public List<SearchCriteria> getSearchCriteria() {
+        return searchCriteria;
+    }
+
+    public List<SearchCriteria> getSearchOrCriteria() {
+        return searchOrCriteria;
+    }
+
+    public List<JoinCriteria> getJoinCriteria() {
+        return joinCriteria;
     }
 }

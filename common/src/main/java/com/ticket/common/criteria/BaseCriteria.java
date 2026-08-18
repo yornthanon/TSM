@@ -2,18 +2,17 @@ package com.ticket.common.criteria;
 
 import jakarta.persistence.criteria.CriteriaBuilder;
 import jakarta.persistence.criteria.CriteriaQuery;
-import jakarta.persistence.criteria.Root;
 
 public class BaseCriteria<T> {
 
-    private final CriteriaBuilder criteriaBuilder;
-    private final CriteriaQuery<T> criteriaQuery;
-    private final Root<T> root;
+    private CriteriaBuilder criteriaBuilder;
+    private CriteriaQuery<T> criteriaQuery;
 
-    public BaseCriteria(CriteriaBuilder criteriaBuilder, CriteriaQuery<T> criteriaQuery, Root<T> root) {
+    public BaseCriteria() {
+    }
+
+    public void setCriteriaBuilder(CriteriaBuilder criteriaBuilder) {
         this.criteriaBuilder = criteriaBuilder;
-        this.criteriaQuery = criteriaQuery;
-        this.root = root;
     }
 
     public CriteriaBuilder getCriteriaBuilder() {
@@ -24,7 +23,7 @@ public class BaseCriteria<T> {
         return criteriaQuery;
     }
 
-    public Root<T> getRoot() {
-        return root;
+    public void getCriteriaQuery(CriteriaQuery<T> criteriaQuery) {
+        this.criteriaQuery = criteriaQuery;
     }
 }

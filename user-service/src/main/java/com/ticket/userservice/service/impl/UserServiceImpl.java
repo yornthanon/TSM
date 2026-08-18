@@ -1,9 +1,12 @@
 package com.ticket.userservice.service.impl;
 
 import com.ticket.common.criteria.BaseSearchCriteria;
-import com.ticket.common.dto.PageableRequestVO;
-import com.ticket.common.dto.PageableResponseVO;
+import com.ticket.common.criteria.SearchCriteria;
+import com.ticket.common.criteria.SearchOperation;
+import com.ticket.common.dto.request.PageableRequestVO;
+import com.ticket.common.dto.response.PageableResponseVO;
 import com.ticket.common.exception.ResponseErrorTemplate;
+import com.ticket.common.repository.BaseRepository;
 import com.ticket.userservice.dto.request.UserFilterRequest;
 import com.ticket.userservice.dto.request.UserRequest;
 import com.ticket.userservice.dto.response.UserResponse;
@@ -17,8 +20,6 @@ import com.ticket.userservice.repository.UserRepository;
 import com.ticket.userservice.service.UserService;
 import com.ticket.userservice.service.handle.UserHandlerService;
 import lombok.RequiredArgsConstructor;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -38,6 +39,8 @@ public class UserServiceImpl implements UserService {
     private final GroupRepository groupRepository;
     private final UserHandlerService userHandlerService;
     private final PasswordEncoder passwordEncoder;
+    private final BaseRepository baseRepository;
+    private final UserSearchServiceImpl userSearchService;
 
     @Transactional
     public ResponseErrorTemplate create(UserRequest userRequest) {
@@ -58,7 +61,7 @@ public class UserServiceImpl implements UserService {
         assignRoles(user, userRequest.roles());
         assignGroups(user, userRequest.groupIds());
 
-        userRepository.save(user);
+        baseRepository.saveOrUpdate(user);
 
         return new ResponseErrorTemplate(
                 "User created successfully",
@@ -71,17 +74,13 @@ public class UserServiceImpl implements UserService {
     @Override
     @Transactional
     public ResponseErrorTemplate update(Long id, UserRequest userRequest) {
-        User user = userRepository.findById(id)
-                .orElseThrow(() -> new BasedException(
-                        "USER_NOT_FOUND",
-                        "User not found with id: " + id,
-                        null,
-                        "id",
-                        String.valueOf(id)
-                ));
+        User user = baseRepository.getByField("id", id, User.class);
+        if (user == null) {
+            throw new BasedException("USER_NOT_FOUND", "User not found with id: " + id, null, "id", String.valueOf(id));
+        }
 
         userHandlerService.mapUserRequestToUser(userRequest, user);
-        userRepository.save(user);
+        baseRepository.saveOrUpdate(user);
 
         return new ResponseErrorTemplate(
                 "User updated successfully",
@@ -93,14 +92,10 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public ResponseErrorTemplate findById(Long id) {
-        User user = userRepository.findById(id)
-                .orElseThrow(() -> new BasedException(
-                        "USER_NOT_FOUND",
-                        "User not found with id: " + id,
-                        null,
-                        "id",
-                        String.valueOf(id)
-                ));
+        User user = baseRepository.getByField("id", id, User.class);
+        if (user == null) {
+            throw new BasedException("USER_NOT_FOUND", "User not found with id: " + id, null, "id", String.valueOf(id));
+        }
         return new ResponseErrorTemplate(
                 "User retrieved successfully",
                 "USER_FOUND",
@@ -111,15 +106,41 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public ResponseErrorTemplate findAll(UserFilterRequest userFilterRequest) {
-        Page<UserResponse> page = userRepository.findAll(
-                        PageRequest.of(userFilterRequest.getPageNumber(), userFilterRequest.getPageSize(), userFilterRequest.getSort()))
-                .map(userHandlerService::mapUserToUserResponse);
+        BaseSearchCriteria criteria = new BaseSearchCriteria();
+        boolean hasFilter = false;
+
+        if (userFilterRequest.hasUsernameFilter()) {
+            criteria.addCriteria(new SearchCriteria("username", userFilterRequest.getUsername(), SearchOperation.EQUAL));
+            hasFilter = true;
+        }
+        if (userFilterRequest.hasEmailFilter()) {
+            criteria.addCriteria(new SearchCriteria("email", userFilterRequest.getEmail(), SearchOperation.MATCH));
+            hasFilter = true;
+        }
+        if (userFilterRequest.hasStatusFilter()) {
+            criteria.addCriteria(new SearchCriteria("status", userFilterRequest.getStatus().toUpperCase(), SearchOperation.EQUAL));
+            hasFilter = true;
+        }
+
+        PageableRequestVO pageable = PageableRequestVO.of(
+                userFilterRequest.getPageNumber(),
+                userFilterRequest.getPageSize(),
+                userFilterRequest.getSortBy(),
+                userFilterRequest.isDesc());
+
+        PageableResponseVO<User> page = hasFilter
+                ? baseRepository.listPage(User.class, criteria, pageable)
+                : baseRepository.listPage(User.class, pageable);
+
+        List<UserResponse> content = page.getContent().stream()
+                .map(userHandlerService::mapUserToUserResponse)
+                .toList();
 
         PageableResponseVO<UserResponse> pageableResponse = PageableResponseVO.of(
-                page.getContent(),
-                (int) page.getTotalElements(),
-                userFilterRequest.getPageNumber(),
-                userFilterRequest.getPageSize());
+                content,
+                page.getTotalElements(),
+                page.getPageNumber(),
+                page.getPageSize());
 
         return new ResponseErrorTemplate(
                 "Users retrieved successfully",
@@ -131,7 +152,7 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public ResponseErrorTemplate findByUsername(String username) {
-        User user = userRepository.findByUsername(username);
+        User user = baseRepository.getByField("username", username, User.class);
         if (user == null) {
             throw new BasedException("USER_NOT_FOUND", "User not found with username: " + username,
                     null, "username", username);
@@ -146,9 +167,11 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public ResponseErrorTemplate findByEmail(String email) {
-        User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new BasedException("USER_NOT_FOUND", "User not found with email: " + email,
-                        null, "email", email));
+        User user = baseRepository.getByField("email", email, User.class);
+        if (user == null) {
+            throw new BasedException("USER_NOT_FOUND", "User not found with email: " + email,
+                    null, "email", email);
+        }
         return new ResponseErrorTemplate(
                 "User retrieved successfully",
                 "USER_FOUND",
@@ -160,14 +183,10 @@ public class UserServiceImpl implements UserService {
     @Override
     @Transactional
     public ResponseErrorTemplate changePassword(Long id, String oldPassword, String newPassword) {
-        User user = userRepository.findById(id)
-                .orElseThrow(() -> new BasedException(
-                        "USER_NOT_FOUND",
-                        "User not found with id: " + id,
-                        null,
-                        "id",
-                        String.valueOf(id)
-                ));
+        User user = baseRepository.getByField("id", id, User.class);
+        if (user == null) {
+            throw new BasedException("USER_NOT_FOUND", "User not found with id: " + id, null, "id", String.valueOf(id));
+        }
 
         if (!passwordEncoder.matches(oldPassword, user.getPassword())) {
             throw new BasedException("INVALID_PASSWORD", "Old password is incorrect",
@@ -175,7 +194,7 @@ public class UserServiceImpl implements UserService {
         }
 
         user.setPassword(passwordEncoder.encode(newPassword));
-        userRepository.save(user);
+        baseRepository.saveOrUpdate(user);
 
         return new ResponseErrorTemplate(
                 "Password changed successfully",
@@ -188,17 +207,13 @@ public class UserServiceImpl implements UserService {
     @Override
     @Transactional
     public ResponseErrorTemplate disActivateUser(Long id) {
-        User user = userRepository.findById(id)
-                .orElseThrow(() -> new BasedException(
-                        "USER_NOT_FOUND",
-                        "User not found with id: " + id,
-                        null,
-                        "id",
-                        String.valueOf(id)
-                ));
+        User user = baseRepository.getByField("id", id, User.class);
+        if (user == null) {
+            throw new BasedException("USER_NOT_FOUND", "User not found with id: " + id, null, "id", String.valueOf(id));
+        }
 
         user.setStatus("INACTIVE");
-        userRepository.save(user);
+        baseRepository.saveOrUpdate(user);
 
         return new ResponseErrorTemplate(
                 "User deactivated successfully",
@@ -211,18 +226,14 @@ public class UserServiceImpl implements UserService {
     @Override
     @Transactional
     public ResponseErrorTemplate resetPassword(Long id, String newPassword) {
-        User user = userRepository.findById(id)
-                .orElseThrow(() -> new BasedException(
-                        "USER_NOT_FOUND",
-                        "User not found with id: " + id,
-                        null,
-                        "id",
-                        String.valueOf(id)
-                ));
+        User user = baseRepository.getByField("id", id, User.class);
+        if (user == null) {
+            throw new BasedException("USER_NOT_FOUND", "User not found with id: " + id, null, "id", String.valueOf(id));
+        }
 
         user.setPassword(passwordEncoder.encode(newPassword));
         user.setLoginAttempts(0);
-        userRepository.save(user);
+        baseRepository.saveOrUpdate(user);
 
         return new ResponseErrorTemplate(
                 "Password reset successfully",
@@ -235,15 +246,11 @@ public class UserServiceImpl implements UserService {
     @Override
     @Transactional
     public ResponseErrorTemplate delete(Long id) {
-        User user = userRepository.findById(id)
-                .orElseThrow(() -> new BasedException(
-                        "USER_NOT_FOUND",
-                        "User not found with id: " + id,
-                        null,
-                        "id",
-                        String.valueOf(id)
-                ));
-        userRepository.delete(user);
+        User user = baseRepository.getByField("id", id, User.class);
+        if (user == null) {
+            throw new BasedException("USER_NOT_FOUND", "User not found with id: " + id, null, "id", String.valueOf(id));
+        }
+        baseRepository.delete(user);
         return new ResponseErrorTemplate(
                 "User deleted successfully",
                 "USER_DELETED",
@@ -253,18 +260,24 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public PageableResponseVO<User> searchUsers(UserFilterRequest userFilterRequest) {
-        return null;
+        return userSearchService.searchUsers(userFilterRequest);
     }
 
     @Override
+    @Transactional(readOnly = true)
     public PageableResponseVO<User> searchUseWithCriteria(BaseSearchCriteria searchCriteria, PageableRequestVO pageableRequestVO) {
-        return null;
+        return searchUsersWithCriteria(searchCriteria, pageableRequestVO);
     }
 
     @Override
+    @Transactional(readOnly = true)
     public PageableResponseVO<User> searchUsersWithCriteria(BaseSearchCriteria searchCriteria, PageableRequestVO pageable) {
-        return null;
+        if (searchCriteria == null) {
+            return baseRepository.listPage(User.class, pageable);
+        }
+        return baseRepository.listPage(User.class, searchCriteria, pageable);
     }
 
     private void assignRoles(User user, Set<String> roleNames) {

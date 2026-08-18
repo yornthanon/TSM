@@ -1,8 +1,8 @@
 package com.ticket.userservice.service;
 
 import com.ticket.common.criteria.BaseSearchCriteria;
-import com.ticket.common.dto.PageableRequestVO;
-import com.ticket.common.dto.PageableResponseVO;
+import com.ticket.common.dto.request.PageableRequestVO;
+import com.ticket.common.dto.response.PageableResponseVO;
 import com.ticket.common.exception.ResponseErrorTemplate;
 import com.ticket.userservice.dto.request.UserFilterRequest;
 import com.ticket.userservice.dto.request.UserRequest;

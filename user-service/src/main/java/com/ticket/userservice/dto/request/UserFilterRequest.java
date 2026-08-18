@@ -1,6 +1,6 @@
 package com.ticket.userservice.dto.request;
 
-import com.ticket.common.dto.PageableRequestVO;
+import com.ticket.common.dto.request.PageableRequestVO;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 import lombok.AllArgsConstructor;

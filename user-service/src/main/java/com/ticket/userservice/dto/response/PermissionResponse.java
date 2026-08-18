@@ -1,28 +1,36 @@
 package com.ticket.userservice.dto.response;
 
-import com.ticket.common.dto.BasedDTO;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.ticket.userservice.entity.Permission;
-import lombok.Getter;
-import lombok.Setter;
 
-@Getter
-@Setter
-public class PermissionResponse extends BasedDTO {
-    private Long id;
-    private String name;
-    private String description;
-    private String status;
+import java.util.Set;
+import java.util.stream.Collectors;
 
+
+public record PermissionResponse(
+        @JsonProperty("id") Long id,
+        @JsonProperty("name") String name,
+        @JsonProperty("description") String description,
+        @JsonProperty("status") String status,
+        @JsonProperty("roles") Set<String> roles,
+        @JsonProperty("groups") Set<String> groups
+) {
     public static PermissionResponse from(Permission permission) {
-        PermissionResponse dto = new PermissionResponse();
-        dto.setId(permission.getId());
-        dto.setName(permission.getName());
-        dto.setDescription(permission.getDescription());
-        dto.setStatus(permission.getStatus());
-        dto.setCreatedAt(permission.getCreatedAt());
-        dto.setCreatedBy(permission.getCreatedBy());
-        dto.setUpdatedAt(permission.getUpdatedAt());
-        dto.setUpdatedBy(permission.getUpdatedBy());
-        return dto;
+        Set<String> roleNames = permission.getRoles() != null
+                ? permission.getRoles().stream().map(role -> role.getName()).collect(Collectors.toSet())
+                : Set.of();
+
+        Set<String> groupNames = permission.getGroups() != null
+                ? permission.getGroups().stream().map(group -> group.getName()).collect(Collectors.toSet())
+                : Set.of();
+
+        return new PermissionResponse(
+                permission.getId(),
+                permission.getName(),
+                permission.getDescription(),
+                permission.getStatus(),
+                roleNames,
+                groupNames
+        );
     }
 }

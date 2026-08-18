@@ -1,11 +1,10 @@
 package com.ticket.userservice.controller;
 
 import com.ticket.common.exception.ResponseErrorTemplate;
-import com.ticket.userservice.dto.request.CreateRoleRequestDTO;
+import com.ticket.userservice.dto.request.RoleFilterRequest;
+import com.ticket.userservice.dto.request.RoleRequest;
 import com.ticket.userservice.service.RoleService;
 import jakarta.validation.Valid;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Sort;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -28,13 +27,13 @@ public class RoleController {
     }
 
     @PostMapping("/create")
-    public ResponseEntity<ResponseErrorTemplate> createRole(@Valid @RequestBody CreateRoleRequestDTO createRoleRequestDTO) {
-        return ResponseEntity.ok(roleService.create(createRoleRequestDTO));
+    public ResponseEntity<ResponseErrorTemplate> createRole(@Valid @RequestBody RoleRequest roleRequest) {
+        return ResponseEntity.ok(roleService.create(roleRequest));
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<ResponseErrorTemplate> updateRole(@PathVariable Long id, @Valid @RequestBody CreateRoleRequestDTO createRoleRequestDTO) {
-        return ResponseEntity.ok(roleService.update(id, createRoleRequestDTO));
+    public ResponseEntity<ResponseErrorTemplate> updateRole(@PathVariable Long id, @Valid @RequestBody RoleRequest roleRequest) {
+        return ResponseEntity.ok(roleService.update(id, roleRequest));
     }
 
     @GetMapping("/{id}")
@@ -49,18 +48,37 @@ public class RoleController {
 
     @GetMapping
     public ResponseEntity<ResponseErrorTemplate> getAllRoles(
+            @RequestParam(required = false) Long id,
+            @RequestParam(required = false) String name,
+            @RequestParam(required = false) String status,
             @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "10") int size) {
-        return ResponseEntity.ok(roleService.findAll(
-                PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "id"))));
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(defaultValue = "id") String sortBy,
+            @RequestParam(defaultValue = "true") boolean desc) {
+        RoleFilterRequest filter = new RoleFilterRequest();
+        filter.setId(id);
+        filter.setName(name);
+        filter.setStatus(status);
+        filter.setPageNumber(page);
+        filter.setPageSize(size);
+        filter.setSortBy(sortBy);
+        filter.setDesc(desc);
+        return ResponseEntity.ok(roleService.findAll(filter));
     }
 
     @GetMapping("/active")
     public ResponseEntity<ResponseErrorTemplate> getAllActiveRoles(
             @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "10") int size) {
-        return ResponseEntity.ok(roleService.findAllRoleActive(
-                PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "id"))));
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(defaultValue = "id") String sortBy,
+            @RequestParam(defaultValue = "true") boolean desc) {
+        RoleFilterRequest filter = new RoleFilterRequest();
+        filter.setStatus("ACTIVE");
+        filter.setPageNumber(page);
+        filter.setPageSize(size);
+        filter.setSortBy(sortBy);
+        filter.setDesc(desc);
+        return ResponseEntity.ok(roleService.findAll(filter));
     }
 
     @DeleteMapping("/{id}")

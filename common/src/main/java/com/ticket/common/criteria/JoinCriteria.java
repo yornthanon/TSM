@@ -1,27 +1,64 @@
 package com.ticket.common.criteria;
 
 import jakarta.persistence.criteria.Join;
-public class JoinCriteria<T, R> {
+import jakarta.persistence.criteria.JoinType;
+import jakarta.persistence.criteria.Root;
 
-    private final Join<T, R> join;
-    private final BaseSearchCriteria<R> searchCriteria;
+public class JoinCriteria {
 
-    public JoinCriteria(Join<T, R> join, BaseSearchCriteria<R> searchCriteria) {
-        this.join = join;
-        this.searchCriteria = searchCriteria;
+    private String joinEntity;
+    private String propertyField;
+    private Object jointValue;
+    private SearchOperation searchOperation;
+
+    public JoinCriteria() {
     }
 
-    public Join<T, R> getJoin() {
-        return join;
+    public JoinCriteria(String joinEntity, String propertyField, Object jointValue, SearchOperation searchOperation) {
+        this.joinEntity = joinEntity;
+        this.propertyField = propertyField;
+        this.jointValue = jointValue;
+        this.searchOperation = searchOperation;
     }
 
-    public BaseSearchCriteria<R> getSearchCriteria(SearchOperation equal) {
-        return searchCriteria;
+    public String getJoinEntity() {
+        return joinEntity;
     }
 
-    public void setJoinEntity(String roles) {
+    public void setJoinEntity(String joinEntity) {
+        this.joinEntity = joinEntity;
     }
 
-    public void setPropertyField(String name) {
+    public String getPropertyField() {
+        return propertyField;
+    }
+
+    public void setPropertyField(String propertyField) {
+        this.propertyField = propertyField;
+    }
+
+    public Object getJointValue() {
+        return jointValue;
+    }
+
+    public void setJointValue(Object jointValue) {
+        this.jointValue = jointValue;
+    }
+
+    public SearchOperation getSearchOperation() {
+        return searchOperation;
+    }
+
+    public void setSearchOperation(SearchOperation searchOperation) {
+        this.searchOperation = searchOperation;
+    }
+
+    public <T, R> Join<T, R> buildJoinCriteria(Root<T> root) {
+        String firstSegment = joinEntity;
+        if (joinEntity != null) {
+            String[] parts = joinEntity.split("\\.");
+            firstSegment = parts.length > 0 ? parts[0] : joinEntity;
+        }
+        return root.join(firstSegment, JoinType.INNER);
     }
 }

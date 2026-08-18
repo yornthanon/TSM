@@ -1,17 +1,18 @@
 package com.ticket.userservice.service;
 
 import com.ticket.common.exception.ResponseErrorTemplate;
-import com.ticket.userservice.dto.request.CreateGroupRequestDTO;
-import org.springframework.data.domain.Pageable;
+import com.ticket.userservice.dto.request.GroupFilterRequest;
+import com.ticket.userservice.dto.request.GroupRequest;
 
 public interface GroupService {
-    ResponseErrorTemplate create(CreateGroupRequestDTO createGroupRequestDTO);
 
-    ResponseErrorTemplate update(Long id, CreateGroupRequestDTO createGroupRequestDTO);
+    ResponseErrorTemplate create(GroupRequest request);
+
+    ResponseErrorTemplate update(Long id, GroupRequest request);
 
     ResponseErrorTemplate findById(Long id);
 
-    ResponseErrorTemplate findAll(Pageable pageable);
+    ResponseErrorTemplate findAll(GroupFilterRequest filterRequest);
 
     ResponseErrorTemplate getMembers(Long groupId);
 

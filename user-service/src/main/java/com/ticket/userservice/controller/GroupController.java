@@ -1,11 +1,10 @@
 package com.ticket.userservice.controller;
 
 import com.ticket.common.exception.ResponseErrorTemplate;
-import com.ticket.userservice.dto.request.CreateGroupRequestDTO;
+import com.ticket.userservice.dto.request.GroupFilterRequest;
+import com.ticket.userservice.dto.request.GroupRequest;
 import com.ticket.userservice.service.GroupService;
 import jakarta.validation.Valid;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Sort;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -20,13 +19,13 @@ public class GroupController {
     }
 
     @PostMapping("/create")
-    public ResponseEntity<ResponseErrorTemplate> createGroup(@Valid @RequestBody CreateGroupRequestDTO createGroupRequestDTO) {
-        return ResponseEntity.ok(groupService.create(createGroupRequestDTO));
+    public ResponseEntity<ResponseErrorTemplate> createGroup(@Valid @RequestBody GroupRequest request) {
+        return ResponseEntity.ok(groupService.create(request));
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<ResponseErrorTemplate> updateGroup(@PathVariable Long id, @Valid @RequestBody CreateGroupRequestDTO createGroupRequestDTO) {
-        return ResponseEntity.ok(groupService.update(id, createGroupRequestDTO));
+    public ResponseEntity<ResponseErrorTemplate> updateGroup(@PathVariable Long id, @Valid @RequestBody GroupRequest request) {
+        return ResponseEntity.ok(groupService.update(id, request));
     }
 
     @GetMapping("/{id}")
@@ -36,10 +35,22 @@ public class GroupController {
 
     @GetMapping
     public ResponseEntity<ResponseErrorTemplate> getAllGroups(
+            @RequestParam(required = false) Long id,
+            @RequestParam(required = false) String name,
+            @RequestParam(required = false) String status,
             @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "10") int size) {
-        return ResponseEntity.ok(groupService.findAll(
-                PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "id"))));
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(defaultValue = "id") String sortBy,
+            @RequestParam(defaultValue = "true") boolean desc) {
+        GroupFilterRequest filter = new GroupFilterRequest();
+        filter.setId(id);
+        filter.setName(name);
+        filter.setStatus(status);
+        filter.setPageNumber(page);
+        filter.setPageSize(size);
+        filter.setSortBy(sortBy);
+        filter.setDesc(desc);
+        return ResponseEntity.ok(groupService.findAll(filter));
     }
 
     @GetMapping("/{groupId}/members")

@@ -1,11 +1,10 @@
 package com.ticket.userservice.controller;
 
 import com.ticket.common.exception.ResponseErrorTemplate;
-import com.ticket.userservice.dto.request.CreatePermissionRequestDTO;
+import com.ticket.userservice.dto.request.PermissionRequest;
+import com.ticket.userservice.dto.request.PermissionFilterRequest;
 import com.ticket.userservice.service.PermissionService;
 import jakarta.validation.Valid;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Sort;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -20,12 +19,12 @@ public class PermissionController {
     }
 
     @PostMapping("/create")
-    public ResponseEntity<ResponseErrorTemplate> createPermission(@Valid @RequestBody CreatePermissionRequestDTO createPermissionRequestDTO) {
+    public ResponseEntity<ResponseErrorTemplate> createPermission(@Valid @RequestBody PermissionRequest createPermissionRequestDTO) {
         return ResponseEntity.ok(permissionService.create(createPermissionRequestDTO));
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<ResponseErrorTemplate> updatePermission(@PathVariable Long id, @Valid @RequestBody CreatePermissionRequestDTO createPermissionRequestDTO) {
+    public ResponseEntity<ResponseErrorTemplate> updatePermission(@PathVariable Long id, @Valid @RequestBody PermissionRequest createPermissionRequestDTO) {
         return ResponseEntity.ok(permissionService.update(id, createPermissionRequestDTO));
     }
 
@@ -41,10 +40,22 @@ public class PermissionController {
 
     @GetMapping
     public ResponseEntity<ResponseErrorTemplate> getAllPermissions(
+            @RequestParam(required = false) Long id,
+            @RequestParam(required = false) String name,
+            @RequestParam(required = false) String status,
             @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "10") int size) {
-        return ResponseEntity.ok(permissionService.findAll(
-                PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "id"))));
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(defaultValue = "id") String sortBy,
+            @RequestParam(defaultValue = "true") boolean desc) {
+        PermissionFilterRequest filter = new PermissionFilterRequest();
+        filter.setId(id);
+        filter.setName(name);
+        filter.setStatus(status);
+        filter.setPageNumber(page);
+        filter.setPageSize(size);
+        filter.setSortBy(sortBy);
+        filter.setDesc(desc);
+        return ResponseEntity.ok(permissionService.findAll(filter));
     }
 
     @PostMapping("/{permissionId}/roles/{roleId}")

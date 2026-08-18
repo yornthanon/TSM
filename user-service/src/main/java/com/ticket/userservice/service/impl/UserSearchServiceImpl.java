@@ -1,11 +1,10 @@
 package com.ticket.userservice.service.impl;
 
-import com.ticket.common.dto.PageableResponseVO;
+import com.ticket.common.dto.response.PageableResponseVO;
 import com.ticket.userservice.dto.request.UserFilterRequest;
 import com.ticket.userservice.entity.Role;
 import com.ticket.userservice.entity.User;
 import com.ticket.userservice.repository.UserRepository;
-import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
@@ -13,10 +12,13 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import jakarta.persistence.criteria.Join;
 import jakarta.persistence.criteria.JoinType;
+import jakarta.persistence.criteria.Predicate;
 
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -51,47 +53,41 @@ public class UserSearchServiceImpl {
 
     private Specification<User> buildSpecification(UserFilterRequest filter) {
         return (root, query, cb) -> {
-            Specification<User> s = Specification.where((Specification<User>) null);
+            List<Predicate> predicates = new ArrayList<>();
 
             if (filter.hasNameFilter()) {
                 String pattern = "%" + filter.getName().toLowerCase() + "%";
-                s = s.and((r, q, c) -> c.or(
-                        c.like(c.lower(r.get("firstName")), pattern),
-                        c.like(c.lower(r.get("lastName")), pattern)
+                predicates.add(cb.or(
+                        cb.like(cb.lower(root.get("firstName")), pattern),
+                        cb.like(cb.lower(root.get("lastName")), pattern)
                 ));
             }
 
             if (filter.hasUsernameFilter()) {
-                String username = filter.getUsername().toLowerCase();
-                s = s.and((r, q, c) -> c.equal(c.lower(r.get("username")), username));
+                predicates.add(cb.equal(cb.lower(root.get("username")), filter.getUsername().toLowerCase()));
             }
 
             if (filter.hasEmailFilter()) {
-                String pattern = "%" + filter.getEmail().toLowerCase() + "%";
-                s = s.and((r, q, c) -> c.like(c.lower(r.get("email")), pattern));
+                predicates.add(cb.like(cb.lower(root.get("email")), "%" + filter.getEmail().toLowerCase() + "%"));
             }
 
             if (filter.hasStatusFilter()) {
-                String status = filter.getStatus().toUpperCase();
-                s = s.and((r, q, c) -> c.equal(c.upper(r.get("status")), status));
+                predicates.add(cb.equal(cb.upper(root.get("status")), filter.getStatus().toUpperCase()));
             }
 
             if (filter.hasRoleFilter()) {
-                String roleValue = filter.getRole().toUpperCase();
-                s = s.and((r, q, c) -> {
-                    Join<User, Role> join = r.join("roles", JoinType.INNER);
-                    return c.equal(c.upper(join.get("name")), roleValue);
-                });
+                Join<User, Role> join = root.join("roles", JoinType.INNER);
+                predicates.add(cb.equal(cb.upper(join.get("name")), filter.getRole().toUpperCase()));
             }
 
             if (filter.hasDateRange()) {
                 if (filter.getStartDate().isAfter(filter.getEndDate())) {
                     throw new IllegalArgumentException("Start date cannot be after end date");
                 }
-                s = s.and((r, q, c) -> c.between(r.get("createdAt"), filter.getStartDate(), filter.getEndDate()));
+                predicates.add(cb.between(root.get("createdAt"), filter.getStartDate(), filter.getEndDate()));
             }
 
-            return s.toPredicate(root, query, cb);
+            return cb.and(predicates.toArray(new Predicate[0]));
         };
     }
 }

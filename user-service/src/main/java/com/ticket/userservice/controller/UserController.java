@@ -50,6 +50,16 @@ public class UserController {
         return ResponseEntity.ok(userService.findAll(userFilterRequest));
     }
 
+    @GetMapping("/search")
+    public ResponseEntity<ResponseErrorTemplate> searchUsers(@Valid @ModelAttribute UserFilterRequest userFilterRequest) {
+        return ResponseEntity.ok(new ResponseErrorTemplate(
+                "Users search successful",
+                "USERS_FOUND",
+                userService.searchUsers(userFilterRequest),
+                false
+        ));
+    }
+
     @PutMapping("/{id}/change-password")
     public ResponseEntity<ResponseErrorTemplate> changePassword(
             @PathVariable Long id,

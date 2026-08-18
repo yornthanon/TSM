@@ -25,4 +25,8 @@ public enum EntityFieldShare {
     public String getFieldName() {
         return fieldName;
     }
+
+    public String getKey() {
+        return fieldName;
+    }
 }

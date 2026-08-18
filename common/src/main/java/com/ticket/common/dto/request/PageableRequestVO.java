@@ -1,4 +1,4 @@
-package com.ticket.common.dto;
+package com.ticket.common.dto.request;
 
 import jakarta.validation.constraints.Min;
 import lombok.AllArgsConstructor;

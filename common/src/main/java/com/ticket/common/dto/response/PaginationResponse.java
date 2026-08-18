@@ -1,4 +1,4 @@
-package com.ticket.common.dto;
+package com.ticket.common.dto.response;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Setter;
