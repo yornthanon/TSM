@@ -9,7 +9,6 @@ import org.springframework.security.config.annotation.web.configuration.EnableWe
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
-import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
 
 /**
  * Basic auth security configuration.
@@ -30,12 +29,12 @@ public class SecurityConfig {
 
         // H2 console uses standard requests and should skip CSRF tokens.
         http.csrf(csrf ->
-            csrf.ignoringRequestMatchers(new AntPathRequestMatcher("/h2-console/**"))
+            csrf.ignoringRequestMatchers("/h2-console/**")
         );
 
         // H2 console is restricted to ADMIN users.
         http.authorizeHttpRequests(auth ->
-            auth.requestMatchers(new AntPathRequestMatcher("/h2-console/**")).hasRole("ADMIN")
+            auth.requestMatchers("/h2-console/**").hasRole("ADMIN")
         );
 
         // Configure Vaadin security (internal endpoints, login view, etc.)

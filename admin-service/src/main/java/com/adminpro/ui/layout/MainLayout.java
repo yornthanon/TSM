@@ -11,6 +11,8 @@ import com.vaadin.flow.component.html.Div;
 import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.icon.VaadinIcon;
 import com.vaadin.flow.component.textfield.TextField;
+import com.vaadin.flow.router.AfterNavigationEvent;
+import com.vaadin.flow.router.AfterNavigationObserver;
 import com.vaadin.flow.router.RouteConfiguration;
 import jakarta.annotation.security.PermitAll;
 import com.vaadin.flow.spring.security.AuthenticationContext;
@@ -28,7 +30,7 @@ import java.util.Map;
  * The @Theme annotation lives in AppShell (Vaadin 24 requirement).
  */
 @PermitAll
-public class MainLayout extends AppLayout {
+public class MainLayout extends AppLayout implements AfterNavigationObserver {
 
     private static final Map<String, String> PAGE_TITLES = Map.ofEntries(
         Map.entry("", "Dashboard"),
@@ -136,8 +138,7 @@ addToDrawer(sidenav);
     }
 
     @Override
-    protected void afterNavigation() {
-        super.afterNavigation();
+    public void afterNavigation(AfterNavigationEvent event) {
         currentPage.setText(resolvePageTitle());
     }
 
