@@ -14,8 +14,8 @@ import com.ticket.userservice.repository.RefreshTokenRepository;
 import com.ticket.userservice.repository.UserRepository;
 import com.ticket.userservice.service.JwtService;
 import com.ticket.userservice.service.handle.CustomUserDetailService;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 
@@ -26,13 +26,22 @@ import java.util.Optional;
 
 @Slf4j
 @Service
-@RequiredArgsConstructor
 public class RefreshTokenService {
 
     private final UserRepository userRepository;
     private final RefreshTokenRepository refreshTokenRepository;
     private final CustomUserDetailService customUserDetailService;
     private final JwtService jwtService;
+
+    public RefreshTokenService(UserRepository userRepository,
+                               RefreshTokenRepository refreshTokenRepository,
+                               CustomUserDetailService customUserDetailService,
+                               @Lazy JwtService jwtService) {
+        this.userRepository = userRepository;
+        this.refreshTokenRepository = refreshTokenRepository;
+        this.customUserDetailService = customUserDetailService;
+        this.jwtService = jwtService;
+    }
 
 
     public void createRefreshToken(String username, String token, Date tokenExpiration) {

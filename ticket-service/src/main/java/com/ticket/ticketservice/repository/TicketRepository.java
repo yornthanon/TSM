@@ -1,0 +1,16 @@
+package com.ticket.ticketservice.repository;
+import com.ticket.ticketservice.Enum.TicketStatus;
+import com.ticket.ticketservice.entity.Ticket;
+import org.springframework.data.jpa.repository.JpaRepository;
+
+import java.util.List;
+import java.util.Optional;
+
+public interface TicketRepository extends JpaRepository<Ticket, Long> {
+
+    List<Ticket> findAllByEventId(Long eventId);
+
+    List<Ticket> findAllByEventIdAndTicketStatus(Long eventId, TicketStatus status);
+
+    Optional<Ticket> findFirstBySeatNumberAndEventId(String seatNumber, Long eventId);
+}
