@@ -12,11 +12,13 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.authentication.AuthenticationProvider;
+import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.crypto.password.PasswordEncoder;
 
 import java.util.*;
 
@@ -26,6 +28,7 @@ import java.util.*;
 public class CustomAuthenticationProvider implements AuthenticationProvider {
 
     private final UserRepository userRepository;
+    private final PasswordEncoder passwordEncoder;
 
     @Override
     public Authentication authenticate(Authentication authentication) throws AuthenticationException {
@@ -49,6 +52,10 @@ public class CustomAuthenticationProvider implements AuthenticationProvider {
                     String.valueOf(HttpStatus.UNAUTHORIZED.value()),
                     new EmptyObject(),
                     HttpStatus.UNAUTHORIZED);
+        }
+        if (!passwordEncoder.matches(password, user.get().getPassword())) {
+            log.warn("Invalid password for username: {}", username);
+            throw new BadCredentialsException("Bad credentials");
         }
         final List<GrantedAuthority> grantedAuthorities = grantedAuthorities(user.get().getRoles().stream().toList());
         final CustomUserDetail customUserDetail = new CustomUserDetail(username, password, grantedAuthorities);

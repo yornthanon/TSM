@@ -79,7 +79,7 @@ public class JwtServiceImpl extends JwtConfigProperties implements JwtService {
     @Override
     public String refreshToken(CustomUserDetail customUserDetail) {
         Instant currentTime = Instant.now();
-        var tokenExpiration = Date.from(currentTime.plusMillis(600000));
+        var tokenExpiration = Date.from(currentTime.plusMillis(getRefreshTokenExpiration()));
         var refreshToken = Jwts.builder()
                 .subject(customUserDetail.getUsername())
                 .issuedAt(Date.from(currentTime))

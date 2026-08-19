@@ -18,6 +18,8 @@ public class JwtConfigProperties {
     public String prefix;
     @Value("${jwt.expiration}")
     public Long expiration;
+    @Value("${jwt.refresh-token-expiration}")
+    public Long refreshTokenExpiration;
     @Value("${jwt.secret}")
     public String secret;
 }

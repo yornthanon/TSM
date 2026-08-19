@@ -4,6 +4,7 @@ import com.ticket.apigateway.service.Impl.RateLimiterService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.cloud.gateway.filter.GatewayFilterChain;
 import org.springframework.cloud.gateway.filter.GlobalFilter;
+import org.springframework.core.Ordered;
 import org.springframework.core.io.buffer.DataBuffer;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
@@ -18,11 +19,11 @@ import java.nio.charset.StandardCharsets;
 
 @Component
 @Slf4j
-public class RatingLimitGlobalFilter implements GlobalFilter {
+public class RateLimitGlobalFilter implements GlobalFilter, Ordered {
 
     private final RateLimiterService rateLimiterService;
 
-    public RatingLimitGlobalFilter(RateLimiterService rateLimiterService) {
+    public RateLimitGlobalFilter(RateLimiterService rateLimiterService) {
         this.rateLimiterService = rateLimiterService;
     }
 
@@ -30,8 +31,7 @@ public class RatingLimitGlobalFilter implements GlobalFilter {
     public Mono<Void> filter(ServerWebExchange exchange, GatewayFilterChain chain) {
         ServerHttpRequest request = exchange.getRequest();
 
-        String uri = request.getURI().toString();
-        String path = request.getPath().toString();
+        String path = request.getPath().value();
         String method = request.getMethod().toString();
         // Check for X-Forwarded-For header
         /*
@@ -47,7 +47,7 @@ public class RatingLimitGlobalFilter implements GlobalFilter {
                 ? request.getRemoteAddress().getAddress().getHostAddress()
                 : "Unknown";
 
-        return rateLimiterService.verifyRatingLimit(path, method, clientIp)  // Check if the request is allowed based on rate-limiting
+        return rateLimiterService.verifyRateLimit(path, method, clientIp)  // Check if the request is allowed based on rate-limiting
                 .flatMap(isAllowed -> {
                     if (!isAllowed) {
                         // If rate limit exceeded, return 429 status
@@ -69,5 +69,10 @@ public class RatingLimitGlobalFilter implements GlobalFilter {
                     log.info("Rate limit not exceeded. Forwarding request to the backend...");
                     return chain.filter(exchange);
                 }).then();
+    }
+
+    @Override
+    public int getOrder() {
+        return 0;
     }
 }

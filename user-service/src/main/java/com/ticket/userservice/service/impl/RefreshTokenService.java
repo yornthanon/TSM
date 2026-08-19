@@ -12,6 +12,7 @@ import com.ticket.userservice.entity.RefreshToken;
 import com.ticket.userservice.entity.User;
 import com.ticket.userservice.repository.RefreshTokenRepository;
 import com.ticket.userservice.repository.UserRepository;
+import com.ticket.userservice.service.JwtService;
 import com.ticket.userservice.service.handle.CustomUserDetailService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -31,6 +32,7 @@ public class RefreshTokenService {
     private final UserRepository userRepository;
     private final RefreshTokenRepository refreshTokenRepository;
     private final CustomUserDetailService customUserDetailService;
+    private final JwtService jwtService;
 
 
     public void createRefreshToken(String username, String token, Date tokenExpiration) {
@@ -70,7 +72,7 @@ public class RefreshTokenService {
                     .map(RefreshToken::getUser)
                     .map(userInfo -> {
                         final CustomUserDetail customUserDetail = customUserDetailService.customUserDetail(userInfo.getUsername());
-                        final String accessToken = "SSS";//jwtService.generateToken(customUserDetail);
+                        final String accessToken = jwtService.generateToken(customUserDetail);
                         var responseToken = new AuthenticationResponse(accessToken, refreshTokenRequest.refreshToken());
                         return new ResponseErrorTemplate(
                                 ApiConstant.REFRESH_TOKEN_SUCCESS.getDescription(),

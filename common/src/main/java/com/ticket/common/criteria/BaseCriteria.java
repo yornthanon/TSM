@@ -23,7 +23,7 @@ public class BaseCriteria<T> {
         return criteriaQuery;
     }
 
-    public void getCriteriaQuery(CriteriaQuery<T> criteriaQuery) {
+    public void setCriteriaQuery(CriteriaQuery<T> criteriaQuery) {
         this.criteriaQuery = criteriaQuery;
     }
 }

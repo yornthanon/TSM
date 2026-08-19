@@ -17,6 +17,7 @@ public class DataSourceConfig {
         initializer.setConnectionFactory(connectionFactory);
         ResourceDatabasePopulator resourceDatabasePopulator  = new ResourceDatabasePopulator();
         resourceDatabasePopulator.addScript(new ClassPathResource("schema.sql"));
+        resourceDatabasePopulator.addScript(new ClassPathResource("data.sql"));
         initializer.setDatabasePopulator(resourceDatabasePopulator);
         return initializer;
     }

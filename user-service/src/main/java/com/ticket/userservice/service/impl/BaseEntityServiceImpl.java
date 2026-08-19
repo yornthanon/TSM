@@ -54,7 +54,7 @@ public class BaseEntityServiceImpl implements BaseRepository {
             criteriaBuilder = entityManager.getCriteriaBuilder();
             CriteriaQuery<T> criteriaQuery = criteriaBuilder.createQuery(clazz);
             baseCriteria.setCriteriaBuilder(criteriaBuilder);
-            baseCriteria.getCriteriaQuery(criteriaQuery);
+            baseCriteria.setCriteriaQuery(criteriaQuery);
             return baseCriteria;
         } catch (Exception e) {
             log.error("Error creating criteria builder for type {}: {}", clazz.getSimpleName(), e.getMessage());

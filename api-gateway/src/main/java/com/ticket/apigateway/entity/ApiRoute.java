@@ -23,7 +23,7 @@ public class ApiRoute {
     private String method;
     private String description;
     private String groupCode;
-    private Integer rateLimed;
+    private Integer rateLimited;
     private Integer rateLimitDuration;
     private String status;
     @Column( "created_at")

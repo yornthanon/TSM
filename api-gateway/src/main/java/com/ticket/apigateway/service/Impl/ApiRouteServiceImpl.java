@@ -78,7 +78,7 @@ public class ApiRouteServiceImpl implements ApiRouteService {
                 .method(routeApiRequest.method())
                 .description(routeApiRequest.description())
                 .groupCode(routeApiRequest.groupCode())
-                .rateLimed(routeApiRequest.rateLimit())
+                .rateLimited(routeApiRequest.rateLimit())
                 .rateLimitDuration(routeApiRequest.rateLimitDuration())
                 .status(routeApiRequest.status())
                 .createdAt(LocalDateTime.now())
@@ -96,7 +96,7 @@ public class ApiRouteServiceImpl implements ApiRouteService {
                 apiRoute.getMethod(),
                 apiRoute.getDescription(),
                 apiRoute.getGroupCode(),
-                apiRoute.getRateLimed(),
+                apiRoute.getRateLimited(),
                 apiRoute.getRateLimitDuration(),
                 apiRoute.getStatus(),
                 apiRoute.getCreatedAt() != null ? apiRoute.getCreatedAt().toString() : null,

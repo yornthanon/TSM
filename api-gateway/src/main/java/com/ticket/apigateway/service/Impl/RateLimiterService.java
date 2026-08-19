@@ -1,5 +1,6 @@
 package com.ticket.apigateway.service.Impl;
 
+import com.ticket.apigateway.entity.ApiRoute;
 import com.ticket.apigateway.repository.ApiRouteRepository;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.redis.core.StringRedisTemplate;
@@ -39,12 +40,12 @@ public class RateLimiterService {
     }
 
 
-    public Mono<Boolean> verifyRatingLimit(String path, String method, String identifier) {
-
-        final  String normalizedPath = normalizePath(path);
-        return apiRouteRepository.findFirstByPathAndMethod(normalizedPath, method)
+    public Mono<Boolean> verifyRateLimit(String path, String method, String identifier) {
+        return apiRouteRepository.findByMethod(method)
+                .filter(route -> route.isActive() && matches(route.getPath(), path))
+                .next()
                 .flatMap(routeConfig -> {
-                    if (routeConfig.getRateLimed() == null) {
+                    if (routeConfig.getRateLimited() == null) {
                         return Mono.just(true); // No rate limit for this route
                     }
 
@@ -57,7 +58,7 @@ public class RateLimiterService {
                     return Mono.fromCallable(() -> stringRedisTemplate.execute(
                             RedisScript.of(LUA_SCRIPT, Long.class),
                             Collections.singletonList(redisKey),
-                            routeConfig.getRateLimed().toString(),
+                            routeConfig.getRateLimited().toString(),
                             routeConfig.getRateLimitDuration().toString()
                     )).map(result -> result != null && result == 1L);
                 })
@@ -65,12 +66,36 @@ public class RateLimiterService {
     }
 
     /**
-     * Normalize the request path to match the database configuration.
-     * Replace dynamic segments with placeholders (e.g., posts/1 -> posts/{id}).
+     * Matches a request path against a route path pattern.
+     * Supports trailing {@code /**} (any sub-path, including none) and {@code *}
+     * (any characters within a single path segment).
      */
-    private String normalizePath(String path) {
-        // Define your dynamic path patterns and replace them with placeholders
-        return path.replaceAll("/posts/\\d+", "/posts/{id}")
-                .replaceAll("/users/\\d+", "/users/{id}");
+    private boolean matches(String pattern, String path) {
+        if (pattern == null || path == null) {
+            return false;
+        }
+        if (pattern.equals(path)) {
+            return true;
+        }
+
+        StringBuilder regex = new StringBuilder();
+        boolean trailingDoubleStar = pattern.endsWith("/**");
+        String core = trailingDoubleStar ? pattern.substring(0, pattern.length() - 3) : pattern;
+
+        for (int i = 0; i < core.length(); i++) {
+            char c = core.charAt(i);
+            if (c == '*') {
+                regex.append("[^/]*");
+            } else {
+                if ("\\.[]{}()<>+-=!?^$|".indexOf(c) >= 0) {
+                    regex.append('\\');
+                }
+                regex.append(c);
+            }
+        }
+        if (trailingDoubleStar) {
+            regex.append("(?:/.*)?");
+        }
+        return path.matches(regex.toString());
     }
 }
