@@ -30,8 +30,8 @@ import java.time.format.DateTimeFormatter;
 import java.util.Arrays;
 import java.util.List;
 
-@Route(value = "messages", layout = MainLayout.class)
-@PageTitle("Messages | Arc Admin")
+@Route(value = "inbox", layout = MainLayout.class)
+@PageTitle("Inbox | Ticket")
 @PermitAll
 public class MessagesView extends Div {
 
@@ -54,7 +54,7 @@ public class MessagesView extends Div {
         addClassName("page-content");
         setWidthFull();
 
-        PageHeader header = new PageHeader("Messages", "Manage inbound support and customer conversations");
+        PageHeader header = new PageHeader("Inbox", "Manage inbound support and customer conversations");
 
         Button composeButton = new Button("Compose", VaadinIcon.PLUS.create());
         composeButton.addClassNames("btn", "btn-primary");

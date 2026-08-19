@@ -1,18 +1,18 @@
 package com.adminpro.infrastructure.seed;
 
 import com.adminpro.domain.AnalyticsMetric;
-import com.adminpro.domain.OrderRecord;
-import com.adminpro.domain.ProductItem;
 import com.adminpro.domain.ReportConfig;
 import com.adminpro.domain.Role;
 import com.adminpro.domain.SupportMessage;
+import com.adminpro.domain.Ticket;
+import com.adminpro.domain.TicketCategory;
 import com.adminpro.domain.User;
 import com.adminpro.domain.UserSettings;
 import com.adminpro.infrastructure.repo.AnalyticsMetricRepository;
-import com.adminpro.infrastructure.repo.OrderRecordRepository;
-import com.adminpro.infrastructure.repo.ProductItemRepository;
 import com.adminpro.infrastructure.repo.ReportConfigRepository;
 import com.adminpro.infrastructure.repo.SupportMessageRepository;
+import com.adminpro.infrastructure.repo.TicketCategoryRepository;
+import com.adminpro.infrastructure.repo.TicketRepository;
 import com.adminpro.infrastructure.repo.UserRepository;
 import com.adminpro.infrastructure.repo.UserSettingsRepository;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -34,8 +34,8 @@ public class DevDataSeeder implements CommandLineRunner {
     private final UserRepository userRepo;
     private final UserSettingsRepository settingsRepo;
     private final AnalyticsMetricRepository analyticsRepo;
-    private final OrderRecordRepository orderRepo;
-    private final ProductItemRepository productRepo;
+    private final TicketCategoryRepository categoryRepo;
+    private final TicketRepository ticketRepo;
     private final SupportMessageRepository messageRepo;
     private final ReportConfigRepository reportRepo;
     private final PasswordEncoder passwordEncoder;
@@ -43,16 +43,16 @@ public class DevDataSeeder implements CommandLineRunner {
     public DevDataSeeder(UserRepository userRepo,
                          UserSettingsRepository settingsRepo,
                          AnalyticsMetricRepository analyticsRepo,
-                         OrderRecordRepository orderRepo,
-                         ProductItemRepository productRepo,
+                         TicketCategoryRepository categoryRepo,
+                         TicketRepository ticketRepo,
                          SupportMessageRepository messageRepo,
                          ReportConfigRepository reportRepo,
                          PasswordEncoder passwordEncoder) {
-        this.userRepo    = userRepo;
+        this.userRepo = userRepo;
         this.settingsRepo = settingsRepo;
         this.analyticsRepo = analyticsRepo;
-        this.orderRepo = orderRepo;
-        this.productRepo = productRepo;
+        this.categoryRepo = categoryRepo;
+        this.ticketRepo = ticketRepo;
         this.messageRepo = messageRepo;
         this.reportRepo = reportRepo;
         this.passwordEncoder = passwordEncoder;
@@ -62,14 +62,14 @@ public class DevDataSeeder implements CommandLineRunner {
     public void run(String... args) {
         seedUsers();
         seedSettings();
-        seedAnalytics();
-        seedOrders();
-        seedProducts();
+        seedCategories();
+        seedTickets();
         seedMessages();
+        seedAnalytics();
         seedReports();
     }
 
-    // ── Users ─────────────────────────────────────────────────────────────────
+    // ── Agents ────────────────────────────────────────────────────────────────
 
     private void seedUsers() {
         if (userRepo.count() > 0) return;
@@ -97,39 +97,48 @@ public class DevDataSeeder implements CommandLineRunner {
         settingsRepo.save(new UserSettings());
     }
 
-    private void seedAnalytics() {
-        if (analyticsRepo.count() > 0) return;
+    // ── Categories ────────────────────────────────────────────────────────────
 
-        analyticsRepo.saveAll(List.of(
-            new AnalyticsMetric("Page Views", new BigDecimal("248.4"), "K", "This week", "UP"),
-            new AnalyticsMetric("Avg Session", new BigDecimal("4.62"), "min", "This week", "UP"),
-            new AnalyticsMetric("Bounce Rate", new BigDecimal("38.2"), "%", "This week", "DOWN"),
-            new AnalyticsMetric("Orders", new BigDecimal("2.84"), "K", "This month", "UP")
+    private void seedCategories() {
+        if (categoryRepo.count() > 0) return;
+
+        categoryRepo.saveAll(List.of(
+            new TicketCategory("Technical", "Hardware, software, and connectivity issues", "ACTIVE"),
+            new TicketCategory("Billing", "Invoices, payments, and subscription questions", "ACTIVE"),
+            new TicketCategory("Account", "Profile, access, and password management", "ACTIVE"),
+            new TicketCategory("General", "General inquiries and requests", "ACTIVE"),
+            new TicketCategory("Feature Request", "New feature suggestions and ideas", "INACTIVE")
         ));
     }
 
-    private void seedOrders() {
-        if (orderRepo.count() > 0) return;
+    // ── Tickets ───────────────────────────────────────────────────────────────
 
-        orderRepo.saveAll(List.of(
-            new OrderRecord("NX-9012", "Alex Wong", "Pro Annual", new BigDecimal("1199.00"), "PAID", LocalDate.now()),
-            new OrderRecord("NX-9011", "Sarah Kim", "Starter", new BigDecimal("49.00"), "PENDING", LocalDate.now()),
-            new OrderRecord("NX-9010", "Lior Maron", "Enterprise", new BigDecimal("4999.00"), "PAID", LocalDate.now().minusDays(1)),
-            new OrderRecord("NX-9009", "Dani Park", "Trial", new BigDecimal("0.00"), "TRIAL", LocalDate.now().minusDays(1)),
-            new OrderRecord("NX-9008", "Marcus Bell", "Starter", new BigDecimal("49.00"), "FAILED", LocalDate.now().minusDays(2))
+    private void seedTickets() {
+        if (ticketRepo.count() > 0) return;
+
+        ticketRepo.saveAll(List.of(
+            new Ticket("TKT-1001", "Cannot log in after password reset", "Alex Wong", "alex@techcorp.com", "Account", "HIGH", "OPEN", "Alice Müller", "Reset token expired before I could use it.", LocalDate.now()),
+            new Ticket("TKT-1002", "Invoice missing line items", "Sarah Kim", "sarah@startup.co", "Billing", "MEDIUM", "IN_PROGRESS", "Bob Johnson", "The monthly invoice is missing the pro plan line.", LocalDate.now()),
+            new Ticket("TKT-1003", "VPN not connecting from office", "Lior Maron", "lior@enterprise.io", "Technical", "URGENT", "OPEN", "James Patel", "All agents cannot reach the internal network since this morning.", LocalDate.now().minusDays(1)),
+            new Ticket("TKT-1004", "Change billing email address", "Dani Park", "dani@mobile.dev", "Account", "LOW", "RESOLVED", "Alice Müller", "Please switch the invoice email to accounts@mobile.dev", LocalDate.now().minusDays(1)),
+            new Ticket("TKT-1005", "Feature: export tickets to CSV", "Marcus Bell", "m.bell@legacy.org", "Feature Request", "MEDIUM", "NEW", null, "Would be great to export the ticket list to CSV.", LocalDate.now().minusDays(1)),
+            new Ticket("TKT-1006", "Double charge on card", "Nora Ali", "nora@shop.com", "Billing", "URGENT", "OPEN", "Bob Johnson", "I was charged twice for the annual plan.", LocalDate.now().minusDays(2)),
+            new Ticket("TKT-1007", "Slow dashboard loading", "Omar Hassan", "omar@analytics.io", "Technical", "MEDIUM", "IN_PROGRESS", "Carla Fernández", "Dashboard charts take over 5 seconds to load.", LocalDate.now().minusDays(2)),
+            new Ticket("TKT-1008", "Update team member permissions", "Priya Patel", "priya@retail.com", "Account", "HIGH", "RESOLVED", "Alice Müller", "Please grant billing access to the finance team.", LocalDate.now().minusDays(2)),
+            new Ticket("TKT-1009", "Support question about API limits", "Tomás Silva", "tomas@dev.co", "Technical", "LOW", "CLOSED", "Carla Fernández", "What is the maximum requests per minute on the standard plan?", LocalDate.now().minusDays(3)),
+            new Ticket("TKT-1010", "Request refund for duplicate order", "Mei Lin", "mei@fashion.cn", "Billing", "MEDIUM", "OPEN", "James Patel", "Order #8821 was charged twice by mistake.", LocalDate.now().minusDays(3)),
+            new Ticket("TKT-1011", "Enable two-factor authentication", "Kenji Sato", "kenji@games.jp", "Account", "HIGH", "NEW", null, "Please guide me on enabling 2FA on my account.", LocalDate.now().minusDays(3)),
+            new Ticket("TKT-1012", "Mobile app crashes on startup", "Anna Weber", "anna@travel.de", "Technical", "URGENT", "IN_PROGRESS", "Carla Fernández", "App version 4.2 crashes immediately after launch.", LocalDate.now().minusDays(4)),
+            new Ticket("TKT-1013", "Add priority flag to tickets", "Ryan Cole", "ryan@design.us", "Feature Request", "LOW", "RESOLVED", "Alice Müller", "A high-priority flag would help triage urgent issues.", LocalDate.now().minusDays(4)),
+            new Ticket("TKT-1014", "Update contact phone number", "Fatima Zahra", "fatima@bank.ma", "Account", "LOW", "CLOSED", "Bob Johnson", "The contact number on the profile is outdated.", LocalDate.now().minusDays(5)),
+            new Ticket("TKT-1015", "Integration with Slack broken", "Leo Martins", "leo@agency.br", "Technical", "HIGH", "OPEN", "James Patel", "Slack notifications stopped arriving this week.", LocalDate.now().minusDays(5)),
+            new Ticket("TKT-1016", "Payment declined but money deducted", "Elena Popova", "elena@ecom.ru", "Billing", "URGENT", "NEW", null, "Payment says failed but the amount was deducted from my card.", LocalDate.now().minusDays(6)),
+            new Ticket("TKT-1017", "Request demo of enterprise plan", "Chloe Martin", "chloe@corp.fr", "General", "MEDIUM", "RESOLVED", "Alice Müller", "We would like to see a demo of the enterprise features.", LocalDate.now().minusDays(6)),
+            new Ticket("TKT-1018", "Reset password link not sending", "David Osei", "david@fintech.gh", "Account", "HIGH", "OPEN", "Bob Johnson", "The reset password email never arrives.", LocalDate.now().minusDays(7))
         ));
     }
 
-    private void seedProducts() {
-        if (productRepo.count() > 0) return;
-
-        productRepo.saveAll(List.of(
-            new ProductItem("Arc Starter", "ARC-ST-001", "Subscription", new BigDecimal("49.00"), 240, "ACTIVE"),
-            new ProductItem("Arc Pro Annual", "ARC-PR-AN", "Subscription", new BigDecimal("1199.00"), 96, "ACTIVE"),
-            new ProductItem("Enterprise Seat", "ARC-ENT-01", "License", new BigDecimal("4999.00"), 24, "ACTIVE"),
-            new ProductItem("Support Add-on", "ARC-SUP-10", "Service", new BigDecimal("299.00"), 9, "DRAFT")
-        ));
-    }
+    // ── Messages ──────────────────────────────────────────────────────────────
 
     private void seedMessages() {
         if (messageRepo.count() > 0) return;
@@ -141,13 +150,28 @@ public class DevDataSeeder implements CommandLineRunner {
         ));
     }
 
+    // ── Analytics ─────────────────────────────────────────────────────────────
+
+    private void seedAnalytics() {
+        if (analyticsRepo.count() > 0) return;
+
+        analyticsRepo.saveAll(List.of(
+            new AnalyticsMetric("Open Tickets", new BigDecimal("7"), "", "This week", "UP"),
+            new AnalyticsMetric("Avg Resolution Time", new BigDecimal("4.6"), "h", "This week", "DOWN"),
+            new AnalyticsMetric("First Response Time", new BigDecimal("2.1"), "h", "This week", "DOWN"),
+            new AnalyticsMetric("SLA Compliance", new BigDecimal("96.4"), "%", "This month", "UP")
+        ));
+    }
+
+    // ── Reports ───────────────────────────────────────────────────────────────
+
     private void seedReports() {
         if (reportRepo.count() > 0) return;
 
         reportRepo.saveAll(List.of(
-            new ReportConfig("Monthly Revenue", "Jordan Lee", "Monthly", "READY", LocalDate.now().minusDays(2)),
-            new ReportConfig("User Growth", "Jordan Lee", "Weekly", "RUNNING", LocalDate.now().minusDays(1)),
-            new ReportConfig("Billing Exceptions", "Finance Team", "Daily", "FAILED", LocalDate.now().minusDays(3))
+            new ReportConfig("Ticket Volume", "Alice Müller", "Weekly", "READY", LocalDate.now().minusDays(2)),
+            new ReportConfig("Resolution SLA", "James Patel", "Daily", "RUNNING", LocalDate.now().minusDays(1)),
+            new ReportConfig("Category Breakdown", "Bob Johnson", "Monthly", "FAILED", LocalDate.now().minusDays(3))
         ));
     }
 }

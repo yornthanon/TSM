@@ -6,9 +6,9 @@ import com.vaadin.flow.spring.annotation.EnableVaadin;
 
 @SpringBootApplication
 @EnableVaadin("com.adminpro.ui")
-public class AdminProApplication {
+public class AdminApplication {
 
     public static void main(String[] args) {
-        SpringApplication.run(AdminProApplication.class, args);
+        SpringApplication.run(AdminApplication.class, args);
     }
 }

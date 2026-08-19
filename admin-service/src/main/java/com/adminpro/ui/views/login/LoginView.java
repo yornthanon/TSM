@@ -20,7 +20,7 @@ import com.vaadin.flow.server.auth.AnonymousAllowed;
 import com.vaadin.flow.spring.security.AuthenticationContext;
 
 @Route("login")
-@PageTitle("Sign In | Arc Admin")
+@PageTitle("Sign In | Ticket")
 @AnonymousAllowed
 public class LoginView extends Div implements BeforeEnterObserver {
 
@@ -144,7 +144,7 @@ public class LoginView extends Div implements BeforeEnterObserver {
 
         Div footer = new Div();
         footer.addClassName("panel-left-footer");
-        footer.setText("© 2026 Arc Admin. All rights reserved.");
+        footer.setText("© 2026 Ticket Management. All rights reserved.");
 
         panelLeft.add(brand, body, footer);
         return panelLeft;

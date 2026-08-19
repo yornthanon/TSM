@@ -111,6 +111,19 @@
     </build>
 
     <profiles>
+        <!-- Development: enables Vaadin dev-mode tooling (live reload, dev server) -->
+        <profile>
+            <id>development</id>
+            <activation>
+                <activeByDefault>true</activeByDefault>
+            </activation>
+            <dependencies>
+                <dependency>
+                    <groupId>com.vaadin</groupId>
+                    <artifactId>vaadin-dev</artifactId>
+                </dependency>
+            </dependencies>
+        </profile>
         <!-- Production build: bundles frontend assets -->
         <profile>
             <id>production</id>

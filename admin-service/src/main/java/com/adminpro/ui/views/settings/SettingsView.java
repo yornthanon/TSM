@@ -27,7 +27,7 @@ import jakarta.annotation.security.PermitAll;
 import java.util.List;
 
 @Route(value = "settings", layout = MainLayout.class)
-@PageTitle("Settings | Arc Admin")
+@PageTitle("Settings | Ticket")
 @PermitAll
 public class SettingsView extends Div {
 

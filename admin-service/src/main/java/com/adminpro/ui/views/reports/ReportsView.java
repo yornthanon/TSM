@@ -29,7 +29,7 @@ import java.util.Arrays;
 import java.util.List;
 
 @Route(value = "reports", layout = MainLayout.class)
-@PageTitle("Reports | Arc Admin")
+@PageTitle("Reports | Ticket")
 @PermitAll
 public class ReportsView extends Div {
 

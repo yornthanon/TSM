@@ -1,12 +1,12 @@
 package com.adminpro.ui.layout;
 
 import com.adminpro.ui.views.analytics.AnalyticsView;
+import com.adminpro.ui.views.categories.CategoriesView;
 import com.adminpro.ui.views.dashboard.DashboardView;
 import com.adminpro.ui.views.messages.MessagesView;
-import com.adminpro.ui.views.orders.OrdersView;
-import com.adminpro.ui.views.products.ProductsView;
 import com.adminpro.ui.views.reports.ReportsView;
 import com.adminpro.ui.views.settings.SettingsView;
+import com.adminpro.ui.views.tickets.TicketsView;
 import com.adminpro.ui.views.users.UsersView;
 import com.vaadin.flow.component.html.Div;
 import com.vaadin.flow.component.html.Span;
@@ -47,11 +47,11 @@ public class SideNav extends Div {
     // Views are forward-referenced; imports resolved at build time.
     private static final List<NavEntry> NAV_ITEMS = List.of(
         new NavEntry("Workspace", "Dashboard", DashboardView.class, VaadinIcon.DASHBOARD, null),
+        new NavEntry("Workspace", "Tickets", TicketsView.class, VaadinIcon.TICKET, null),
         new NavEntry("Workspace", "Analytics", AnalyticsView.class, VaadinIcon.TRENDING_UP, "New"),
-        new NavEntry("Workspace", "Users", UsersView.class, VaadinIcon.USERS, null),
-        new NavEntry("Workspace", "Orders", OrdersView.class, VaadinIcon.CART_O, "14"),
-        new NavEntry("Manage", "Products", ProductsView.class, VaadinIcon.DESKTOP, null),
-        new NavEntry("Manage", "Messages", MessagesView.class, VaadinIcon.CHAT, "3"),
+        new NavEntry("Workspace", "Agents", UsersView.class, VaadinIcon.USERS, null),
+        new NavEntry("Manage", "Categories", CategoriesView.class, VaadinIcon.FOLDER_O, null),
+        new NavEntry("Manage", "Inbox", MessagesView.class, VaadinIcon.CHAT, null),
         new NavEntry("Manage", "Reports", ReportsView.class, VaadinIcon.FILE_TEXT_O, null),
         new NavEntry("System", "Settings", SettingsView.class, VaadinIcon.COG, null)
     );
@@ -78,12 +78,12 @@ public class SideNav extends Div {
     private Div buildBrand() {
         Div iconBox = new Div();
         iconBox.addClassName("sidebar-brand__icon");
-        iconBox.setText("A");
+        iconBox.setText("T");
 
         Div nameBlock = new Div();
-        Span name = new Span("Arc");
+        Span name = new Span("Ticket");
         name.addClassName("sidebar-brand__name");
-        Span tagline = new Span("Admin");
+        Span tagline = new Span("Management");
         tagline.addClassName("sidebar-brand__tagline");
         nameBlock.add(name, tagline);
 

@@ -1,47 +1,52 @@
 package com.adminpro.application;
 
 import com.adminpro.domain.DashboardStat;
-import com.adminpro.domain.Role;
-import com.adminpro.domain.User;
-import com.adminpro.infrastructure.repo.UserRepository;
+import com.adminpro.domain.Ticket;
+import com.adminpro.infrastructure.repo.TicketRepository;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
 
 /**
  * Provides data for the Dashboard view.
- * All stat tiles are computed from live DB queries – replace with
- * real business metrics as the project grows.
+ * All stat tiles and charts are computed from live ticket queries.
  */
 @Service
 public class DashboardService {
 
-    private final UserRepository userRepo;
+    private final TicketRepository ticketRepo;
 
-    public DashboardService(UserRepository userRepo) {
-        this.userRepo = userRepo;
+    public DashboardService(TicketRepository ticketRepo) {
+        this.ticketRepo = ticketRepo;
     }
 
     public List<DashboardStat> getStats() {
-        long total   = userRepo.count();
-        long active  = userRepo.countByActiveTrue();
-        long admins  = userRepo.countByRole(Role.ADMIN);
-        long managers = userRepo.countByRole(Role.MANAGER);
+        long open      = ticketRepo.countByStatus("NEW") + ticketRepo.countByStatus("OPEN");
+        long inProgress = ticketRepo.countByStatus("IN_PROGRESS");
+        long resolved  = ticketRepo.countByStatus("RESOLVED") + ticketRepo.countByStatus("CLOSED");
+        long total     = ticketRepo.count();
 
         return List.of(
-            new DashboardStat("Total Users",    String.valueOf(total),    "all accounts",      "vaadin:users"),
-            new DashboardStat("Active Users",   String.valueOf(active),   "currently enabled", "vaadin:check-circle"),
-            new DashboardStat("Administrators", String.valueOf(admins),   "full access",       "vaadin:shield"),
-            new DashboardStat("Managers",       String.valueOf(managers), "team leads",        "vaadin:group")
+            new DashboardStat("Open Tickets",   String.valueOf(open),      "new + open",      "vaadin:envelope-open"),
+            new DashboardStat("In Progress",    String.valueOf(inProgress),"being worked on", "vaadin:workplace"),
+            new DashboardStat("Resolved",       String.valueOf(resolved),  "resolved + closed","vaadin:check-circle"),
+            new DashboardStat("Total Tickets",  String.valueOf(total),     "all records",     "vaadin:ticket")
         );
     }
 
-    /** Returns the 5 most recently created users for the "Recent Activity" table. */
-    public List<User> getRecentActivity() {
-        return userRepo.findAll()
-                .stream()
-                .sorted((a, b) -> b.getCreatedAt().compareTo(a.getCreatedAt()))
-                .limit(5)
-                .toList();
+    public long countByStatus(String status) {
+        return ticketRepo.countByStatus(status);
+    }
+
+    public long countByPriority(String priority) {
+        return ticketRepo.countByPriority(priority);
+    }
+
+    /** Returns the most recently created tickets for the "Recent Tickets" table. */
+    public List<Ticket> getRecentTickets(int limit) {
+        return ticketRepo.findAll().stream()
+            .sorted((a, b) -> b.getCreatedOn().compareTo(a.getCreatedOn()))
+            .limit(limit)
+            .toList();
     }
 }

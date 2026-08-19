@@ -35,11 +35,11 @@ public class MainLayout extends AppLayout implements AfterNavigationObserver {
     private static final Map<String, String> PAGE_TITLES = Map.ofEntries(
         Map.entry("", "Dashboard"),
         Map.entry("dashboard", "Dashboard"),
+        Map.entry("tickets", "Tickets"),
         Map.entry("analytics", "Analytics"),
-        Map.entry("users", "Users"),
-        Map.entry("orders", "Orders"),
-        Map.entry("products", "Products"),
-        Map.entry("messages", "Messages"),
+        Map.entry("agents", "Agents"),
+        Map.entry("categories", "Categories"),
+        Map.entry("inbox", "Inbox"),
         Map.entry("reports", "Reports"),
         Map.entry("settings", "Settings")
     );
@@ -75,7 +75,7 @@ addToDrawer(sidenav);
         DrawerToggle toggle = new DrawerToggle();
         toggle.addClassName("topbar__toggle");
 
-        Span rootCrumb = new Span("Arc");
+        Span rootCrumb = new Span("Ticket");
         rootCrumb.addClassName("crumb-item");
 
         Span separator = new Span(".");

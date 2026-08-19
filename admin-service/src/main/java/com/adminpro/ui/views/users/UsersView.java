@@ -30,8 +30,8 @@ import java.time.format.DateTimeFormatter;
 import java.util.Arrays;
 import java.util.List;
 
-@Route(value = "users", layout = MainLayout.class)
-@PageTitle("Users | Arc Admin")
+@Route(value = "agents", layout = MainLayout.class)
+@PageTitle("Agents | Ticket")
 @PermitAll
 public class UsersView extends Div {
 
@@ -52,7 +52,7 @@ public class UsersView extends Div {
         addClassName("page-content");
         setWidthFull();
 
-        PageHeader header = new PageHeader("Users", "Manage team members and their access levels");
+        PageHeader header = new PageHeader("Agents", "Manage team members and their access levels");
 
         Button filterButton = new Button("Filter");
         filterButton.addClassNames("btn", "btn-outline");
