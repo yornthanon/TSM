@@ -19,6 +19,7 @@
         <module>common</module>
         <module>user-service</module>
         <module>api-gateway</module>
+        <module>admin-service</module>
     </modules>
     <name>TicketManagment</name>
     <description>TicketManagment</description>
