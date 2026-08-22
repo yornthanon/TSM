@@ -2,8 +2,8 @@ package com.ticket.paymentservice.service;
 
 import com.ticket.common.constant.ApiConstant;
 import com.ticket.common.exception.ResponseErrorTemplate;
-import com.ticket.paymentservice.Enum.PaymentStatus;
-import com.ticket.paymentservice.dto.PaymentRequest;
+import com.ticket.common.enums.PaymentStatus;
+import com.ticket.common.dto.request.PaymentRequest;
 import com.ticket.paymentservice.dto.PaymentResponse;
 import com.ticket.paymentservice.entity.Payment;
 import com.ticket.paymentservice.repository.PaymentRepository;
@@ -32,11 +32,17 @@ public class PaymentServiceImpl implements PaymentService{
 
         boolean paymentSuccess = paymentGatewayService.processPayment(paymentRequest);
 
-        if(paymentSuccess) {
-            payment.setPaymentStatus(PaymentStatus.COMPLETED);
-            payment.setTransactionId(paymentRequest.getUsername()+"_"+ UUID.randomUUID());
+        if(!paymentSuccess) {
+            paymentRepository.save(payment);
+            return new ResponseErrorTemplate(
+                    ApiConstant.PAYMENT_FAILED.getFormattedDescription(paymentRequest.getOrderId()),
+                    ApiConstant.PAYMENT_FAILED.getKey(),
+                    mapToPaymentResponse(payment),
+                    true);
         }
 
+        payment.setPaymentStatus(PaymentStatus.COMPLETED);
+        payment.setTransactionId(paymentRequest.getUsername()+"_"+ UUID.randomUUID());
         paymentRepository.save(payment);
 
         PaymentResponse paymentResponse = mapToPaymentResponse(payment);
@@ -45,8 +51,8 @@ public class PaymentServiceImpl implements PaymentService{
         paymentResponse.setOrderId(paymentRequest.getOrderId());
 
         return new ResponseErrorTemplate(
-                ApiConstant.SUCCESS.getDescription(),
-                ApiConstant.SUCCESS.getKey(),
+                ApiConstant.PAYMENT_SUCCESS.getFormattedDescription(paymentRequest.getOrderId()),
+                ApiConstant.PAYMENT_SUCCESS.getKey(),
                 paymentResponse,
                 false);
     }
@@ -59,7 +65,6 @@ public class PaymentServiceImpl implements PaymentService{
                 .amount(paymentRequest.getAmount())
                 .currency(paymentRequest.getCurrency())
                 .paymentMethod(paymentRequest.getPaymentMethod())
-                .paymentStatus(paymentRequest.getPaymentStatus())
                 .description(paymentRequest.getDescription())
                 .paymentDate(LocalDateTime.now())
                 .build();

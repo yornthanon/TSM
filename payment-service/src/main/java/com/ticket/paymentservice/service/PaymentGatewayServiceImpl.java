@@ -1,10 +1,10 @@
 package com.ticket.paymentservice.service;
 
-import com.ticket.paymentservice.dto.PaymentRequest;
+import com.ticket.common.dto.request.PaymentRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
-import static com.ticket.paymentservice.Enum.PaymentMethod.*;
+import static com.ticket.common.enums.PaymentMethod.*;
 
 @Slf4j
 @Service

@@ -8,8 +8,6 @@ import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.cloud.gateway.filter.GatewayFilterChain;
-import org.springframework.cloud.gateway.filter.GlobalFilter;
 import org.springframework.core.Ordered;
 import org.springframework.core.io.buffer.DataBuffer;
 import org.springframework.http.HttpHeaders;
@@ -18,8 +16,11 @@ import org.springframework.http.MediaType;
 import org.springframework.http.server.reactive.ServerHttpRequest;
 import org.springframework.http.server.reactive.ServerHttpResponse;
 import org.springframework.stereotype.Component;
+import org.springframework.util.AntPathMatcher;
 import org.springframework.util.StringUtils;
 import org.springframework.web.server.ServerWebExchange;
+import org.springframework.web.server.WebFilter;
+import org.springframework.web.server.WebFilterChain;
 import reactor.core.publisher.Mono;
 
 import javax.crypto.SecretKey;
@@ -30,7 +31,7 @@ import java.util.List;
 
 @Slf4j
 @Component
-public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
+public class JwtAuthenticationFilter implements WebFilter, Ordered {
 
     private final ObjectMapper objectMapper;
     private final SecretKey secretKey;
@@ -41,17 +42,14 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
     @Value("${jwt.prefix:Bearer}")
     private String jwtPrefix;
 
-    // Paths that don't require authentication
-    private static final List<String> PUBLIC_PATHS = Arrays.asList(
-        "/api/public/users/login",
-        "/api/public/users/registration",
-        "/api/public/users/refreshToken",
-        "/api/public/users/logout",
-        "/api/public/users/verify-token",
-        "/health",
-        "/actuator/health",
-        "/actuator/info"
-    );
+    @Value("${jwt.public-paths:/api/public/**,/health,/actuator/health,/actuator/info}")
+    private String publicPaths;
+
+    // Paths restricted to ADMIN role
+    @Value("${jwt.admin-paths:/api/routes/**}")
+    private String adminPaths;
+
+    private final AntPathMatcher pathMatcher = new AntPathMatcher();
 
     public JwtAuthenticationFilter(ObjectMapper objectMapper,
                                    @Value("${jwt.secret:}") String jwtSecret) {
@@ -68,7 +66,7 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
     }
 
     @Override
-    public Mono<Void> filter(ServerWebExchange exchange, GatewayFilterChain chain) {
+    public Mono<Void> filter(ServerWebExchange exchange, WebFilterChain chain) {
         ServerHttpRequest request = exchange.getRequest();
         String path = request.getPath().value();
 
@@ -93,12 +91,48 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
             return handleUnauthorized(exchange, "Invalid token");
         }
 
+        // ADMIN-only paths (e.g. route management)
+        if (isAdminPath(path) && !hasAdminRole(token)) {
+            log.warn("Access denied: ADMIN role required for path: {}", path);
+            return handleForbidden(exchange, "ADMIN role required");
+        }
+
         log.debug("Token verification successful for path: {}", path);
         return chain.filter(exchange);
     }
 
     private boolean isPublicPath(String path) {
-        return PUBLIC_PATHS.stream().anyMatch(path::startsWith);
+        return matchesAny(path, publicPaths);
+    }
+
+    private boolean isAdminPath(String path) {
+        return matchesAny(path, adminPaths);
+    }
+
+    private boolean matchesAny(String path, String patterns) {
+        return Arrays.stream(patterns.split(","))
+                .map(String::trim)
+                .filter(p -> !p.isEmpty())
+                .anyMatch(p -> pathMatcher.match(p, path));
+    }
+
+    private boolean hasAdminRole(String token) {
+        try {
+            Claims claims = Jwts.parser()
+                    .verifyWith(secretKey)
+                    .build()
+                    .parseSignedClaims(token)
+                    .getPayload();
+            Object roles = claims.get("roles");
+            if (roles instanceof List<?> roleList) {
+                return roleList.stream()
+                        .map(String::valueOf)
+                        .anyMatch("ADMIN"::equalsIgnoreCase);
+            }
+            return false;
+        } catch (JwtException | IllegalArgumentException e) {
+            return false;
+        }
     }
 
     private boolean isValidToken(String token) {
@@ -116,11 +150,19 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
     }
 
     private Mono<Void> handleUnauthorized(ServerWebExchange exchange, String message) {
+        return writeError(exchange, HttpStatus.UNAUTHORIZED, "UNAUTHORIZED", message);
+    }
+
+    private Mono<Void> handleForbidden(ServerWebExchange exchange, String message) {
+        return writeError(exchange, HttpStatus.FORBIDDEN, "FORBIDDEN", message);
+    }
+
+    private Mono<Void> writeError(ServerWebExchange exchange, HttpStatus status, String code, String message) {
         ServerHttpResponse response = exchange.getResponse();
-        response.setStatusCode(HttpStatus.UNAUTHORIZED);
+        response.setStatusCode(status);
         response.getHeaders().setContentType(MediaType.APPLICATION_JSON);
 
-        ApiResponse<Object> errorResponse = ApiResponse.error("UNAUTHORIZED", message);
+        ApiResponse<Object> errorResponse = ApiResponse.error(code, message);
 
         try {
             String errorJson = objectMapper.writeValueAsString(errorResponse);

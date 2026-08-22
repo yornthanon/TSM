@@ -1,7 +1,7 @@
 package com.ticket.paymentservice.service;
 
 
-import com.ticket.paymentservice.dto.PaymentRequest;
+import com.ticket.common.dto.request.PaymentRequest;
 
 public interface PaymentGatewayService {
 

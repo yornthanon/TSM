@@ -93,7 +93,7 @@ public class TicketServiceImpl implements TicketService {
     @Override
     public ResponseErrorTemplate lockTicket(TicketLockRequest ticketLockRequest) {
 
-        var lockKey = "ticket:lock:" + ticketLockRequest.getEventId()  + ticketLockRequest.getUserId();
+        var lockKey = "ticket:lock:" + ticketLockRequest.getEventId() + ":" + ticketLockRequest.getUserId();
         String lockValue = ticketLockRequest.getEventId()+"_"+ UUID.randomUUID();
 
         Boolean lockAcquired = redisTemplate.opsForValue()

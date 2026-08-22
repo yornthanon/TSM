@@ -4,13 +4,13 @@ import com.ticket.common.constant.ApiConstant;
 import com.ticket.common.dto.EmptyObject;
 import com.ticket.common.exception.ResponseErrorTemplate;
 import com.ticket.orderservice.Enum.OrderStatus;
-import com.ticket.orderservice.Enum.PaymentMethod;
+import com.ticket.common.enums.PaymentMethod;
 import com.ticket.orderservice.Mapper.OrderMapper;
 import com.ticket.orderservice.client.PaymentClient;
 import com.ticket.orderservice.client.UserClient;
-import com.ticket.orderservice.dto.OrderConfirmedEvent;
+import com.ticket.common.dto.event.OrderConfirmedEvent;
 import com.ticket.orderservice.dto.OrderRequest;
-import com.ticket.orderservice.dto.PaymentRequest;
+import com.ticket.common.dto.request.PaymentRequest;
 import com.ticket.orderservice.entity.Order;
 import com.ticket.orderservice.Producer.OrderConfirmedKafkaProducer;
 import com.ticket.orderservice.repository.OrderRepository;
@@ -89,7 +89,8 @@ public class OrderServiceImpl implements OrderService{
         }
 
         order.setOrderStatus(OrderStatus.COMPLETED);
-        Long paymentId = (Long) ((LinkedHashMap<?, ?>) paymentResponse.data()).get("paymentId");
+        Object rawPaymentId = ((LinkedHashMap<?, ?>) paymentResponse.data()).get("paymentId");
+        Long paymentId = rawPaymentId != null ? ((Number) rawPaymentId).longValue() : null;
         order.setPaymentId(paymentId);
         orderRepository.save(order);
 

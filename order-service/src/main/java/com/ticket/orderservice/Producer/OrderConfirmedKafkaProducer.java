@@ -1,6 +1,6 @@
 package com.ticket.orderservice.Producer;
 
-import com.ticket.orderservice.dto.OrderConfirmedEvent;
+import com.ticket.common.dto.event.OrderConfirmedEvent;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.kafka.core.KafkaTemplate;

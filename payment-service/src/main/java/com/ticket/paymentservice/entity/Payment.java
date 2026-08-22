@@ -2,8 +2,8 @@ package com.ticket.paymentservice.entity;
 
 
 import com.ticket.common.entity.BasedEntity;
-import com.ticket.paymentservice.Enum.PaymentMethod;
-import com.ticket.paymentservice.Enum.PaymentStatus;
+import com.ticket.common.enums.PaymentMethod;
+import com.ticket.common.enums.PaymentStatus;
 import jakarta.persistence.*;
 import lombok.*;
 

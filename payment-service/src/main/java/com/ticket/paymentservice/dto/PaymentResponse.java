@@ -1,6 +1,6 @@
 package com.ticket.paymentservice.dto;
 
-import com.ticket.paymentservice.Enum.PaymentStatus;
+import com.ticket.common.enums.PaymentStatus;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;

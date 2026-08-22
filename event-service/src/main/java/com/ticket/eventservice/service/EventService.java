@@ -1,7 +1,7 @@
 package com.ticket.eventservice.service;
 
 import com.ticket.eventservice.dto.EventRequest;
-import com.ticket.eventservice.dto.ResponseErrorTemplate;
+import com.ticket.common.exception.ResponseErrorTemplate;
 
 public interface EventService {
 

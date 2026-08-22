@@ -1,6 +1,6 @@
 package com.ticket.orderservice.client;
 
-import com.ticket.orderservice.dto.TokenVerificationResponse;
+import com.ticket.common.dto.TokenVerificationResponse;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpHeaders;
@@ -19,7 +19,7 @@ public class UserClient {
         this.webClient = webClient.build();
     }
 
-    @Value("${service.user.url:http://localhost:8081}")
+    @Value("${user.service.url:http://localhost:8081}")
     private String userServiceUrl;
 
     public Mono<TokenVerificationResponse> verifyToken(String token) {

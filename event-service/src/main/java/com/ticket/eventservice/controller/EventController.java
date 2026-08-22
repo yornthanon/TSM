@@ -1,7 +1,7 @@
 package com.ticket.eventservice.controller;
 
 import com.ticket.eventservice.dto.EventRequest;
-import com.ticket.eventservice.dto.ResponseErrorTemplate;
+import com.ticket.common.exception.ResponseErrorTemplate;
 import com.ticket.eventservice.service.EventService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;

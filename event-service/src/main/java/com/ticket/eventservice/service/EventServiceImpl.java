@@ -1,10 +1,10 @@
 package com.ticket.eventservice.service;
 
-import com.ticket.eventservice.constant.ApiConstant;
-import com.ticket.eventservice.dto.EmptyObject;
+import com.ticket.common.constant.ApiConstant;
+import com.ticket.common.dto.EmptyObject;
 import com.ticket.eventservice.dto.EventRequest;
 import com.ticket.eventservice.dto.EventResponse;
-import com.ticket.eventservice.dto.ResponseErrorTemplate;
+import com.ticket.common.exception.ResponseErrorTemplate;
 import com.ticket.eventservice.entity.Event;
 import com.ticket.eventservice.mapper.EventMapper;
 import com.ticket.eventservice.repository.EventRepository;

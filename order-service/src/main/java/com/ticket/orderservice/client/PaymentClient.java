@@ -1,15 +1,15 @@
 package com.ticket.orderservice.client;
 
+import com.ticket.common.constant.ApiConstant;
+import com.ticket.common.dto.EmptyObject;
 import com.ticket.common.exception.ResponseErrorTemplate;
-import com.ticket.orderservice.dto.PaymentRequest;
+import com.ticket.common.dto.request.PaymentRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Mono;
-
-import java.util.LinkedHashMap;
 
 @Service
 @Slf4j
@@ -32,15 +32,13 @@ public class PaymentClient {
                 .retrieve()
                 .bodyToMono(ResponseErrorTemplate.class)
                 .onErrorResume(throwable -> {
-                    log.warn("Payment service unavailable ({}), simulating successful payment: {}",
-                            throwable.getMessage(), paymentRequest.getOrderId());
-                    LinkedHashMap<String, Object> paymentData = new LinkedHashMap<>();
-                    paymentData.put("paymentId", paymentRequest.getOrderId());
+                    log.error("Payment service unavailable for order ID {}: {}",
+                            paymentRequest.getOrderId(), throwable.getMessage());
                     return Mono.just(new ResponseErrorTemplate(
-                            "Payment processed successfully.",
-                            "200",
-                            paymentData,
-                            false));
+                            ApiConstant.SERVICE_UNAVAILABLE.getDescription(),
+                            ApiConstant.SERVICE_UNAVAILABLE.getKey(),
+                            new EmptyObject(),
+                            true));
                 });
     }
 }
