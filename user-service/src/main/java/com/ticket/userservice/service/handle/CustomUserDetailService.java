@@ -33,8 +33,12 @@ public class CustomUserDetailService implements UserDetailsService {
     }
 
     public CustomUserDetail customUserDetail(String username) {
-        // Load user regardless of status to give correct error for blocked users
+        // Load user regardless of status to give correct error for blocked users.
+        // Accepts either the username or the email address as the login identifier.
         User user = userRepository.findByUsername(username);
+        if (user == null) {
+            user = userRepository.findByEmail(username).orElse(null);
+        }
         if (user == null) {
             log.warn("Username {} unauthorized", username);
             throw new CustomMessageException(
@@ -71,7 +75,7 @@ public class CustomUserDetailService implements UserDetailsService {
     }
 
     public void saveUserAttemptAuthentication(String username) {
-         userRepository.findFirstByUsernameAndStatus(username, ApiConstant.ACTIVE.getKey()).ifPresent(
+         findActiveUser(username).ifPresent(
                 user -> {
                     int attempt = user.getLoginAttempts() + 1;
                     user.setLoginAttempts(attempt);
@@ -86,13 +90,24 @@ public class CustomUserDetailService implements UserDetailsService {
     }
 
     public void updateAttempt(String username) {
-        userRepository.findFirstByUsernameAndStatus(username, ApiConstant.ACTIVE.getKey()).ifPresent(
+        findActiveUser(username).ifPresent(
                 user -> {
                     user.setLoginAttempts(0);
                     user.setUpdatedAt(LocalDateTime.now());
                     userRepository.save(user);
                 }
         );
+    }
+
+    /** Resolves a login identifier that may be either a username or an email. */
+    private java.util.Optional<User> findActiveUser(String identifier) {
+        java.util.Optional<User> user =
+                userRepository.findFirstByUsernameAndStatus(identifier, ApiConstant.ACTIVE.getKey());
+        if (user.isEmpty()) {
+            user = userRepository.findByEmail(identifier)
+                    .filter(found -> ApiConstant.ACTIVE.getKey().equals(found.getStatus()));
+        }
+        return user;
     }
 
 }

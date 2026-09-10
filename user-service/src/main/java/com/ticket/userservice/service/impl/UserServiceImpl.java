@@ -1,5 +1,6 @@
 package com.ticket.userservice.service.impl;
 
+import com.ticket.common.constant.ApiConstant;
 import com.ticket.common.criteria.BaseSearchCriteria;
 import com.ticket.common.criteria.SearchCriteria;
 import com.ticket.common.criteria.SearchOperation;
@@ -26,6 +27,9 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
 import java.util.HashSet;
+import java.util.LinkedHashMap;
+import java.util.Map;
+import java.util.stream.Collectors;
 import java.util.List;
 import java.util.Set;
 
@@ -193,6 +197,11 @@ public class UserServiceImpl implements UserService {
                     null, "oldPassword", null);
         }
 
+        if (passwordEncoder.matches(newPassword, user.getPassword())) {
+            throw new BasedException("NEW_PASSWORD_SAME", "New password cannot be the same as the old password",
+                    null, "newPassword", null);
+        }
+
         user.setPassword(passwordEncoder.encode(newPassword));
         baseRepository.saveOrUpdate(user);
 
@@ -218,6 +227,25 @@ public class UserServiceImpl implements UserService {
         return new ResponseErrorTemplate(
                 "User deactivated successfully",
                 "USER_DEACTIVATED",
+                userHandlerService.mapUserToUserResponse(user),
+                false
+        );
+    }
+
+    @Override
+    @Transactional
+    public ResponseErrorTemplate activateUser(Long id) {
+        User user = baseRepository.getByField("id", id, User.class);
+        if (user == null) {
+            throw new BasedException("USER_NOT_FOUND", "User not found with id: " + id, null, "id", String.valueOf(id));
+        }
+
+        user.setStatus("ACTIVE");
+        baseRepository.saveOrUpdate(user);
+
+        return new ResponseErrorTemplate(
+                "User activated successfully",
+                "USER_ACTIVATED",
                 userHandlerService.mapUserToUserResponse(user),
                 false
         );
@@ -309,5 +337,29 @@ public class UserServiceImpl implements UserService {
                     null, "groupIds", missing.toString());
         }
         groups.forEach(user::addGroup);
+    }
+
+    @Override
+    public ResponseErrorTemplate getStats() {
+        List<User> users = userRepository.findAll();
+        Map<String, Long> byStatus = users.stream()
+                .filter(u -> u.getStatus() != null)
+                .collect(Collectors.groupingBy(User::getStatus, Collectors.counting()));
+
+        java.time.LocalDateTime startOfDay = java.time.LocalDate.now().atStartOfDay();
+        long registeredToday = users.stream()
+                .filter(u -> u.getCreatedAt() != null && u.getCreatedAt().isAfter(startOfDay))
+                .count();
+
+        Map<String, Object> stats = new LinkedHashMap<>();
+        stats.put("total", users.size());
+        stats.put("registeredToday", registeredToday);
+        stats.put("byStatus", byStatus);
+
+        return new ResponseErrorTemplate(
+                ApiConstant.SUCCESS.getDescription(),
+                ApiConstant.SUCCESS.getKey(),
+                stats,
+                false);
     }
 }

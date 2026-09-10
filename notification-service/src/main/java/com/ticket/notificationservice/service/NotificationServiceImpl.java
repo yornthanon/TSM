@@ -1,5 +1,8 @@
 package com.ticket.notificationservice.service;
 
+import com.ticket.common.constant.ApiConstant;
+import com.ticket.common.dto.EmptyObject;
+import com.ticket.common.exception.ResponseErrorTemplate;
 import com.ticket.notificationservice.Enum.NotificationStatus;
 import com.ticket.notificationservice.Enum.NotificationType;
 import com.ticket.notificationservice.dto.NotificationRequest;
@@ -10,6 +13,8 @@ import com.ticket.notificationservice.repository.NotificationRepository;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
+
+import java.util.Optional;
 
 
 @Service
@@ -90,6 +95,7 @@ public class NotificationServiceImpl implements NotificationService{
                 .build();
 
         Notification notification = toEntity(notificationRequest);
+        notification.setEmail(confirmedEvent.getEmail());
         notificationRepository.save(notification);
 
         boolean sent = emailService.sendEmail(
@@ -142,6 +148,7 @@ public class NotificationServiceImpl implements NotificationService{
     public Notification toEntity(NotificationRequest notificationRequest) {
         return Notification.builder()
                 .username(notificationRequest.getUsername())
+                .email(notificationRequest.getEmail())
                 .orderId(notificationRequest.getOrderId())
                 .eventType(notificationRequest.getEventType())
                 .notificationType(notificationRequest.getNotificationType())
@@ -163,5 +170,65 @@ public class NotificationServiceImpl implements NotificationService{
                 .message(notification.getMessage())
                 .status(notification.getStatus())
                 .build();
+    }
+
+    @Override
+    public ResponseErrorTemplate resend(Long notificationId) {
+        Optional<Notification> existing = notificationRepository.findById(notificationId);
+        if (existing.isEmpty()) {
+            return new ResponseErrorTemplate(
+                    ApiConstant.NOTIFICATION_NOT_FOUND.getFormattedDescription(notificationId),
+                    ApiConstant.NOTIFICATION_NOT_FOUND.getKey(),
+                    new EmptyObject(),
+                    true);
+        }
+
+        Notification notification = existing.get();
+        if (notification.getStatus() != NotificationStatus.FAILED) {
+            return new ResponseErrorTemplate(
+                    ApiConstant.NOTIFICATION_NOT_RESENDABLE.getFormattedDescription(notificationId),
+                    ApiConstant.NOTIFICATION_NOT_RESENDABLE.getKey(),
+                    toResponse(notification),
+                    true);
+        }
+
+        boolean sent = false;
+        try {
+            sent = switch (notification.getNotificationType()) {
+                case EMAIL -> emailService.sendEmail(notification.getRecipient(),
+                                                     notification.getSubject(),
+                                                     notification.getMessage());
+                case SMS -> smsService.sendSms(notification.getRecipient(), notification.getMessage());
+                case PUSH_NOTIFICATION -> false;
+            };
+        } catch (Exception e) {
+            log.error("Error resending notification {}: {}", notificationId, e.getMessage());
+        }
+        updateNotificationStatus(notification, sent);
+
+        return new ResponseErrorTemplate(
+                ApiConstant.SUCCESS.getDescription(),
+                ApiConstant.SUCCESS.getKey(),
+                toResponse(notification),
+                false);
+    }
+
+    @Override
+    public ResponseErrorTemplate delete(Long notificationId) {
+        Optional<Notification> existing = notificationRepository.findById(notificationId);
+        if (existing.isEmpty()) {
+            return new ResponseErrorTemplate(
+                    ApiConstant.NOTIFICATION_NOT_FOUND.getFormattedDescription(notificationId),
+                    ApiConstant.NOTIFICATION_NOT_FOUND.getKey(),
+                    new EmptyObject(),
+                    true);
+        }
+        notificationRepository.deleteById(notificationId);
+
+        return new ResponseErrorTemplate(
+                ApiConstant.SUCCESS.getDescription(),
+                ApiConstant.SUCCESS.getKey(),
+                new EmptyObject(),
+                false);
     }
 }

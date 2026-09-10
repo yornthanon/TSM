@@ -33,9 +33,24 @@ public class OrderController {
         return ResponseEntity.ok(orderService.getOrderById(id));
     }
 
+    @GetMapping
+    public ResponseEntity<ResponseErrorTemplate> findAll() {
+        return ResponseEntity.ok(orderService.findAll());
+    }
+
+    @GetMapping("/stats")
+    public ResponseEntity<ResponseErrorTemplate> getStats() {
+        return ResponseEntity.ok(orderService.getStats());
+    }
+
     @PutMapping("/{id}/cancel")
     public ResponseEntity<ResponseErrorTemplate> cancelOrder(@PathVariable Long id,
                                                              HttpServletRequest httpServletRequest) {
         return ResponseEntity.ok(orderService.cancelOrder(id, httpServletRequest));
+    }
+
+    @PutMapping("/{id}/force-cancel")
+    public ResponseEntity<ResponseErrorTemplate> forceCancelOrder(@PathVariable Long id) {
+        return ResponseEntity.ok(orderService.forceCancelOrder(id));
     }
 }

@@ -13,7 +13,7 @@ import org.springframework.transaction.annotation.EnableTransactionManagement;
 
 import java.util.List;
 
-@SpringBootApplication
+@SpringBootApplication(scanBasePackages = {"com.ticket.userservice", "com.ticket.common"})
 @EnableTransactionManagement
 @EnableJpaAuditing
 public class UserServiceApplication {

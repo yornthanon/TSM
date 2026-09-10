@@ -21,6 +21,10 @@ public interface UserService {
     @Transactional(readOnly = true)
     ResponseErrorTemplate findAll(UserFilterRequest userFilterRequest);
 
+    ResponseErrorTemplate getStats();
+
+    ResponseErrorTemplate activateUser(Long id);
+
     ResponseErrorTemplate findByUsername(String username);
 
     ResponseErrorTemplate findByEmail(String email);

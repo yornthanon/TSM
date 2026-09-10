@@ -14,6 +14,10 @@ public interface OrderMapper {
     @Mapping(target = "createdBy", ignore = true)
     @Mapping(target = "updatedAt", ignore = true)
     @Mapping(target = "updatedBy", ignore = true)
+    @Mapping(target = "username", ignore = true)
+    @Mapping(target = "paymentId", ignore = true)
+    @Mapping(target = "orderStatus", ignore = true)
+    @Mapping(target = "orderDate", ignore = true)
     Order toEntity(OrderRequest request);
 
     OrderResponse toResponse(Order order);

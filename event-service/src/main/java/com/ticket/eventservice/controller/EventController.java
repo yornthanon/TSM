@@ -38,6 +38,16 @@ public class EventController {
         return ResponseEntity.ok(eventService.getById(id));
     }
 
+    @GetMapping
+    public ResponseEntity<ResponseErrorTemplate> findAll() {
+        return ResponseEntity.ok(eventService.findAll());
+    }
+
+    @GetMapping("/stats")
+    public ResponseEntity<ResponseErrorTemplate> getStats() {
+        return ResponseEntity.ok(eventService.getStats());
+    }
+
     @DeleteMapping("/{id}")
     public ResponseEntity<ResponseErrorTemplate> delete(@PathVariable Long id) {
         eventService.delete(id);

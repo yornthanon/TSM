@@ -14,7 +14,7 @@
 - 📧 **Notification** ជូនដំណឹងតាម Email/SMS ពេល Order ជោគជ័យ
 - 🖥️ **Admin Panel** សម្រាប់គ្រប់គ្រងទិន្នន័យ
 
-Project នេះបែងចែកជា **9 Modules (Maven Multi-Module)** ដោយ service នីមួយៗរត់ដោយឡែកពីគ្នា ហើយមាន Database របស់ខ្លួន (**Database per Service pattern**)។
+Project នេះបែងចែកជា **8 Modules (Maven Multi-Module)** ដោយ service នីមួយៗរត់ដោយឡែកពីគ្នា ហើយមាន Database របស់ខ្លួន (**Database per Service pattern**)។
 
 ### Maven Module Structure
 
@@ -27,8 +27,7 @@ TicketManagment (parent pom)
 ├── ticket-service          # គ្រប់គ្រងសំបុត្រ + Redis locking
 ├── order-service           # គ្រប់គ្រង Order + Kafka producer
 ├── payment-service         # ដំណើរការបង់ប្រាក់
-├── notification-service    # ផ្ញើ Email/SMS (ឥឡូវ = skeleton)
-└── admin-service           # Vaadin Admin Dashboard UI
+└── notification-service    # ផ្ញើ Email (SMTP) + SMS (Twilio)
 ```
 
 ---
@@ -76,8 +75,7 @@ Redis     (port 6379)   → rate limiting + ticket locking
 | **ticket-service** | `8083` | `ticket_db` + Redis | CRUD Ticket, Lock/Unlock កៅអ៊ី |
 | **order-service** | `8084` | `ticket_order_db` | បង្កើត Order, ហៅ payment, ផ្ញើ Kafka event |
 | **payment-service** | `8085` | PostgreSQL | Process payment (mock gateway) |
-| **notification-service** | *(មិនទាន់កំណត់)* | *(មិនទាន់មាន)* | Consume Kafka → ផ្ញើ Email/SMS *(skeleton)* |
-| **admin-service** | `8090` | H2 in-memory | Vaadin Admin Dashboard |
+| **notification-service** | `8086` | `ticket_notification_db` | Consume Kafka → ផ្ញើ Email (SMTP) + SMS (Twilio) |
 
 > ⚙️ គ្រប់ config ទាំងអស់ support **Environment Variables** ដោយ default value:
 > ឧ. `spring.datasource.url=${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/ticket_user_db}`
@@ -410,46 +408,34 @@ verify JWT → save(PROCESSING) → call payment → save(COMPLETED) → publish
 
 ---
 
-### 7.8 Module `notification-service` — ⚠️ Skeleton (មិនទាន់ Implement)
+### 7.8 Module `notification-service` (:8086) — Notification Delivery (Implemented)
 
-ឥឡូវមានតែ：
-- `NotificationServiceApplication.java` — main class (`@SpringBootApplication`)
-- `application.properties` — មានតែ `spring.application.name=notification-service`
-- `pom.xml` — dependency មានតែ `spring-boot-starter`
+Service នេះ consume Kafka event ពី order-service រួចផ្ញើ **Email ពិត (SMTP)** និង **SMS ពិត (Twilio)**：
 
-**គម្រោង (Plan ដែលបានពិភាក្សា)：**
 ```
-Consume "order-confirmed-topic" (spring-kafka consumer)
+Kafka consumer (OrderConfirmedEventListener)
    ▼
-Parse OrderConfirmedEvent (JSON)
+Parse OrderConfirmedEvent (JSON via tools.jackson ObjectMapper)
    ▼
-Save NotificationHistory (PostgreSQL, status=PENDING)
+NotificationServiceImpl.handlerOrderConfirmationEvent()
+   ├─[1] save Notification (status=PENDING) → tt_notification
+   ├─[2] EmailService.sendEmail()  → JavaMailSender (MimeMessage, HTML)
+   └─[3] SmsService.sendSms()      → Twilio SDK (Message.creator)
    ▼
-EmailService  (spring-boot-starter-mail, Gmail SMTP)
-SmsService    (Twilio SDK)
-   ▼
-Update history status = SENT / FAILED
-REST API: GET /api/v1/notifications?orderId=...
+Update Notification status = SENT / FAILED
 ```
 
----
-
-### 7.9 Module `admin-service` (:8090) — Vaadin Admin Dashboard
-
-**ខុសពីអ្នកដទៃ៖** នេះជា **Full-stack Java UI** (Vaadin renders UI ពី Java code មិនមែន REST API)។ ប្រើ **Clean Architecture layers**:
-
-| Package | តួនាទី |
+| Class | ប្រើសម្រាប់ |
 |---|---|
-| `domain/` | Entities: Ticket, TicketCategory, User, SupportMessage, ReportConfig, AnalyticsMetric, UserSettings |
-| `application/` | Services: DashboardService, AnalyticsService, TicketService, UserService, ReportService, MessageService, SettingsService |
-| `infrastructure/repo/` | Spring Data repositories |
-| `infrastructure/seed/DevDataSeeder` | Auto-insert demo data ពេល start (dev only) |
-| `ui/views/*` | Pages: Dashboard, Analytics, Tickets, Users, Messages, Reports, Settings, Categories, Login |
-| `ui/layout/MainLayout, SideNav` | Shell + navigation |
-| `ui/components/StatCard, ContentCard, PageHeader` | Reusable UI components |
-| `security/SecurityConfig` | Spring Security form-login សម្រាប់ panel |
+| `EmailService` | `JavaMailSender` + `MimeMessageHelper` (HTML email), retry 3x ជាមួយ exponential backoff |
+| `SmsService` | Twilio SDK (`com.twilio.sdk:twilio`) — ប្រសិទ្ធភាពមិនមាន credentials នឹង skip gracefully |
+| `config/TwilioConfig` | `Twilio.init()` ពេល startup (បើមាន credentials) |
+| `listener/OrderConfirmedEventListener` | `@KafkaListener` លើ `order-confirmed-topic` |
+| `controller/AdminNotificationController` | CRUD: findAll, stats, resend, delete |
 
-> ℹ️ ប្រើ **H2 in-memory** (data បាត់ពេល restart) — សម្រាប់ demo/dev។ Config production មានក្នុង `application-prod.properties`។
+> ⚙️ **Config:** `spring.mail.*` (SMTP) + `twilio.account-sid/auth-token/phone-number` (env vars) — សុទ្ធតែ support env override។ បើគ្មាន Twilio credentials → SMS ត្រូវ skip (log warning) មិន crash app។
+
+> 📝 **TODO:** PUSH_NOTIFICATION (`case PUSH_NOTIFICATION -> false`) នៅមិនទាន់ implement (ត្រូវបន្ថែម FCM)។ Retry ពេលនេះ manual loop — អាចបន្ថែម `@RetryableTopic` / Dead Letter Queue ពេលក្រោយ។
 
 ---
 
@@ -496,7 +482,6 @@ REST API: GET /api/v1/notifications?orderId=...
 ./mvnw spring-boot:run -pl ticket-service        # 4. :8083
 ./mvnw spring-boot:run -pl payment-service       # 5. :8085
 ./mvnw spring-boot:run -pl order-service         # 6. :8084
-./mvnw spring-boot:run -pl admin-service         # 7. :8090 (UI)
 ```
 
 ### Test End-to-End (Order Flow)
@@ -521,7 +506,7 @@ kafka-console-consumer --bootstrap-server localhost:9092 \
 
 ## 10. Known Issues / TODOs (រកឃើញក្នុង Code)
 
-1. **notification-service** — មិនទាន់ implement (សូមមើល plan ក្នុង section 7.8)
+1. **notification-service** — PUSH_NOTIFICATION នៅមិនទាន់ implement (សូមមើល section 7.8); Kafka consumer នៅគ្មាន DLQ/retry topic ពេល processing fail ជាប់ៗ
 2. **order-service** — `email`, `phoneNumber`, `eventTitle`, `eventLocation` ក្នុង `OrderConfirmedEvent` នៅ hardcoded (OrderServiceImpl.java:100-103) — ត្រូវ pull ពី user-service/event-service
 3. **order-service pom.xml** — duplicate dependency `spring-webflux` (lines 82-88)
 4. **payment-service** — gateway ជា mock (return true) — ត្រូវ integrate provider ពិត

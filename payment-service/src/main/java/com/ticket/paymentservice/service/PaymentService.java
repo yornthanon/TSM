@@ -11,5 +11,14 @@ public interface PaymentService {    // get by transaction id
 
     ResponseErrorTemplate processPayment(PaymentRequest paymentRequest);
 
+    ResponseErrorTemplate findAll();
+
+    ResponseErrorTemplate getRevenueSummary();
+
+    ResponseErrorTemplate getById(Long paymentId);
+
+    ResponseErrorTemplate getByTransactionId(String transactionId);
+
+    ResponseErrorTemplate refund(Long paymentId);
 
 }

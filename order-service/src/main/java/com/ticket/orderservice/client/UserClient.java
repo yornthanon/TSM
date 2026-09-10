@@ -9,6 +9,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Mono;
 
+import java.util.Map;
+
 @Service
 @Slf4j
 public class UserClient {
@@ -37,5 +39,15 @@ public class UserClient {
                     log.error("Error calling user service for token verification: {}", throwable.getMessage());
                     return Mono.just(new TokenVerificationResponse());
                 });
+    }
+
+    public Mono<Map> getUserByUsername(String username) {
+        return webClient.get()
+                .uri(userServiceUrl + "/api/v1/users/username/{username}", username)
+                .header(HttpHeaders.ACCEPT, MediaType.APPLICATION_JSON_VALUE)
+                .retrieve()
+                .bodyToMono(Map.class)
+                .doOnError(e -> log.error("Error calling user service for username {}: {}", username, e.getMessage()))
+                .onErrorResume(e -> Mono.empty());
     }
 }

@@ -14,6 +14,8 @@ public interface TicketMapper {
     @Mapping(target = "createdBy", ignore = true)
     @Mapping(target = "updatedAt", ignore = true)
     @Mapping(target = "updatedBy", ignore = true)
+    @Mapping(target = "lockedUntil", ignore = true)
+    @Mapping(target = "lockedBy", ignore = true)
     Ticket toEntity(TicketRequest request);
 
     TicketResponse toResponse(Ticket ticket);

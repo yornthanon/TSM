@@ -14,6 +14,7 @@ import com.ticket.userservice.service.handle.CustomUserDetailService;
 import com.ticket.userservice.service.impl.RefreshTokenService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -31,18 +32,18 @@ public class PublicController {
     private final JwtService jwtService;
 
     @PostMapping("/registration")
-    public ResponseEntity<ResponseErrorTemplate> register(@RequestBody UserRequest userRequest) {
+    public ResponseEntity<ResponseErrorTemplate> register(@Valid @RequestBody UserRequest userRequest) {
         log.info("Intercept registration new user with req: {}", userRequest);
         return ResponseEntity.ok(userService.create(userRequest));
     }
 
     @PostMapping("/login")
-    public ResponseEntity<com.ticket.common.exception.ResponseErrorTemplate> login(@RequestBody AuthenticationRequest authenticationRequest) {
+    public ResponseEntity<com.ticket.common.exception.ResponseErrorTemplate> login(@Valid @RequestBody AuthenticationRequest authenticationRequest) {
         return ResponseEntity.ok(authService.login(authenticationRequest));
     }
 
     @PostMapping("/logout")
-    public ResponseEntity<ResponseErrorTemplate> logout(@RequestBody RefreshTokenRequest refreshTokenRequest) {
+    public ResponseEntity<ResponseErrorTemplate> logout(@Valid @RequestBody RefreshTokenRequest refreshTokenRequest) {
         log.info("Intercept logout refresh token with req: {}", refreshTokenRequest);
         refreshTokenService.deleteToken(refreshTokenRequest.refreshToken());
         var responseErrorTemplate = new ResponseErrorTemplate(
@@ -54,7 +55,7 @@ public class PublicController {
     }
 
     @PostMapping("/refreshToken")
-    public ResponseEntity<ResponseErrorTemplate> refreshToken(@RequestBody RefreshTokenRequest refreshTokenRequest) {
+    public ResponseEntity<ResponseErrorTemplate> refreshToken(@Valid @RequestBody RefreshTokenRequest refreshTokenRequest) {
         return ResponseEntity.ok(refreshTokenService.refreshToken(refreshTokenRequest));
     }
 

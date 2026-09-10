@@ -15,4 +15,14 @@ public interface TicketService {
 
     void unlockTicket(Long eventId, Integer quantity);
 
+    ResponseErrorTemplate findAll();
+
+    ResponseErrorTemplate getStats();
+
+    ResponseErrorTemplate updateTicket(Long ticketId, TicketRequest ticketRequest);
+
+    ResponseErrorTemplate deleteTicket(Long ticketId);
+
+    ResponseErrorTemplate unlockTicketById(Long ticketId);
+
 }

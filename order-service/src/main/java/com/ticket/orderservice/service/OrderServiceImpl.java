@@ -3,9 +3,12 @@ package com.ticket.orderservice.service;
 import com.ticket.common.constant.ApiConstant;
 import com.ticket.common.dto.EmptyObject;
 import com.ticket.common.exception.ResponseErrorTemplate;
+import com.ticket.orderservice.dto.OrderResponse;
+import com.ticket.orderservice.entity.Order;
 import com.ticket.orderservice.Enum.OrderStatus;
 import com.ticket.common.enums.PaymentMethod;
 import com.ticket.orderservice.Mapper.OrderMapper;
+import com.ticket.orderservice.client.EventClient;
 import com.ticket.orderservice.client.PaymentClient;
 import com.ticket.orderservice.client.UserClient;
 import com.ticket.common.dto.event.OrderConfirmedEvent;
@@ -20,7 +23,12 @@ import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
 import java.time.LocalDateTime;
+import java.math.BigDecimal;
 import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.stream.Collectors;
 import java.util.Optional;
 
 @Service
@@ -29,16 +37,18 @@ public class OrderServiceImpl implements OrderService{
 
     private final OrderMapper orderMapper;
     private final UserClient userClient;
+    private final EventClient eventClient;
     private final PaymentClient paymentClient;
     private final OrderRepository orderRepository;
     private final OrderConfirmedKafkaProducer orderConfirmedKafkaProducer;
 
     public OrderServiceImpl(OrderMapper orderMapper,
-                            UserClient userClient, PaymentClient paymentClient,
+                            UserClient userClient, EventClient eventClient, PaymentClient paymentClient,
                             OrderRepository orderRepository,
                             OrderConfirmedKafkaProducer orderConfirmedKafkaProducer) {
         this.orderMapper = orderMapper;
         this.userClient = userClient;
+        this.eventClient = eventClient;
         this.paymentClient = paymentClient;
         this.orderRepository = orderRepository;
         this.orderConfirmedKafkaProducer = orderConfirmedKafkaProducer;
@@ -95,14 +105,43 @@ public class OrderServiceImpl implements OrderService{
         orderRepository.save(order);
 
         // Send order confirmed event to Kafka
+        Map userData = userClient.getUserByUsername(username).block();
+        Map eventData = eventClient.getEventById(orderRequest.getEventId()).block();
+
+        String email = "no-reply@ticketmanagement.com";
+        String phoneNumber = "";
+        String eventTitle = "Event #" + orderRequest.getEventId();
+        String eventLocation = "";
+        LocalDateTime eventDate = LocalDateTime.now();
+
+        if (userData != null && userData.get("data") instanceof Map data) {
+            Object emailObj = data.get("email");
+            Object phoneObj = data.get("phoneNumber");
+            if (emailObj != null) email = emailObj.toString();
+            if (phoneObj != null) phoneNumber = phoneObj.toString();
+        }
+        if (eventData != null && eventData.get("data") instanceof Map data) {
+            Object titleObj = data.get("title");
+            Object locObj = data.get("location");
+            Object dateObj = data.get("eventDate");
+            if (titleObj != null) eventTitle = titleObj.toString();
+            if (locObj != null) eventLocation = locObj.toString();
+            if (dateObj != null) {
+                try {
+                    eventDate = LocalDateTime.parse(dateObj.toString());
+                } catch (Exception ignored) {
+                }
+            }
+        }
+
         OrderConfirmedEvent orderConfirmedEvent = new OrderConfirmedEvent();
         orderConfirmedEvent.setOrderId(order.getId());
         orderConfirmedEvent.setUsername(order.getUsername());
-        orderConfirmedEvent.setEmail("codestorykh@gmail.com"); // need to get from user service
-        orderConfirmedEvent.setPhoneNumber("0123456789"); // need to get from user service
-        orderConfirmedEvent.setEventTitle(orderRequest.getEventId().toString()); // need to get from event service
-        orderConfirmedEvent.setEventLocation(orderRequest.getEventId().toString()); // need to get from event service
-        orderConfirmedEvent.setEventDate(LocalDateTime.now());
+        orderConfirmedEvent.setEmail(email);
+        orderConfirmedEvent.setPhoneNumber(phoneNumber);
+        orderConfirmedEvent.setEventTitle(eventTitle);
+        orderConfirmedEvent.setEventLocation(eventLocation);
+        orderConfirmedEvent.setEventDate(eventDate);
         orderConfirmedEvent.setQuantity(orderRequest.getQuantity());
         orderConfirmedEvent.setAmount(orderRequest.getAmount());
 
@@ -168,5 +207,61 @@ public class OrderServiceImpl implements OrderService{
        }
     log.warn("Invalid token provided");
     return null;
+    }
+
+    @Override
+    public ResponseErrorTemplate findAll() {
+        List<OrderResponse> orders = orderRepository.findAll().stream()
+                .map(orderMapper::toResponse)
+                .toList();
+        return new ResponseErrorTemplate(
+                ApiConstant.SUCCESS.getDescription(),
+                ApiConstant.SUCCESS.getKey(),
+                orders,
+                false);
+    }
+
+    @Override
+    public ResponseErrorTemplate getStats() {
+        List<Order> orders = orderRepository.findAll();
+        Map<String, Long> byStatus = orders.stream()
+                .collect(Collectors.groupingBy(o -> o.getOrderStatus().name(), Collectors.counting()));
+
+        Map<String, Object> stats = new LinkedHashMap<>();
+        stats.put("total", orders.size());
+        stats.put("byStatus", byStatus);
+        stats.put("totalAmount", orders.stream()
+                .map(Order::getAmount)
+                .filter(Objects::nonNull)
+                .reduce(BigDecimal.ZERO, BigDecimal::add));
+
+        return new ResponseErrorTemplate(
+                ApiConstant.SUCCESS.getDescription(),
+                ApiConstant.SUCCESS.getKey(),
+                stats,
+                false);
+    }
+
+    @Override
+    public ResponseErrorTemplate forceCancelOrder(Long orderId) {
+        Optional<Order> order = orderRepository.findById(orderId);
+        if (order.isEmpty()) {
+            return new ResponseErrorTemplate(
+                    ApiConstant.DATA_NOT_FOUND.getFormattedDescription(orderId),
+                    ApiConstant.DATA_NOT_FOUND.getKey(),
+                    new EmptyObject(),
+                    true);
+        }
+
+        Order existing = order.get();
+        existing.setOrderStatus(OrderStatus.CANCELLED);
+        existing.setUpdatedBy("admin");
+        orderRepository.save(existing);
+
+        return new ResponseErrorTemplate(
+                ApiConstant.SUCCESS.getDescription(),
+                ApiConstant.SUCCESS.getKey(),
+                orderMapper.toResponse(existing),
+                false);
     }
 }

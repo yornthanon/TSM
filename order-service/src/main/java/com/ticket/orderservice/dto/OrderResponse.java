@@ -9,6 +9,7 @@ import java.time.LocalDateTime;
 @Data
 public class OrderResponse {
 
+    private Long id;
     private Long eventId;
     private Long ticketId;
     private Integer quantity;

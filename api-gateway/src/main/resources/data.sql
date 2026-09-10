@@ -53,3 +53,30 @@ WHERE NOT EXISTS (SELECT 1 FROM api_route WHERE path = '/api/v1/orders/**' AND m
 INSERT INTO api_route (uri, path, method, description, group_code, rate_limited, rate_limit_duration, status, created_at, created_by, updated_at, updated_by)
 SELECT 'http://localhost:8084', '/api/v1/orders/**', 'PUT', 'Order service (cancel)', 'order-service', 20, 60, 'ACTIVE', NOW(), 'system', NOW(), 'system'
 WHERE NOT EXISTS (SELECT 1 FROM api_route WHERE path = '/api/v1/orders/**' AND method = 'PUT');
+INSERT INTO api_route (uri, path, method, description, group_code, rate_limited, rate_limit_duration, status, created_at, created_by, updated_at, updated_by)
+SELECT 'http://localhost:8085', '/api/v1/payments/**', 'POST', 'Payment service (process/refund)', 'payment-service', 20, 60, 'ACTIVE', NOW(), 'system', NOW(), 'system'
+WHERE NOT EXISTS (SELECT 1 FROM api_route WHERE path = '/api/v1/payments/**' AND method = 'POST');
+
+INSERT INTO api_route (uri, path, method, description, group_code, rate_limited, rate_limit_duration, status, created_at, created_by, updated_at, updated_by)
+SELECT 'http://localhost:8086', '/api/v1/notifications/**', 'POST', 'Notification service (resend)', 'notification-service', 20, 60, 'ACTIVE', NOW(), 'system', NOW(), 'system'
+WHERE NOT EXISTS (SELECT 1 FROM api_route WHERE path = '/api/v1/notifications/**' AND method = 'POST');
+
+INSERT INTO api_route (uri, path, method, description, group_code, rate_limited, rate_limit_duration, status, created_at, created_by, updated_at, updated_by)
+SELECT 'http://localhost:8086', '/api/v1/notifications/**', 'DELETE', 'Notification service (delete)', 'notification-service', 20, 60, 'ACTIVE', NOW(), 'system', NOW(), 'system'
+WHERE NOT EXISTS (SELECT 1 FROM api_route WHERE path = '/api/v1/notifications/**' AND method = 'DELETE');
+
+INSERT INTO api_route (uri, path, method, description, group_code, rate_limited, rate_limit_duration, status, created_at, created_by, updated_at, updated_by)
+SELECT 'http://localhost:8083', '/api/v1/tickets/**', 'DELETE', 'Ticket service (delete)', 'ticket-service', 20, 60, 'ACTIVE', NOW(), 'system', NOW(), 'system'
+WHERE NOT EXISTS (SELECT 1 FROM api_route WHERE path = '/api/v1/tickets/**' AND method = 'DELETE');
+
+INSERT INTO api_route (uri, path, method, description, group_code, rate_limited, rate_limit_duration, status, created_at, created_by, updated_at, updated_by)
+SELECT 'http://localhost:8081', '/api/v1/users/**', 'PUT', 'User management (update/password/status)', 'user-service', 20, 60, 'ACTIVE', NOW(), 'system', NOW(), 'system'
+WHERE NOT EXISTS (SELECT 1 FROM api_route WHERE path = '/api/v1/users/**' AND method = 'PUT');
+
+INSERT INTO api_route (uri, path, method, description, group_code, rate_limited, rate_limit_duration, status, created_at, created_by, updated_at, updated_by)
+SELECT 'http://localhost:8081', '/api/v1/users/**', 'POST', 'User management (create)', 'user-service', 20, 60, 'ACTIVE', NOW(), 'system', NOW(), 'system'
+WHERE NOT EXISTS (SELECT 1 FROM api_route WHERE path = '/api/v1/users/**' AND method = 'POST');
+
+INSERT INTO api_route (uri, path, method, description, group_code, rate_limited, rate_limit_duration, status, created_at, created_by, updated_at, updated_by)
+SELECT 'http://localhost:8081', '/api/v1/users/**', 'DELETE', 'User management (delete)', 'user-service', 20, 60, 'ACTIVE', NOW(), 'system', NOW(), 'system'
+WHERE NOT EXISTS (SELECT 1 FROM api_route WHERE path = '/api/v1/users/**' AND method = 'DELETE');

@@ -3,7 +3,7 @@ package com.ticket.eventservice;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 
-@SpringBootApplication
+@SpringBootApplication(scanBasePackages = {"com.ticket.eventservice", "com.ticket.common"})
 public class EventServiceApplication {
 
     public static void main(String[] args) {

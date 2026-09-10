@@ -50,6 +50,11 @@ public class UserController {
         return ResponseEntity.ok(userService.findAll(userFilterRequest));
     }
 
+    @GetMapping("/stats")
+    public ResponseEntity<ResponseErrorTemplate> getStats() {
+        return ResponseEntity.ok(userService.getStats());
+    }
+
     @GetMapping("/search")
     public ResponseEntity<ResponseErrorTemplate> searchUsers(@Valid @ModelAttribute UserFilterRequest userFilterRequest) {
         return ResponseEntity.ok(new ResponseErrorTemplate(
@@ -71,6 +76,11 @@ public class UserController {
     @PutMapping("/{id}/deactivate")
     public ResponseEntity<ResponseErrorTemplate> disActivateUser(@PathVariable Long id) {
         return ResponseEntity.ok(userService.disActivateUser(id));
+    }
+
+    @PutMapping("/{id}/activate")
+    public ResponseEntity<ResponseErrorTemplate> activateUser(@PathVariable Long id) {
+        return ResponseEntity.ok(userService.activateUser(id));
     }
 
     @PutMapping("/{id}/reset-password")

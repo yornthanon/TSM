@@ -52,6 +52,8 @@ public class AuthServiceImpl implements AuthService {
             );
         }
 
+        customUserDetailService.updateAttempt(username);
+
         return new ResponseErrorTemplate(
                 ApiConstant.LOGIN_SUCCESS.getDescription(),
                 ApiConstant.LOGIN_SUCCESS.getKey(),

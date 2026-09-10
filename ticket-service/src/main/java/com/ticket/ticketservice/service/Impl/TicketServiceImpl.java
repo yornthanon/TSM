@@ -63,6 +63,9 @@ public class TicketServiceImpl implements TicketService {
 
         Ticket ticket = ticketMapper.toEntity(ticketRequest);
         ticket.setEventId(ticketRequest.getEventId());
+        if (ticketRequest.getTicketStatus() == null) {
+            ticket.setTicketStatus(TicketStatus.AVAILABLE);
+        }
         ticketRepository.save(ticket);
 
         return new ResponseErrorTemplate(
@@ -162,5 +165,119 @@ public class TicketServiceImpl implements TicketService {
         );
 
         ticketRepository.saveAll(ticketsToUnlock);
+    }
+
+    @Override
+    public ResponseErrorTemplate findAll() {
+        List<TicketResponse> tickets = ticketRepository.findAll().stream()
+                .map(ticketMapper::toResponse)
+                .toList();
+        return new ResponseErrorTemplate(
+                ApiConstant.SUCCESS.getDescription(),
+                ApiConstant.SUCCESS.getKey(),
+                tickets,
+                false);
+    }
+
+    @Override
+    public ResponseErrorTemplate getStats() {
+        List<Ticket> tickets = ticketRepository.findAll();
+        Map<String, Long> byStatus = tickets.stream()
+                .collect(Collectors.groupingBy(t -> t.getTicketStatus().name(), Collectors.counting()));
+
+        Map<String, Object> stats = new HashMap<>();
+        stats.put("total", tickets.size());
+        stats.put("byStatus", byStatus);
+
+        return new ResponseErrorTemplate(
+                ApiConstant.SUCCESS.getDescription(),
+                ApiConstant.SUCCESS.getKey(),
+                stats,
+                false);
+    }
+
+    @Override
+    public ResponseErrorTemplate updateTicket(Long ticketId, TicketRequest ticketRequest) {
+        Optional<Ticket> existing = ticketRepository.findById(ticketId);
+        if (existing.isEmpty()) {
+            return new ResponseErrorTemplate(
+                    ApiConstant.TICKET_NOT_FOUND.getFormattedDescription(ticketId),
+                    ApiConstant.TICKET_NOT_FOUND.getKey(),
+                    new EmptyObject(),
+                    true);
+        }
+
+        Ticket ticket = existing.get();
+        if (ticketRequest.getPrice() != null) {
+            ticket.setPrice(ticketRequest.getPrice());
+        }
+        if (ticketRequest.getSeatNumber() != null && !ticketRequest.getSeatNumber().isBlank()) {
+            ticket.setSeatNumber(ticketRequest.getSeatNumber());
+        }
+        if (ticketRequest.getTicketType() != null) {
+            ticket.setTicketType(ticketRequest.getTicketType());
+        }
+        if (ticketRequest.getTicketStatus() != null) {
+            ticket.setTicketStatus(ticketRequest.getTicketStatus());
+        }
+        ticketRepository.save(ticket);
+
+        return new ResponseErrorTemplate(
+                ApiConstant.SUCCESS.getDescription(),
+                ApiConstant.SUCCESS.getKey(),
+                ticketMapper.toResponse(ticket),
+                false);
+    }
+
+    @Override
+    public ResponseErrorTemplate deleteTicket(Long ticketId) {
+        Optional<Ticket> existing = ticketRepository.findById(ticketId);
+        if (existing.isEmpty()) {
+            return new ResponseErrorTemplate(
+                    ApiConstant.TICKET_NOT_FOUND.getFormattedDescription(ticketId),
+                    ApiConstant.TICKET_NOT_FOUND.getKey(),
+                    new EmptyObject(),
+                    true);
+        }
+        if (existing.get().getTicketStatus() == TicketStatus.SOLD) {
+            return new ResponseErrorTemplate(
+                    ApiConstant.TICKET_ALREADY_SOLD.getFormattedDescription(ticketId),
+                    ApiConstant.TICKET_ALREADY_SOLD.getKey(),
+                    new EmptyObject(),
+                    true);
+        }
+        ticketRepository.deleteById(ticketId);
+
+        return new ResponseErrorTemplate(
+                ApiConstant.SUCCESS.getDescription(),
+                ApiConstant.SUCCESS.getKey(),
+                new EmptyObject(),
+                false);
+    }
+
+    @Override
+    public ResponseErrorTemplate unlockTicketById(Long ticketId) {
+        Optional<Ticket> existing = ticketRepository.findById(ticketId);
+        if (existing.isEmpty()) {
+            return new ResponseErrorTemplate(
+                    ApiConstant.TICKET_NOT_FOUND.getFormattedDescription(ticketId),
+                    ApiConstant.TICKET_NOT_FOUND.getKey(),
+                    new EmptyObject(),
+                    true);
+        }
+
+        Ticket ticket = existing.get();
+        if (ticket.getTicketStatus() == TicketStatus.LOCKED) {
+            ticket.setTicketStatus(TicketStatus.AVAILABLE);
+            ticket.setLockedUntil(null);
+            ticket.setLockedBy(null);
+            ticketRepository.save(ticket);
+        }
+
+        return new ResponseErrorTemplate(
+                ApiConstant.SUCCESS.getDescription(),
+                ApiConstant.SUCCESS.getKey(),
+                ticketMapper.toResponse(ticket),
+                false);
     }
 }

@@ -45,10 +45,15 @@ public enum ApiConstant {
 
     PAYMENT_FAILED("400", "Payment processing failed for order ID %s."),
     PAYMENT_SUCCESS("200", "Payment processed successfully for order ID %s."),
+    PAYMENT_REFUND_SUCCESS("200", "Payment refunded successfully for ID %s."),
+    PAYMENT_NOT_REFUNDABLE("400", "Payment ID %s is not refundable in its current status."),
 
     SEAT_NUMBER_ALREADY_EXISTS("400", "Seat number %s already exists."),
     EVENT_NOT_FOUND("404", "Event not found for ID %s."),
     TICKET_NOT_FOUND("404", "Ticket not found for ID %s."),
+    TICKET_ALREADY_SOLD("400", "Ticket ID %s is already sold and cannot be deleted."),
+    NOTIFICATION_NOT_FOUND("404", "Notification not found for ID %s."),
+    NOTIFICATION_NOT_RESENDABLE("400", "Notification ID %s is not in FAILED status and cannot be resent."),
     TICKET_LOCKED("423", "Ticket is locked for ID %s."),
     TICKET_NOT_AVAILABLE("404", "Ticket not available for ID %s."),
     DATA_NOT_FOUND("404", "Data not found for %s.");

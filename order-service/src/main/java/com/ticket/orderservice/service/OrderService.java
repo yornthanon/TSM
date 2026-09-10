@@ -9,5 +9,8 @@ public interface OrderService {
     ResponseErrorTemplate createOrder(OrderRequest orderRequest, HttpServletRequest httpServletRequest);
     ResponseErrorTemplate getOrderById(Long orderId);
     ResponseErrorTemplate cancelOrder(Long orderId, HttpServletRequest httpServletRequest);
+    ResponseErrorTemplate findAll();
+    ResponseErrorTemplate getStats();
+    ResponseErrorTemplate forceCancelOrder(Long orderId);
 
 }

@@ -11,7 +11,12 @@ import com.ticket.eventservice.repository.EventRepository;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Service
 @Slf4j
@@ -79,6 +84,41 @@ public class EventServiceImpl implements EventService {
                 ApiConstant.SUCCESS.getDescription(),
                 ApiConstant.SUCCESS.getKey(),
                 eventMapper.toResponse(event.get()),
+                false);
+    }
+
+    @Override
+    public ResponseErrorTemplate findAll() {
+        List<EventResponse> events = eventMapper.toResponseList(eventRepository.findAll());
+        return new ResponseErrorTemplate(
+                ApiConstant.SUCCESS.getDescription(),
+                ApiConstant.SUCCESS.getKey(),
+                events,
+                false);
+    }
+
+    @Override
+    public ResponseErrorTemplate getStats() {
+        List<Event> events = eventRepository.findAll();
+        Map<String, Long> byStatus = events.stream()
+                .collect(Collectors.groupingBy(e -> e.getStatus().name(), Collectors.counting()));
+        Map<String, Long> byType = events.stream()
+                .filter(e -> e.getEventType() != null)
+                .collect(Collectors.groupingBy(e -> e.getEventType().name(), Collectors.counting()));
+        long upcoming = events.stream()
+                .filter(e -> e.getEventDate() != null && e.getEventDate().isAfter(LocalDateTime.now()))
+                .count();
+
+        Map<String, Object> stats = new HashMap<>();
+        stats.put("total", events.size());
+        stats.put("upcoming", upcoming);
+        stats.put("byStatus", byStatus);
+        stats.put("byType", byType);
+
+        return new ResponseErrorTemplate(
+                ApiConstant.SUCCESS.getDescription(),
+                ApiConstant.SUCCESS.getKey(),
+                stats,
                 false);
     }
 
