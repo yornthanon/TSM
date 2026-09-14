@@ -123,6 +123,28 @@ public class EventServiceImpl implements EventService {
     }
 
     @Override
+    public ResponseErrorTemplate updateStatus(Long id, String status) {
+        Optional<Event> event = eventRepository.findById(id);
+        if (event.isEmpty()) {
+            return new ResponseErrorTemplate(
+                    ApiConstant.EVENT_NOT_FOUND.getFormattedDescription(id),
+                    ApiConstant.EVENT_NOT_FOUND.getKey(),
+                    new EmptyObject(),
+                    true);
+        }
+
+        Event existing = event.get();
+        existing.setStatus(com.ticket.eventservice.Enum.EventStatus.valueOf(status));
+        eventRepository.save(existing);
+
+        return new ResponseErrorTemplate(
+                ApiConstant.SUCCESS.getDescription(),
+                ApiConstant.SUCCESS.getKey(),
+                eventMapper.toResponse(existing),
+                false);
+    }
+
+    @Override
     public void delete(Long id) {
         eventRepository.deleteById(id);
     }

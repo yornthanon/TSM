@@ -25,4 +25,6 @@ public interface TicketService {
 
     ResponseErrorTemplate unlockTicketById(Long ticketId);
 
+    ResponseErrorTemplate lockTicketById(Long ticketId);
+
 }

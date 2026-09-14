@@ -40,14 +40,12 @@ TicketManagment (parent pom)
 | **Spring Boot** | 4.1.0 | Application framework | ទាំងអស់ |
 | **Spring Web MVC** | - | REST API (synchronous) | user, event, ticket, order, payment |
 | **Spring Cloud Gateway** | - | API Gateway (reactive routing) | api-gateway |
-| **Spring Data JPA + Hibernate** | - | ORM ទាក់ទង Database | user, event, ticket, order, payment, admin |
+| **Spring Data JPA + Hibernate** | - | ORM ទាក់ទង Database | user, event, ticket, order, payment |
 | **Spring Data R2DBC** | - | Reactive DB access (dynamic routes) | api-gateway |
 | **PostgreSQL** | - | Main relational database | user, event, ticket, order, payment |
-| **H2 (in-memory)** | - | Database សាកល្បង | admin-service |
 | **Apache Kafka** (`spring-kafka`) | - | Async messaging រវាង services | order-service (producer) |
 | **Redis** (`spring-data-redis`) | - | Distributed lock + Rate limiting | ticket-service, api-gateway |
 | **Spring Security + JJWT** | - | Authentication & JWT | user-service, api-gateway |
-| **Vaadin** | - | Admin UI framework (full-stack Java) | admin-service |
 | **WebClient / Spring WebFlux** | - | Inter-service HTTP calls (reactive) | order, ticket, api-gateway |
 | **MapStruct** | 1.6.3 | DTO ↔ Entity mapping (compile-time) | order, ticket, event, payment |
 | **Lombok** | - | កាត់បន្ថយ boilerplate (getter/setter/builder) | ទាំងអស់ |
@@ -510,7 +508,6 @@ kafka-console-consumer --bootstrap-server localhost:9092 \
 2. **order-service** — `email`, `phoneNumber`, `eventTitle`, `eventLocation` ក្នុង `OrderConfirmedEvent` នៅ hardcoded (OrderServiceImpl.java:100-103) — ត្រូវ pull ពី user-service/event-service
 3. **order-service pom.xml** — duplicate dependency `spring-webflux` (lines 82-88)
 4. **payment-service** — gateway ជា mock (return true) — ត្រូវ integrate provider ពិត
-5. **admin-service** — ប្រើ H2 in-memory + data seeder — សម្រាប់ production ត្រូវប្ដូរ PostgreSQL
 6. **ddl-auto=create-drop** — data បាត់រាល់ពេល restart (dev mode); production ត្រូវប្រើ `validate` + migration tool (Flyway/Liquibase)
 7. **jwt.secret** — hardcoded default ក្នុង properties — ត្រូវ inject តាម env var ពេល deploy ពិត
 

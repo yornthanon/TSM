@@ -41,10 +41,11 @@ gateway.logging.log-response-size=true
 gateway.logging.service-name=api-gateway
 
 # CORS (mobile + web clients)
-spring.webflux.cors.allowed-origins=http://localhost:3000,http://localhost:3001,http://localhost:5173
+spring.webflux.cors.allowed-origins=*
 spring.webflux.cors.allowed-methods=*
 spring.webflux.cors.allowed-headers=*
 spring.webflux.cors.allow-credentials=true
 
 # User service configuration
 user.service.url=${USER_SERVICE_URL:http://localhost:8081}
+PROPS

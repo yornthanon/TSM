@@ -3,6 +3,8 @@ services:
   postgres:
     image: postgres:14
     container_name: postgres
+    env_file:
+      - ../.env
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-ticket}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-ticket123}
@@ -73,13 +75,14 @@ services:
     container_name: api-gateway
     ports:
       - "8080:8080"
+    env_file:
+      - ../.env
     environment:
       SPRING_DATASOURCE_URL: r2dbc:postgresql://postgres:5432/ticket_gateway_db
       SPRING_DATASOURCE_USERNAME: ticket
       SPRING_DATASOURCE_PASSWORD: ticket123
       REDIS_HOST: redis
       REDIS_PORT: 6379
-      JWT_SECRET: ${JWT_SECRET:}
       USER_SERVICE_URL: http://user-service:8081
     depends_on:
       postgres:
@@ -96,11 +99,12 @@ services:
     container_name: user-service
     ports:
       - "8081:8081"
+    env_file:
+      - ../.env
     environment:
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/ticket_user_db
       SPRING_DATASOURCE_USERNAME: ticket
       SPRING_DATASOURCE_PASSWORD: ticket123
-      JWT_SECRET: ${JWT_SECRET:}
     depends_on:
       postgres:
         condition: service_healthy
@@ -216,6 +220,7 @@ services:
       kafka:
         condition: service_started
     networks: [ticket-networks]
+
 
 networks:
   ticket-networks:

@@ -1,0 +1,15 @@
+.git
+.gitignore
+.idea
+.mvn
+target
+node_modules
+*.md
+*.yml
+*.yaml
+.env
+.env.example
+deployment
+docs
+mvnw
+mvnw.cmd

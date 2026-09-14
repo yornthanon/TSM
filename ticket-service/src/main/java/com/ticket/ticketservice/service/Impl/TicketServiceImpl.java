@@ -280,4 +280,36 @@ public class TicketServiceImpl implements TicketService {
                 ticketMapper.toResponse(ticket),
                 false);
     }
+
+    @Override
+    public ResponseErrorTemplate lockTicketById(Long ticketId) {
+        Optional<Ticket> existing = ticketRepository.findById(ticketId);
+        if (existing.isEmpty()) {
+            return new ResponseErrorTemplate(
+                    ApiConstant.TICKET_NOT_FOUND.getFormattedDescription(ticketId),
+                    ApiConstant.TICKET_NOT_FOUND.getKey(),
+                    new EmptyObject(),
+                    true);
+        }
+
+        Ticket ticket = existing.get();
+        if (ticket.getTicketStatus() == TicketStatus.LOCKED || ticket.getTicketStatus() == TicketStatus.SOLD) {
+            return new ResponseErrorTemplate(
+                    "Ticket is already locked or sold",
+                    "TICKET_ALREADY_LOCKED",
+                    ticketMapper.toResponse(ticket),
+                    true);
+        }
+
+        ticket.setTicketStatus(TicketStatus.LOCKED);
+        ticket.setLockedBy("admin");
+        ticket.setLockedUntil(LocalDateTime.now().plusMinutes(30));
+        ticketRepository.save(ticket);
+
+        return new ResponseErrorTemplate(
+                ApiConstant.SUCCESS.getDescription(),
+                ApiConstant.SUCCESS.getKey(),
+                ticketMapper.toResponse(ticket),
+                false);
+    }
 }
