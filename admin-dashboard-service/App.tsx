@@ -1,6 +1,6 @@
 import React from 'react';
-import { AdminDashboardApp } from './modules/AdminDashboardApp';
-import { ManagementApiApp } from './modules/ManagementApiApp';
+import { AdminDashboardApp } from './admin-service/AdminDashboardApp';
+import { ManagementApiApp } from './management-api-service/ManagementApiApp';
 
 export const App: React.FC = () => {
   const path = window.location.pathname.toLowerCase();
