@@ -167,6 +167,90 @@ const INITIAL_ORDERS: Order[] = [
     paymentId: 501,
     orderDate: '2026-09-10T14:22:10Z',
   },
+  {
+    id: 102,
+    orderNumber: 'ORD-20260911-4192',
+    eventId: 1,
+    eventTitle: 'Phnom Penh Mega Music Fest 2026',
+    ticketId: 1,
+    ticketCode: 'TK-101-VIP',
+    quantity: 2,
+    amount: 160.0,
+    orderStatus: 'COMPLETED',
+    username: 'sokha_vip',
+    paymentId: 502,
+    orderDate: '2026-09-11T10:15:30Z',
+  },
+  {
+    id: 103,
+    orderNumber: 'ORD-20260912-9014',
+    eventId: 2,
+    eventTitle: 'Southeast Asia Tech Summit',
+    ticketId: 5,
+    ticketCode: 'TK-201-TECH',
+    quantity: 3,
+    amount: 150.0,
+    orderStatus: 'COMPLETED',
+    username: 'vireak_tech',
+    paymentId: 503,
+    orderDate: '2026-09-12T09:40:15Z',
+  },
+  {
+    id: 104,
+    orderNumber: 'ORD-20260913-3382',
+    eventId: 3,
+    eventTitle: 'National Football Championship Final',
+    ticketId: 6,
+    ticketCode: 'TK-301-SPT',
+    quantity: 4,
+    amount: 60.0,
+    orderStatus: 'COMPLETED',
+    username: 'channa_buyer',
+    paymentId: 504,
+    orderDate: '2026-09-13T16:05:00Z',
+  },
+  {
+    id: 105,
+    orderNumber: 'ORD-20260914-7719',
+    eventId: 1,
+    eventTitle: 'Phnom Penh Mega Music Fest 2026',
+    ticketId: 2,
+    ticketCode: 'TK-102-VIP',
+    quantity: 1,
+    amount: 80.0,
+    orderStatus: 'COMPLETED',
+    username: 'darany_music',
+    paymentId: 505,
+    orderDate: '2026-09-14T11:20:45Z',
+  },
+  {
+    id: 106,
+    orderNumber: 'ORD-20260915-1102',
+    eventId: 2,
+    eventTitle: 'Southeast Asia Tech Summit',
+    ticketId: 5,
+    ticketCode: 'TK-201-TECH',
+    quantity: 1,
+    amount: 50.0,
+    orderStatus: 'COMPLETED',
+    username: 'monirath_dev',
+    paymentId: 506,
+    orderDate: '2026-09-15T15:30:10Z',
+  },
+  {
+    id: 107,
+    orderNumber: 'ORD-20260915-5590',
+    eventId: 3,
+    eventTitle: 'National Football Championship Final',
+    ticketId: 6,
+    ticketCode: 'TK-301-SPT',
+    quantity: 2,
+    amount: 30.0,
+    orderStatus: 'PROCESSING',
+    username: 'piseth_sports',
+    paymentId: 507,
+    orderDate: '2026-09-15T18:45:00Z',
+  },
 ];
 
 const INITIAL_PAYMENTS: Payment[] = [
@@ -179,6 +263,66 @@ const INITIAL_PAYMENTS: Payment[] = [
     paymentStatus: 'SUCCESS',
     transactionId: 'TXN-998842-VISA',
     createdAt: '2026-09-10T14:22:15Z',
+  },
+  {
+    id: 502,
+    orderId: 102,
+    orderNumber: 'ORD-20260911-4192',
+    amount: 160.0,
+    paymentMethod: 'BANK_TRANSFER',
+    paymentStatus: 'SUCCESS',
+    transactionId: 'TXN-ABA-771290',
+    createdAt: '2026-09-11T10:15:40Z',
+  },
+  {
+    id: 503,
+    orderId: 103,
+    orderNumber: 'ORD-20260912-9014',
+    amount: 150.0,
+    paymentMethod: 'CREDIT_CARD',
+    paymentStatus: 'SUCCESS',
+    transactionId: 'TXN-MC-331092',
+    createdAt: '2026-09-12T09:40:22Z',
+  },
+  {
+    id: 504,
+    orderId: 104,
+    orderNumber: 'ORD-20260913-3382',
+    amount: 60.0,
+    paymentMethod: 'BANK_TRANSFER',
+    paymentStatus: 'SUCCESS',
+    transactionId: 'TXN-WING-884102',
+    createdAt: '2026-09-13T16:05:10Z',
+  },
+  {
+    id: 505,
+    orderId: 105,
+    orderNumber: 'ORD-20260914-7719',
+    amount: 80.0,
+    paymentMethod: 'CREDIT_CARD',
+    paymentStatus: 'SUCCESS',
+    transactionId: 'TXN-VISA-552091',
+    createdAt: '2026-09-14T11:20:50Z',
+  },
+  {
+    id: 506,
+    orderId: 106,
+    orderNumber: 'ORD-20260915-1102',
+    amount: 50.0,
+    paymentMethod: 'BANK_TRANSFER',
+    paymentStatus: 'SUCCESS',
+    transactionId: 'TXN-ABA-991244',
+    createdAt: '2026-09-15T15:30:15Z',
+  },
+  {
+    id: 507,
+    orderId: 107,
+    orderNumber: 'ORD-20260915-5590',
+    amount: 30.0,
+    paymentMethod: 'DEBIT_CARD',
+    paymentStatus: 'PENDING',
+    transactionId: 'TXN-PEND-00129',
+    createdAt: '2026-09-15T18:45:05Z',
   },
 ];
 
@@ -310,7 +454,15 @@ export class ApiService {
     this.events = loadStorage('events', INITIAL_EVENTS);
     this.tickets = loadStorage('tickets', INITIAL_TICKETS);
     this.orders = loadStorage('orders', INITIAL_ORDERS);
+    if (!this.orders || this.orders.length < INITIAL_ORDERS.length) {
+      this.orders = INITIAL_ORDERS;
+      saveStorage('orders', this.orders);
+    }
     this.payments = loadStorage('payments', INITIAL_PAYMENTS);
+    if (!this.payments || this.payments.length < INITIAL_PAYMENTS.length) {
+      this.payments = INITIAL_PAYMENTS;
+      saveStorage('payments', this.payments);
+    }
     this.notifications = loadStorage('notifications', INITIAL_NOTIFICATIONS);
     this.routes = loadStorage('routes', INITIAL_ROUTES);
     this.gatewayUrl = localStorage.getItem('ticket_mgmt_gateway_url') || 'http://localhost:8080/api';
