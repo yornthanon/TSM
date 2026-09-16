@@ -8,6 +8,7 @@ import { PaymentsView } from './components/PaymentsView';
 import { NotificationsView } from './components/NotificationsView';
 import { UsersView } from './components/UsersView';
 import { ApiGatewayView } from './components/ApiGatewayView';
+import { ApiServicesManagerView } from './components/ApiServicesManagerView';
 import { ApiLogDrawer } from './components/ApiLogDrawer';
 import { api } from './services/apiClient';
 import { Ticket, EventItem, ApiRequestLog } from './types/index';
@@ -17,6 +18,8 @@ import {
   Server,
   Zap,
   CheckCircle,
+  LayoutDashboard,
+  AlertTriangle,
 } from 'lucide-react';
 
 export const App: React.FC = () => {
@@ -24,15 +27,29 @@ export const App: React.FC = () => {
   const [isLogDrawerOpen, setIsLogDrawerOpen] = useState<boolean>(false);
   const [logs, setLogs] = useState<ApiRequestLog[]>([]);
   const [initialBookingTicket, setInitialBookingTicket] = useState<Ticket | null>(null);
+  const [unresolvedErrorsCount, setUnresolvedErrorsCount] = useState<number>(0);
+
+  const refreshErrorsCount = () => {
+    const errs = api.getServiceErrors().filter((e) => !e.resolved);
+    setUnresolvedErrorsCount(errs.length);
+  };
 
   useEffect(() => {
     setLogs(api.getLogs());
+    refreshErrorsCount();
 
-    const unsubscribe = api.onLog((newLog) => {
+    const unsubLogs = api.onLog((newLog) => {
       setLogs((prev) => [newLog, ...prev.slice(0, 49)]);
     });
 
-    return () => unsubscribe();
+    const unsubErrors = api.onError(() => {
+      refreshErrorsCount();
+    });
+
+    return () => {
+      unsubLogs();
+      unsubErrors();
+    };
   }, []);
 
   const handleSelectEventForBooking = (event: EventItem) => {
@@ -43,6 +60,8 @@ export const App: React.FC = () => {
     setInitialBookingTicket(ticket);
     setActiveTab('orders');
   };
+
+  const isApiView = activeTab === 'api-manager' || activeTab === 'gateway';
 
   return (
     <div className="min-h-screen bg-slate-50 flex text-slate-800">
@@ -56,29 +75,50 @@ export const App: React.FC = () => {
 
       {/* Main Content Layout with Sidebar Offset */}
       <div className="flex-1 flex flex-col min-w-0 lg:pl-64">
-        {/* Top Desktop Context Bar */}
+        {/* Top Desktop Context Bar with Direct Dual Portal Switcher */}
         <header className="hidden lg:flex items-center justify-between px-8 py-3.5 bg-white border-b border-slate-200 sticky top-0 z-20">
-          <div className="flex items-center space-x-3 text-xs">
-            <span className="font-bold text-slate-900 capitalize text-sm">
-              {activeTab === 'dashboard'
-                ? 'System Dashboard & Metrics'
-                : activeTab === 'events'
-                ? 'Events Catalog & Shows'
-                : activeTab === 'tickets'
-                ? 'Interactive Seat Map & Inventory'
-                : activeTab === 'orders'
-                ? 'Orders & E-Ticket Receipts'
-                : activeTab === 'payments'
-                ? 'Payment Gateway Ledger'
-                : activeTab === 'notifications'
-                ? 'Kafka Event Stream & Notifications'
-                : activeTab === 'users'
-                ? 'User & Security (RBAC)'
-                : 'Spring Cloud Gateway (:8080)'}
-            </span>
+          <div className="flex items-center space-x-3">
+            {/* Direct Switcher: Admin Business vs API Management */}
+            <div className="bg-slate-100 p-1 rounded-lg flex items-center text-xs font-semibold">
+              <button
+                id="portal-switch-admin-btn"
+                onClick={() => setActiveTab('dashboard')}
+                className={`px-3 py-1.5 rounded-md transition flex items-center space-x-1.5 ${
+                  !isApiView
+                    ? 'bg-white text-indigo-700 shadow-xs'
+                    : 'text-slate-600 hover:text-slate-900'
+                }`}
+              >
+                <LayoutDashboard className="w-3.5 h-3.5" />
+                <span>Admin Business Dashboard</span>
+              </button>
+
+              <button
+                id="portal-switch-api-btn"
+                onClick={() => setActiveTab('api-manager')}
+                className={`px-3 py-1.5 rounded-md transition flex items-center space-x-1.5 ${
+                  isApiView
+                    ? 'bg-white text-indigo-700 shadow-xs'
+                    : 'text-slate-600 hover:text-slate-900'
+                }`}
+              >
+                <Server className="w-3.5 h-3.5" />
+                <span>គ្រប់គ្រង API & Error Diagnostics</span>
+                {unresolvedErrorsCount > 0 && (
+                  <span className="px-1.5 py-0.2 rounded-full bg-rose-600 text-white text-[10px] font-mono animate-pulse">
+                    {unresolvedErrorsCount}
+                  </span>
+                )}
+              </button>
+            </div>
+
             <span className="text-slate-300">|</span>
             <span className="text-slate-500 font-mono text-[11px]">
-              Microservices Core Hub
+              {activeTab === 'dashboard'
+                ? 'Sales & Revenue Portal'
+                : isApiView
+                ? 'API Diagnostics & Error Monitor'
+                : activeTab.toUpperCase()}
             </span>
           </div>
 
@@ -131,7 +171,9 @@ export const App: React.FC = () => {
 
           {activeTab === 'users' && <UsersView />}
 
-          {activeTab === 'gateway' && <ApiGatewayView />}
+          {(activeTab === 'api-manager' || activeTab === 'gateway') && (
+            <ApiServicesManagerView />
+          )}
         </main>
 
         {/* Clean Footer */}

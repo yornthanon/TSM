@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { api } from '../services/apiClient';
 import { User, RoleType } from '../types/index';
 import {
@@ -40,34 +40,43 @@ export const SidebarNav: React.FC<SidebarNavProps> = ({
   const [showConfigModal, setShowConfigModal] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [savedSuccess, setSavedSuccess] = useState(false);
+  const [activeErrorsCount, setActiveErrorsCount] = useState(0);
+
+  useEffect(() => {
+    const updateErrorCount = () => {
+      const errs = api.getServiceErrors().filter((e) => !e.resolved);
+      setActiveErrorsCount(errs.length);
+    };
+    updateErrorCount();
+    const unsub = api.onError(() => updateErrorCount());
+    return () => unsub();
+  }, []);
+
+  const isApiPortal = activeTab === 'api-manager' || activeTab === 'gateway';
 
   const navSections = [
     {
-      title: 'OVERVIEW',
+      title: 'ADMIN BUSINESS PORTAL (អាជីវកម្ម & រដ្ឋបាល)',
       items: [
-        { id: 'dashboard', label: 'Dashboard & Metrics', icon: LayoutDashboard, badge: null },
+        { id: 'dashboard', label: 'ផ្ទាំងគ្រប់គ្រងការលក់ (Sales Dashboard)', icon: LayoutDashboard, badge: 'Admin' },
+        { id: 'events', label: 'កម្មវិធី & Shows (Events Catalog)', icon: Calendar, badge: '8082' },
+        { id: 'tickets', label: 'ស្តុកសំបុត្រ & កៅអី (Ticket Inventory)', icon: TicketIcon, badge: 'Redis' },
+        { id: 'orders', label: 'ការកុម្ម៉ង់ & Checkout (Orders)', icon: ShoppingCart, badge: '8084' },
+        { id: 'payments', label: 'បញ្ជីទូទាត់ប្រាក់ (Payment Ledger)', icon: CreditCard, badge: '8085' },
+        { id: 'users', label: 'អ្នកប្រើប្រាស់ & RBAC (Users)', icon: Users, badge: '8081' },
       ],
     },
     {
-      title: 'EVENT & TICKETING',
+      title: 'API & SERVICES HUB (គ្រប់គ្រង API & ERROR)',
       items: [
-        { id: 'events', label: 'Events Catalog', icon: Calendar, badge: '8082' },
-        { id: 'tickets', label: 'Ticket Inventory & Lock', icon: TicketIcon, badge: 'Redis' },
-      ],
-    },
-    {
-      title: 'COMMERCE & ORDERS',
-      items: [
-        { id: 'orders', label: 'Orders & Checkout', icon: ShoppingCart, badge: '8084' },
-        { id: 'payments', label: 'Payment Gateway', icon: CreditCard, badge: '8085' },
-        { id: 'notifications', label: 'Kafka Notifications', icon: Bell, badge: 'Kafka' },
-      ],
-    },
-    {
-      title: 'SYSTEM & ADMIN',
-      items: [
-        { id: 'users', label: 'User & RBAC Security', icon: Users, badge: '8081' },
-        { id: 'gateway', label: 'API Gateway & Routes', icon: Server, badge: '8080' },
+        {
+          id: 'api-manager',
+          label: 'គ្រប់គ្រង API & Error Diagnostics',
+          icon: Server,
+          badge: activeErrorsCount > 0 ? `${activeErrorsCount} ERR` : '8080',
+          badgeColor: activeErrorsCount > 0 ? 'bg-rose-500 text-white animate-pulse' : undefined,
+        },
+        { id: 'notifications', label: 'Kafka Event Stream (Notifications)', icon: Bell, badge: 'Kafka' },
       ],
     },
   ];
@@ -210,7 +219,9 @@ export const SidebarNav: React.FC<SidebarNavProps> = ({
                       {item.badge && (
                         <span
                           className={`text-[9px] font-mono px-1.5 py-0.5 rounded ${
-                            isActive
+                            (item as any).badgeColor
+                              ? (item as any).badgeColor
+                              : isActive
                               ? 'bg-indigo-700/80 text-white'
                               : 'bg-slate-800 text-slate-400'
                           }`}

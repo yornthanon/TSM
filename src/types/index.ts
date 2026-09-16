@@ -129,4 +129,20 @@ export interface ServiceHealth {
   database: string;
   description: string;
   latencyMs: number;
+  errorCount?: number;
+  lastError?: string | null;
+}
+
+export interface ServiceErrorLog {
+  id: string;
+  serviceName: string;
+  port: number;
+  timestamp: string;
+  statusCode: number;
+  errorCode: string;
+  path: string;
+  message: string;
+  rootCause: string;
+  correlationId: string;
+  resolved?: boolean;
 }
