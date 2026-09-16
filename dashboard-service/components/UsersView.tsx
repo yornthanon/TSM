@@ -9,6 +9,9 @@ import {
   CheckCircle2,
   X,
   Search,
+  Pencil,
+  Trash2,
+  ArrowUpDown,
 } from 'lucide-react';
 import { useLanguage } from '../i18n';
 
@@ -23,6 +26,9 @@ export const UsersView: React.FC = () => {
   const [newPhone, setNewPhone] = useState('');
   const [newRole, setNewRole] = useState<RoleType>('ROLE_USER');
   const [feedback, setFeedback] = useState<string | null>(null);
+  const [editingUser, setEditingUser] = useState<User | null>(null);
+  const [sortBy, setSortBy] = useState<'username' | 'role' | 'createdAt'>('username');
+  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
 
   const fetchUsers = async () => {
     setLoading(true);
@@ -38,27 +44,47 @@ export const UsersView: React.FC = () => {
     fetchUsers();
   }, []);
 
+  const openEditUser = (user: User) => {
+    setEditingUser(user);
+    setNewUsername(user.username);
+    setNewEmail(user.email);
+    setNewPhone(user.phoneNumber);
+    setNewRole(user.role);
+    setShowAddModal(true);
+  };
+
+  const handleDeleteUser = async (user: User) => {
+    if (!window.confirm(isKhmer ? `លុបអ្នកប្រើប្រាស់ «${user.username}» មែនទេ?` : `Delete user “${user.username}”?`)) return;
+    const res = await api.request('DELETE', `/api/v1/users/${user.id}`);
+    if (!res.error) { setFeedback(isKhmer ? 'លុបអ្នកប្រើប្រាស់បានជោគជ័យ' : 'User deleted successfully'); fetchUsers(); }
+    else setFeedback(`${isKhmer ? 'លុបមិនបានសម្រេច' : 'Delete failed'}: ${res.description}`);
+  };
+
   const handleRegisterUser = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newUsername.trim()) return;
 
     try {
-      const res = await api.request('POST', '/api/v1/auth/register', {
+      const payload = {
         username: newUsername,
         email: newEmail,
         phoneNumber: newPhone,
         role: newRole,
-      });
+        roles: [newRole],
+        status: editingUser?.status || 'ACTIVE',
+      };
+      const res = await api.request(editingUser ? 'PUT' : 'POST', editingUser ? `/api/v1/users/${editingUser.id}` : '/api/v1/auth/register', payload);
 
       if (!res.error) {
-        setFeedback(`User ${newUsername} successfully registered with role ${newRole}!`);
+        setFeedback(editingUser ? (isKhmer ? 'បានកែប្រែអ្នកប្រើប្រាស់ជោគជ័យ' : 'User updated successfully') : `User ${newUsername} successfully registered with role ${newRole}!`);
         setShowAddModal(false);
+        setEditingUser(null);
         setNewUsername('');
         setNewEmail('');
         setNewPhone('');
         fetchUsers();
       } else {
-        setFeedback(`Registration error: ${res.description}`);
+        setFeedback(`${isKhmer ? 'រក្សាទុកមិនបានសម្រេច' : 'Save failed'}: ${res.description}`);
       }
     } catch (err: any) {
       setFeedback(`Registration error: ${err.message}`);
@@ -81,7 +107,12 @@ export const UsersView: React.FC = () => {
       u.username.toLowerCase().includes(searchQuery.toLowerCase()) ||
       u.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
       u.role.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  ).sort((a, b) => {
+    const left = sortBy === 'role' ? a.role : sortBy === 'createdAt' ? a.createdAt : a.username;
+    const right = sortBy === 'role' ? b.role : sortBy === 'createdAt' ? b.createdAt : b.username;
+    const result = left.localeCompare(right);
+    return sortDirection === 'asc' ? result : -result;
+  });
 
   return (
     <div id="users-view" className="space-y-6">
@@ -129,6 +160,15 @@ export const UsersView: React.FC = () => {
             onChange={(e) => setSearchQuery(e.target.value)}
             className="w-full pl-9 pr-3 py-1.5 border border-slate-200 rounded-lg text-slate-800 placeholder-slate-400 focus:outline-hidden focus:border-indigo-500"
           />
+        </div>
+        <div className="flex items-center gap-1.5 text-[11px] text-slate-500">
+          <ArrowUpDown className="w-3.5 h-3.5" />
+          <select value={sortBy} onChange={(e) => setSortBy(e.target.value as typeof sortBy)} className="border border-slate-200 rounded-lg px-2 py-1.5 bg-white">
+            <option value="username">{isKhmer ? 'ឈ្មោះ' : 'Name'}</option>
+            <option value="role">{isKhmer ? 'តួនាទី' : 'Role'}</option>
+            <option value="createdAt">{isKhmer ? 'កាលបរិច្ឆេទ' : 'Created'}</option>
+          </select>
+          <button onClick={() => setSortDirection((value) => value === 'asc' ? 'desc' : 'asc')} className="px-2 py-1.5 rounded-lg border border-slate-200 hover:bg-slate-50">{sortDirection === 'asc' ? '↑' : '↓'}</button>
         </div>
       </div>
 
@@ -193,18 +233,11 @@ export const UsersView: React.FC = () => {
                     </span>
                   </td>
                   <td className="px-4 py-3 text-right">
-                    <button
-                      onClick={() => handleSwitchUser(user)}
-                      disabled={isCurrent}
-                      className={`px-3 py-1 rounded text-[11px] font-medium transition flex items-center space-x-1 ml-auto ${
-                        isCurrent
-                          ? 'bg-emerald-50 text-emerald-700 border border-emerald-200 cursor-default'
-                          : 'bg-slate-100 hover:bg-slate-200 text-slate-700'
-                      }`}
-                    >
-                      <KeyRound className="w-3 h-3" />
-                      <span>{isCurrent ? (isKhmer ? 'កំពុងប្រើ' : 'Logged in') : (isKhmer ? 'ចូលជាអ្នកប្រើប្រាស់' : 'Login as user')}</span>
-                    </button>
+                    <div className="flex items-center justify-end gap-1.5">
+                      <button onClick={() => openEditUser(user)} className="p-1.5 rounded-lg text-slate-500 hover:bg-indigo-50 hover:text-indigo-600" title={isKhmer ? 'កែប្រែ' : 'Edit'}><Pencil className="w-3.5 h-3.5" /></button>
+                      <button onClick={() => handleDeleteUser(user)} className="p-1.5 rounded-lg text-slate-500 hover:bg-rose-50 hover:text-rose-600" title={isKhmer ? 'លុប' : 'Delete'}><Trash2 className="w-3.5 h-3.5" /></button>
+                      <button onClick={() => handleSwitchUser(user)} disabled={isCurrent} className={`px-3 py-1 rounded text-[11px] font-medium transition flex items-center space-x-1 ${isCurrent ? 'bg-emerald-50 text-emerald-700 border border-emerald-200 cursor-default' : 'bg-slate-100 hover:bg-slate-200 text-slate-700'}`}><KeyRound className="w-3 h-3" /><span>{isCurrent ? (isKhmer ? 'កំពុងប្រើ' : 'Logged in') : (isKhmer ? 'ចូលជា user' : 'Login')}</span></button>
+                    </div>
                   </td>
                 </tr>
               );
@@ -224,7 +257,7 @@ export const UsersView: React.FC = () => {
             <div className="flex items-center justify-between border-b border-slate-100 pb-3">
               <div className="flex items-center space-x-2">
                 <UserPlus className="w-5 h-5 text-indigo-600" />
-                <h3 className="font-bold text-base text-slate-900">{isKhmer ? 'បង្កើតអ្នកប្រើប្រាស់ថ្មី' : 'Register new user'}</h3>
+                <h3 className="font-bold text-base text-slate-900">{editingUser ? (isKhmer ? 'កែប្រែអ្នកប្រើប្រាស់' : 'Edit user') : (isKhmer ? 'បង្កើតអ្នកប្រើប្រាស់ថ្មី' : 'Register new user')}</h3>
               </div>
               <button
                 onClick={() => setShowAddModal(false)}

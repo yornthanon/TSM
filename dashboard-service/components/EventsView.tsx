@@ -14,6 +14,9 @@ import {
   Users,
   Layers,
   ArrowRight,
+  Pencil,
+  Trash2,
+  ArrowUpDown,
 } from 'lucide-react';
 import { useLanguage } from '../i18n';
 
@@ -35,6 +38,9 @@ export const EventsView: React.FC<EventsViewProps> = ({
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [creating, setCreating] = useState(false);
   const [feedback, setFeedback] = useState<string | null>(null);
+  const [editingEvent, setEditingEvent] = useState<EventItem | null>(null);
+  const [sortBy, setSortBy] = useState<'date' | 'title' | 'price'>('date');
+  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
 
   // Form State
   const [formTitle, setFormTitle] = useState('');
@@ -61,6 +67,25 @@ export const EventsView: React.FC<EventsViewProps> = ({
     fetchEvents();
   }, []);
 
+  const openEditEvent = (event: EventItem) => {
+    setEditingEvent(event);
+    setFormTitle(event.title);
+    setFormDesc(event.description || '');
+    setFormLocation(event.location || '');
+    setFormDate(event.eventDate.slice(0, 16));
+    setFormType(event.eventType);
+    setFormTickets(String(event.totalTickets));
+    setFormPrice(String(event.basePrice));
+    setShowCreateModal(true);
+  };
+
+  const handleDeleteEvent = async (event: EventItem) => {
+    if (!window.confirm(isKhmer ? `លុបកម្មវិធី «${event.title}» មែនទេ?` : `Delete “${event.title}”?`)) return;
+    const res = await api.request('DELETE', `/api/v1/events/${event.id}`);
+    if (!res.error) { setFeedback(isKhmer ? 'លុបកម្មវិធីបានជោគជ័យ' : 'Event deleted successfully'); fetchEvents(); }
+    else setFeedback(`${isKhmer ? 'លុបមិនបានសម្រេច' : 'Delete failed'}: ${res.description}`);
+  };
+
   const handleCreateEvent = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!formTitle.trim()) return;
@@ -68,24 +93,28 @@ export const EventsView: React.FC<EventsViewProps> = ({
     setCreating(true);
     setFeedback(null);
     try {
-      const res = await api.request<EventItem>('POST', '/api/v1/events', {
+      const payload = {
         title: formTitle,
         description: formDesc,
         location: formLocation || 'Phnom Penh, Cambodia',
         eventDate: new Date(formDate).toISOString(),
         eventType: formType,
         totalTickets: Number(formTickets),
+        capacity: Number(formTickets),
         basePrice: Number(formPrice),
-      });
+        status: editingEvent?.eventStatus || 'UPCOMING',
+      };
+      const res = await api.request<EventItem>(editingEvent ? 'PUT' : 'POST', editingEvent ? `/api/v1/events/${editingEvent.id}` : '/api/v1/events', payload);
 
       if (!res.error) {
-        setFeedback(`Event "${formTitle}" has been published to event-service!`);
+        setFeedback(editingEvent ? (isKhmer ? 'បានកែប្រែកម្មវិធីជោគជ័យ' : 'Event updated successfully') : `Event "${formTitle}" has been published to event-service!`);
         setShowCreateModal(false);
+        setEditingEvent(null);
         setFormTitle('');
         setFormDesc('');
         fetchEvents();
       } else {
-        setFeedback(`Error: ${res.description}`);
+        setFeedback(`${isKhmer ? 'មានបញ្ហា' : 'Error'}: ${res.description}`);
       }
     } catch (err: any) {
       setFeedback(`Creation failed: ${err.message}`);
@@ -132,6 +161,11 @@ export const EventsView: React.FC<EventsViewProps> = ({
       ev.location.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesType = selectedType === 'ALL' || ev.eventType === selectedType;
     return matchesSearch && matchesType;
+  }).sort((a, b) => {
+    const left = sortBy === 'title' ? a.title : sortBy === 'price' ? a.basePrice : new Date(a.eventDate).getTime();
+    const right = sortBy === 'title' ? b.title : sortBy === 'price' ? b.basePrice : new Date(b.eventDate).getTime();
+    const result = typeof left === 'string' ? left.localeCompare(right as string) : (left as number) - (right as number);
+    return sortDirection === 'asc' ? result : -result;
   });
 
   return (
@@ -193,7 +227,7 @@ export const EventsView: React.FC<EventsViewProps> = ({
 
       {/* Modern Filter & Search Toolbar */}
       <div className="bg-white border border-slate-200 rounded-xl p-3 shadow-xs flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3 text-xs">
-        <div className="relative flex-1">
+          <div className="relative flex-1">
           <Search className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
           <input
             id="event-search-input"
@@ -203,6 +237,16 @@ export const EventsView: React.FC<EventsViewProps> = ({
             onChange={(e) => setSearchQuery(e.target.value)}
             className="w-full pl-9 pr-3 py-1.5 border border-slate-200 rounded-lg text-slate-800 placeholder-slate-400 focus:outline-hidden focus:border-indigo-500"
           />
+        </div>
+
+        <div className="flex items-center gap-1.5 text-[11px] text-slate-500">
+          <ArrowUpDown className="w-3.5 h-3.5" />
+          <select value={sortBy} onChange={(e) => setSortBy(e.target.value as typeof sortBy)} className="border border-slate-200 rounded-lg px-2 py-1.5 bg-white">
+            <option value="date">{isKhmer ? 'កាលបរិច្ឆេទ' : 'Date'}</option>
+            <option value="title">{isKhmer ? 'ឈ្មោះ' : 'Title'}</option>
+            <option value="price">{isKhmer ? 'តម្លៃ' : 'Price'}</option>
+          </select>
+          <button onClick={() => setSortDirection((value) => value === 'asc' ? 'desc' : 'asc')} className="px-2 py-1.5 rounded-lg border border-slate-200 hover:bg-slate-50" title="Toggle sort direction">{sortDirection === 'asc' ? '↑' : '↓'}</button>
         </div>
 
         <div className="flex items-center space-x-1.5 overflow-x-auto pb-1 md:pb-0">
@@ -368,12 +412,11 @@ export const EventsView: React.FC<EventsViewProps> = ({
                       </span>
                     </td>
                     <td className="px-4 py-3 text-right">
-                      <button
-                        onClick={() => onSelectEventForBooking && onSelectEventForBooking(ev)}
-                        className="px-2.5 py-1 bg-slate-900 hover:bg-slate-800 text-white rounded text-[11px] font-medium"
-                      >
-                        Order
-                      </button>
+                      <div className="flex items-center justify-end gap-1.5">
+                        <button onClick={() => openEditEvent(ev)} className="p-1.5 rounded-lg text-slate-500 hover:bg-indigo-50 hover:text-indigo-600" title={isKhmer ? 'កែប្រែ' : 'Edit'}><Pencil className="w-3.5 h-3.5" /></button>
+                        <button onClick={() => handleDeleteEvent(ev)} className="p-1.5 rounded-lg text-slate-500 hover:bg-rose-50 hover:text-rose-600" title={isKhmer ? 'លុប' : 'Delete'}><Trash2 className="w-3.5 h-3.5" /></button>
+                        <button onClick={() => onSelectEventForBooking && onSelectEventForBooking(ev)} className="px-2.5 py-1 bg-slate-900 hover:bg-slate-800 text-white rounded text-[11px] font-medium">{isKhmer ? 'កុម្ម៉ង់' : 'Order'}</button>
+                      </div>
                     </td>
                   </tr>
                 ))}
@@ -390,7 +433,7 @@ export const EventsView: React.FC<EventsViewProps> = ({
             <div className="flex items-center justify-between border-b border-slate-100 pb-3">
               <div className="flex items-center space-x-2">
                 <Calendar className="w-5 h-5 text-indigo-600" />
-                <h3 className="font-bold text-base text-slate-900">Publish New Event</h3>
+                <h3 className="font-bold text-base text-slate-900">{editingEvent ? (isKhmer ? 'កែប្រែកម្មវិធី' : 'Edit event') : (isKhmer ? 'បង្កើតកម្មវិធីថ្មី' : 'Publish new event')}</h3>
               </div>
               <button
                 onClick={() => setShowCreateModal(false)}
@@ -499,7 +542,7 @@ export const EventsView: React.FC<EventsViewProps> = ({
                   disabled={creating}
                   className="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg font-semibold shadow-xs transition"
                 >
-                  {creating ? 'Publishing...' : 'Publish Event (event-service)'}
+                  {creating ? (isKhmer ? 'កំពុងរក្សាទុក...' : 'Saving...') : editingEvent ? (isKhmer ? 'រក្សាទុកការកែប្រែ' : 'Save changes') : (isKhmer ? 'បង្កើតកម្មវិធី' : 'Publish event')}
                 </button>
               </div>
             </form>
