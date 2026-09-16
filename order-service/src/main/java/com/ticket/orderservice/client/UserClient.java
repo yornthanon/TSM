@@ -1,0 +1,53 @@
+package com.ticket.orderservice.client;
+
+import com.ticket.common.dto.TokenVerificationResponse;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
+import org.springframework.stereotype.Service;
+import org.springframework.web.reactive.function.client.WebClient;
+import reactor.core.publisher.Mono;
+
+import java.util.Map;
+
+@Service
+@Slf4j
+public class UserClient {
+
+    private final WebClient webClient;
+
+    public UserClient(WebClient.Builder webClient) {
+        this.webClient = webClient.build();
+    }
+
+    @Value("${user.service.url:http://localhost:8081}")
+    private String userServiceUrl;
+
+    public Mono<TokenVerificationResponse> verifyToken(String token) {
+        return webClient.post()
+                .uri(userServiceUrl + "/api/public/users/verify-token")
+                .header(HttpHeaders.AUTHORIZATION, "Bearer " + token)
+                .contentType(MediaType.APPLICATION_JSON)
+                .retrieve()
+                .bodyToMono(TokenVerificationResponse.class)
+                .map(response -> {
+                    log.debug("Token verification response: {}", response);
+                    return response;
+                })
+                .onErrorResume(throwable -> {
+                    log.error("Error calling user service for token verification: {}", throwable.getMessage());
+                    return Mono.just(new TokenVerificationResponse());
+                });
+    }
+
+    public Mono<Map> getUserByUsername(String username) {
+        return webClient.get()
+                .uri(userServiceUrl + "/api/v1/users/username/{username}", username)
+                .header(HttpHeaders.ACCEPT, MediaType.APPLICATION_JSON_VALUE)
+                .retrieve()
+                .bodyToMono(Map.class)
+                .doOnError(e -> log.error("Error calling user service for username {}: {}", username, e.getMessage()))
+                .onErrorResume(e -> Mono.empty());
+    }
+}

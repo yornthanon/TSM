@@ -1,0 +1,232 @@
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:14
+    container_name: postgres
+    env_file:
+      - ../.env
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-ticket}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-ticket123}
+    ports:
+      - "5432:5432"
+    networks:
+      - ticket-networks
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./init-databases.sql:/docker-entrypoint-initdb.d/init-databases.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ticket"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  # Redis (for ticket locking and rate limiting)
+  redis:
+    image: redis:7-alpine
+    container_name: redis
+    ports:
+      - "6379:6379"
+    networks: [ticket-networks]
+    volumes: [redisdata:/data]
+
+  # Zookeeper (for Kafka)
+  zookeeper:
+    image: confluentinc/cp-zookeeper:7.5.0
+    container_name: zookeeper
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+    ports: ["2181:2181"]
+    networks: [ticket-networks]
+
+  # Kafka
+  kafka:
+    image: confluentinc/cp-kafka:7.5.0
+    container_name: kafka
+    depends_on:
+      - zookeeper
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:9092
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+    ports:
+      - "9092:9092"
+    networks: [ticket-networks]
+    volumes: [kafka_data:/var/lib/kafka/data]
+
+  # Zipkin (distributed tracing)
+  zipkin:
+    image: openzipkin/zipkin:latest
+    container_name: zipkin
+    environment:
+      STORAGE_TYPE: mem
+    ports: ["9411:9411"]
+    networks: [ticket-networks]
+
+  # API Gateway
+  api-gateway:
+    build:
+      context: ../../
+      dockerfile: api-gateway/Dockerfile
+    container_name: api-gateway
+    ports:
+      - "8080:8080"
+    env_file:
+      - ../.env
+    environment:
+      SPRING_DATASOURCE_URL: r2dbc:postgresql://postgres:5432/ticket_gateway_db
+      SPRING_DATASOURCE_USERNAME: ticket
+      SPRING_DATASOURCE_PASSWORD: ticket123
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      USER_SERVICE_URL: http://user-service:8081
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    networks: [ticket-networks]
+
+  # User Service
+  user-service:
+    build:
+      context: ../../
+      dockerfile: user-service/Dockerfile
+    container_name: user-service
+    ports:
+      - "8081:8081"
+    env_file:
+      - ../.env
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/ticket_user_db
+      SPRING_DATASOURCE_USERNAME: ticket
+      SPRING_DATASOURCE_PASSWORD: ticket123
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks: [ticket-networks]
+
+  # Event Service
+  event-service:
+    build:
+      context: ../../
+      dockerfile: event-service/Dockerfile
+    container_name: event-service
+    ports:
+      - "8082:8082"
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/ticket_event_db
+      SPRING_DATASOURCE_USERNAME: ticket
+      SPRING_DATASOURCE_PASSWORD: ticket123
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks: [ticket-networks]
+
+  # Ticket Service
+  ticket-service:
+    build:
+      context: ../../
+      dockerfile: ticket-service/Dockerfile
+    container_name: ticket-service
+    ports:
+      - "8083:8083"
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/ticket_db
+      SPRING_DATASOURCE_USERNAME: ticket
+      SPRING_DATASOURCE_PASSWORD: ticket123
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      EVENT_SERVICE_URL: http://event-service:8082/api/v1/events
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    networks: [ticket-networks]
+
+  # Order Service
+  order-service:
+    build:
+      context: ../../
+      dockerfile: order-service/Dockerfile
+    container_name: order-service
+    ports:
+      - "8084:8084"
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/ticket_order_db
+      SPRING_DATASOURCE_USERNAME: ticket
+      SPRING_DATASOURCE_PASSWORD: ticket123
+      EVENT_SERVICE_URL: http://event-service:8082/api/v1/events
+      USER_SERVICE_URL: http://user-service:8081
+      PAYMENT_SERVICE_URL: http://payment-service:8085/api/v1/payments
+      KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      ORDER_CONFIRMED_TOPIC: order-confirmed-topic
+    depends_on:
+      postgres:
+        condition: service_healthy
+      kafka:
+        condition: service_started
+    networks: [ticket-networks]
+
+  # Payment Service
+  payment-service:
+    build:
+      context: ../../
+      dockerfile: payment-service/Dockerfile
+    container_name: payment-service
+    ports:
+      - "8085:8085"
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/ticket_payment_db
+      SPRING_DATASOURCE_USERNAME: ticket
+      SPRING_DATASOURCE_PASSWORD: ticket123
+      USER_SERVICE_URL: http://user-service:8081/api/v1/users
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks: [ticket-networks]
+
+  # Notification Service
+  notification-service:
+    build:
+      context: ../../
+      dockerfile: notification-service/Dockerfile
+    container_name: notification-service
+    ports:
+      - "8086:8086"
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/ticket_notification_db
+      SPRING_DATASOURCE_USERNAME: ticket
+      SPRING_DATASOURCE_PASSWORD: ticket123
+      KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      KAFKA_CONSUMER_GROUP_ID: notification-service-group
+      ORDER_CONFIRMED_TOPIC: order-confirmed-topic
+      MAIL_HOST: ${MAIL_HOST:-smtp.gmail.com}
+      MAIL_PORT: ${MAIL_PORT:-587}
+      MAIL_USERNAME: ${MAIL_USERNAME:-}
+      MAIL_PASSWORD: ${MAIL_PASSWORD:-}
+      MAIL_FROM: ${MAIL_FROM:-no-reply@ticketmanagement.com}
+      TWILIO_ACCOUNT_SID: ${TWILIO_ACCOUNT_SID:-}
+      TWILIO_AUTH_TOKEN: ${TWILIO_AUTH_TOKEN:-}
+      TWILIO_PHONE_NUMBER: ${TWILIO_PHONE_NUMBER:-}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      kafka:
+        condition: service_started
+    networks: [ticket-networks]
+
+
+networks:
+  ticket-networks:
+    driver: bridge
+
+volumes:
+  postgres_data:
+  redisdata:
+  kafka_data:

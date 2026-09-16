@@ -1,0 +1,16 @@
+package com.ticket.eventservice.service;
+
+import com.ticket.eventservice.dto.EventRequest;
+import com.ticket.common.exception.ResponseErrorTemplate;
+
+public interface EventService {
+
+    ResponseErrorTemplate create(EventRequest request);
+    ResponseErrorTemplate update(Long id, EventRequest request);
+    ResponseErrorTemplate getById(Long id);
+    ResponseErrorTemplate findAll();
+    ResponseErrorTemplate getStats();
+    void delete(Long id);
+
+    ResponseErrorTemplate updateStatus(Long id, String status);
+}

@@ -1,0 +1,6 @@
+{
+  "name": "TicketManagement Platform",
+  "description": "Event ticketing platform with user management, event creation, ticket locking, order processing, and API gateway monitoring",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
