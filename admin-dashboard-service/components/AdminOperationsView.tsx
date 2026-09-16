@@ -73,9 +73,9 @@ const toneClasses: Record<string, string> = {
 };
 
 const StatCard: React.FC<{ label: string; value: string; detail: string; icon: React.ElementType; tone?: string }> = ({ label, value, detail, icon: Icon, tone = 'indigo' }) => (
-  <div className="bg-white border border-slate-200 rounded-2xl p-4 shadow-xs">
+  <div className="bg-white border border-slate-200 rounded-xl p-3 shadow-xs">
     <div className="flex items-start justify-between gap-3">
-      <div><p className="text-xs font-semibold text-slate-500">{label}</p><p className="mt-2 text-2xl font-extrabold text-slate-900">{value}</p><p className="mt-1 text-[11px] text-slate-400">{detail}</p></div>
+      <div><p className="text-[11px] font-semibold text-slate-500">{label}</p><p className="mt-1.5 text-xl font-extrabold text-slate-900">{value}</p><p className="mt-1 text-[10px] text-slate-400">{detail}</p></div>
       <div className={`w-9 h-9 rounded-xl ${toneClasses[tone] || toneClasses.indigo} flex items-center justify-center`}><Icon className="w-4 h-4" /></div>
     </div>
   </div>
@@ -119,11 +119,11 @@ export const AdminOperationsView: React.FC<AdminOperationsViewProps> = ({ featur
   };
 
   return (
-    <div className="space-y-6 pb-12">
+    <div className="admin-operations space-y-4 pb-8">
       <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-4">
         <div>
           <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-indigo-600"><meta.icon className="w-4 h-4" /> Admin operations</div>
-          <h2 className="mt-2 text-2xl font-extrabold tracking-tight text-slate-900">{isKhmer ? meta.km : meta.en}</h2>
+          <h2 className="mt-1.5 text-xl font-extrabold tracking-tight text-slate-900">{isKhmer ? meta.km : meta.en}</h2>
           <p className="mt-1 text-sm text-slate-500">{text('គ្រប់គ្រងប្រតិបត្តិការអាជីវកម្មពីកន្លែងតែមួយ', 'Manage business operations from one clear workspace')}</p>
         </div>
         <div className="flex items-center gap-2"><span className="px-3 py-2 rounded-lg bg-emerald-50 border border-emerald-200 text-xs font-semibold text-emerald-700 flex items-center gap-2"><span className="w-2 h-2 rounded-full bg-emerald-500" />{text('ទិន្នន័យបានធ្វើបច្ចុប្បន្នភាព', 'Data up to date')}</span><button onClick={() => notify('បានធ្វើបច្ចុប្បន្នភាពទិន្នន័យ', 'Data refreshed successfully')} className="p-2 rounded-lg border border-slate-200 bg-white text-slate-500 hover:bg-slate-50" title={text('ធ្វើបច្ចុប្បន្នភាព', 'Refresh')}><RefreshCw className="w-4 h-4" /></button></div>

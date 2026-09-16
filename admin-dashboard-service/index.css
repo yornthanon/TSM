@@ -29,6 +29,20 @@
   .modal-scroll { max-height: min(720px, calc(100vh - 2rem)); overflow-y: auto; }
 }
 
+/* Keep the admin workspace information-dense without making it feel cramped. */
+.admin-shell aside > div:first-child { padding: 1.25rem; }
+.admin-shell aside nav { padding: .75rem; }
+.admin-shell aside nav button { padding-top: .6rem; padding-bottom: .6rem; }
+.admin-shell aside .absolute.bottom-0 { padding: .75rem; }
+.admin-operations .rounded-2xl { border-radius: .75rem; }
+.admin-operations .p-5 { padding: 1rem; }
+.admin-operations .gap-5 { gap: 1rem; }
+.admin-operations h3 { font-size: .875rem; line-height: 1.25rem; }
+
+@media (max-width: 1023px) {
+  .admin-shell main { padding-left: 0; }
+}
+
 ::-webkit-scrollbar { width: 8px; height: 8px; }
 ::-webkit-scrollbar-track { background: #f1f5f9; }
 ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 999px; }
