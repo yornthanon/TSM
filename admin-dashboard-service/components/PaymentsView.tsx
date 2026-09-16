@@ -9,6 +9,7 @@ import {
   Search,
   ShieldCheck,
   RefreshCw,
+  ArrowUpDown,
 } from 'lucide-react';
 import {
   ResponsiveContainer,
@@ -22,6 +23,8 @@ export const PaymentsView: React.FC = () => {
   const [payments, setPayments] = useState<Payment[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
+  const [sortBy, setSortBy] = useState<'date' | 'amount' | 'status'>('date');
+  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
 
   const fetchPayments = async () => {
     setLoading(true);
@@ -64,7 +67,12 @@ export const PaymentsView: React.FC = () => {
       p.orderNumber.toLowerCase().includes(searchQuery.toLowerCase()) ||
       p.transactionId.toLowerCase().includes(searchQuery.toLowerCase()) ||
       p.paymentMethod.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  ).sort((a, b) => {
+    const left = sortBy === 'amount' ? a.amount : sortBy === 'status' ? a.paymentStatus : new Date(a.createdAt).getTime();
+    const right = sortBy === 'amount' ? b.amount : sortBy === 'status' ? b.paymentStatus : new Date(b.createdAt).getTime();
+    const result = typeof left === 'string' ? left.localeCompare(right as string) : (left as number) - (right as number);
+    return sortDirection === 'asc' ? result : -result;
+  });
 
   return (
     <div id="payments-view" className="space-y-6">
@@ -148,6 +156,13 @@ export const PaymentsView: React.FC = () => {
                 className="w-full pl-8 pr-3 py-1 text-xs border border-slate-200 rounded-lg focus:outline-hidden focus:border-indigo-500"
               />
             </div>
+            <ArrowUpDown className="w-3.5 h-3.5 text-slate-400" />
+            <select value={sortBy} onChange={(e) => setSortBy(e.target.value as typeof sortBy)} className="border border-slate-200 rounded-lg px-2 py-1 text-xs bg-white">
+              <option value="date">Date</option>
+              <option value="amount">Amount</option>
+              <option value="status">Status</option>
+            </select>
+            <button onClick={() => setSortDirection((value) => value === 'asc' ? 'desc' : 'asc')} className="px-2 py-1 rounded-lg border border-slate-200 hover:bg-slate-50">{sortDirection === 'asc' ? '↑' : '↓'}</button>
           </div>
 
           <div className="overflow-x-auto">
