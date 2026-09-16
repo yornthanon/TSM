@@ -5,7 +5,6 @@ import {
   Order,
   Payment,
   NotificationLog,
-  ServiceHealth,
   Ticket,
 } from '../types/index';
 import {
@@ -56,11 +55,9 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
   const [payments, setPayments] = useState<Payment[]>([]);
   const [tickets, setTickets] = useState<Ticket[]>([]);
   const [notifications, setNotifications] = useState<NotificationLog[]>([]);
-  const [servicesHealth, setServicesHealth] = useState<ServiceHealth[]>([]);
   const [loading, setLoading] = useState(true);
 
   // Filter & View States
-  const [viewMode, setViewMode] = useState<'sales' | 'system'>('sales');
   const [orderSearch, setOrderSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<'ALL' | 'COMPLETED' | 'PROCESSING' | 'CANCELLED'>('ALL');
   const [chartMetric, setChartMetric] = useState<'revenue' | 'orders' | 'tickets'>('revenue');
@@ -81,7 +78,6 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
       setPayments(payRes.data || []);
       setNotifications(notifRes.data || []);
       setTickets(tkRes.data || []);
-      setServicesHealth(api.getServicesHealth());
     } finally {
       setLoading(false);
     }
@@ -230,34 +226,11 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
           </p>
         </div>
 
-        {/* View mode switcher & Actions */}
+        {/* Actions */}
         <div className="flex flex-wrap items-center gap-2.5">
-          {/* Mode switch button */}
-          <div className="bg-slate-100 p-1 rounded-lg flex items-center text-xs font-semibold">
-            <button
-              id="view-sales-tab-btn"
-              onClick={() => setViewMode('sales')}
-              className={`px-3 py-1.5 rounded-md transition flex items-center space-x-1.5 ${
-                viewMode === 'sales'
-                  ? 'bg-white text-indigo-600 shadow-xs'
-                  : 'text-slate-600 hover:text-slate-900'
-              }`}
-            >
-              <BarChart3 className="w-3.5 h-3.5" />
-              <span>ការលក់ & ចំណូល (Sales)</span>
-            </button>
-            <button
-              id="view-system-tab-btn"
-              onClick={() => setViewMode('system')}
-              className={`px-3 py-1.5 rounded-md transition flex items-center space-x-1.5 ${
-                viewMode === 'system'
-                  ? 'bg-white text-slate-900 shadow-xs'
-                  : 'text-slate-600 hover:text-slate-900'
-              }`}
-            >
-              <Layers className="w-3.5 h-3.5" />
-              <span>ប្រព័ន្ធ Microservices</span>
-            </button>
+          <div className="px-3 py-1.5 bg-indigo-50 border border-indigo-200 text-indigo-700 rounded-lg text-xs font-semibold flex items-center space-x-1.5">
+            <Sparkles className="w-3.5 h-3.5 text-indigo-600" />
+            <span>Admin Executive View</span>
           </div>
 
           <button
@@ -281,9 +254,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
         </div>
       </div>
 
-      {viewMode === 'sales' ? (
-        <>
-          {/* 4 Core Sales KPI Cards */}
+      {/* 4 Core Sales KPI Cards */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             {/* Total Gross Revenue */}
             <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-xs">
@@ -766,55 +737,6 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
               </table>
             </div>
           </div>
-        </>
-      ) : (
-        /* Microservices & Infrastructure Mode (When admin wants technical stats) */
-        <div className="space-y-6">
-          <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-xs">
-            <div className="flex items-center justify-between mb-4">
-              <div>
-                <h3 className="text-base font-bold text-slate-900 flex items-center space-x-2">
-                  <Layers className="w-4 h-4 text-indigo-600" />
-                  <span>ស្ថានភាពសេវា Microservices (System Architecture Topology)</span>
-                </h3>
-                <p className="text-xs text-slate-400">
-                  ស្ថាបត្យកម្ម Database-per-service ជាមួយនឹង Spring Cloud Gateway, Redis Lock, និង Kafka
-                </p>
-              </div>
-              <span className="text-xs bg-emerald-50 text-emerald-700 border border-emerald-200 px-3 py-1 rounded-full font-semibold flex items-center space-x-1">
-                <CheckCircle className="w-3.5 h-3.5" />
-                <span>គ្រប់ Services ដំណើរការធម្មតា</span>
-              </span>
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
-              {servicesHealth.map((svc) => (
-                <div
-                  key={svc.name}
-                  className="p-3.5 rounded-lg border border-slate-200 bg-slate-50/50 hover:border-indigo-300 hover:bg-indigo-50/20 transition text-xs"
-                >
-                  <div className="flex items-center justify-between">
-                    <span className="font-bold text-slate-900">{svc.name}</span>
-                    <span className="font-mono text-[10px] bg-slate-200 text-slate-700 px-1.5 py-0.5 rounded">
-                      :{svc.port}
-                    </span>
-                  </div>
-                  <div className="text-[11px] text-slate-500 mt-1 line-clamp-1">
-                    {svc.database}
-                  </div>
-                  <div className="mt-2.5 pt-2 border-t border-slate-200/80 flex items-center justify-between text-[10px]">
-                    <span className="text-slate-400">Latency: {svc.latencyMs}ms</span>
-                    <span className="font-semibold text-emerald-600 flex items-center space-x-1">
-                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
-                      <span>{svc.status}</span>
-                    </span>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* Admin Invoice / E-Ticket Modal */}
       {selectedInvoiceOrder && (

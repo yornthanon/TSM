@@ -11,6 +11,7 @@ import {
   PaymentMethod,
   EventType,
   ServiceHealth,
+  ServiceErrorLog,
 } from '../types/index';
 
 // Initial Mock Data reflecting standard TicketManagement seed
@@ -412,6 +413,74 @@ const INITIAL_ROUTES: ApiRoute[] = [
   },
 ];
 
+const INITIAL_SERVICE_ERRORS: ServiceErrorLog[] = [
+  {
+    id: 'ERR-101',
+    serviceName: 'Ticket Service',
+    port: 8083,
+    timestamp: '2026-09-15T22:54:12Z',
+    statusCode: 504,
+    errorCode: 'REDIS_LOCK_TIMEOUT',
+    path: '/api/v1/tickets/14/lock',
+    message: 'Redis distributed lock acquisition timed out after 5000ms',
+    rootCause: 'Redis key "lock:ticket:14" already held by session usr_8829; lock lease not released in time.',
+    correlationId: 'c8a1e204-9821-4d11-b519-897721ab0192',
+    resolved: false,
+  },
+  {
+    id: 'ERR-102',
+    serviceName: 'Payment Service',
+    port: 8085,
+    timestamp: '2026-09-15T21:40:05Z',
+    statusCode: 502,
+    errorCode: 'PAYMENT_GATEWAY_TIMEOUT',
+    path: '/api/v1/payments',
+    message: 'Upstream payment processor (ABA PayWay / Card Gateway) connection timeout',
+    rootCause: 'HTTP 504 Gateway Timeout from acquirer endpoint https://api.payway.com.kh/v2/charge',
+    correlationId: 'f93d44bc-3301-4991-88ae-410091823120',
+    resolved: false,
+  },
+  {
+    id: 'ERR-103',
+    serviceName: 'API Gateway',
+    port: 8080,
+    timestamp: '2026-09-15T20:15:30Z',
+    statusCode: 429,
+    errorCode: 'RATE_LIMIT_EXCEEDED',
+    path: '/api/v1/tickets',
+    message: 'Too Many Requests: Rate limit exceeded (Redis Token Bucket exhausted)',
+    rootCause: 'Client IP 192.168.1.105 exceeded 40 requests/sec limit on route "ticket-service-v1".',
+    correlationId: 'a12903fe-2201-4478-9a31-778811902231',
+    resolved: true,
+  },
+  {
+    id: 'ERR-104',
+    serviceName: 'Order Service',
+    port: 8084,
+    timestamp: '2026-09-15T19:02:18Z',
+    statusCode: 409,
+    errorCode: 'SEAT_CONCURRENCY_CONFLICT',
+    path: '/api/v1/orders',
+    message: 'Optimistic lock exception: Selected seat was concurrently booked by another customer',
+    rootCause: 'Row version mismatch in ticket_order_db. Order creation aborted to prevent double booking.',
+    correlationId: 'd0012e88-1188-44aa-99bb-665544332211',
+    resolved: true,
+  },
+  {
+    id: 'ERR-105',
+    serviceName: 'Notification Service',
+    port: 8086,
+    timestamp: '2026-09-15T17:28:44Z',
+    statusCode: 503,
+    errorCode: 'SMTP_CONNECTION_REFUSED',
+    path: '/api/v1/notifications/904/retry',
+    message: 'Failed to dispatch ticket confirmation email to sopheap.client@gmail.com',
+    rootCause: 'java.net.ConnectException: Connection refused to mail.smtp.cambodia.local:587',
+    correlationId: 'ee4819aa-7766-4112-98ab-332211009988',
+    resolved: false,
+  },
+];
+
 // Local Storage helpers
 function loadStorage<T>(key: string, fallback: T): T {
   try {
@@ -439,6 +508,8 @@ export class ApiService {
   private currentUserRole: string = 'ROLE_ADMIN';
   private logs: ApiRequestLog[] = [];
   private logSubscribers: ((log: ApiRequestLog) => void)[] = [];
+  private serviceErrors: ServiceErrorLog[] = [];
+  private errorSubscribers: ((err: ServiceErrorLog) => void)[] = [];
 
   // In-memory / localStorage state
   private users: User[];
@@ -450,6 +521,7 @@ export class ApiService {
   private routes: ApiRoute[];
 
   private constructor() {
+    this.serviceErrors = loadStorage('service_errors', INITIAL_SERVICE_ERRORS);
     this.users = loadStorage('users', INITIAL_USERS);
     this.events = loadStorage('events', INITIAL_EVENTS);
     this.tickets = loadStorage('tickets', INITIAL_TICKETS);
@@ -1090,10 +1162,10 @@ export class ApiService {
     };
   }
 
-  // System Health Monitoring
+  // System Health & Service Error Monitoring
   public getServicesHealth(): ServiceHealth[] {
     const isLive = this.mode === 'live';
-    return [
+    const services = [
       {
         name: 'API Gateway',
         port: 8080,
@@ -1167,6 +1239,151 @@ export class ApiService {
         latencyMs: 6,
       },
     ];
+
+    return services.map((s) => {
+      const activeErrors = this.serviceErrors.filter(
+        (e) => e.serviceName.toLowerCase() === s.name.toLowerCase() && !e.resolved
+      );
+      const totalErrors = this.serviceErrors.filter(
+        (e) => e.serviceName.toLowerCase() === s.name.toLowerCase()
+      );
+      const lastErr = totalErrors[0]?.message || null;
+      let status: 'UP' | 'DOWN' | 'DEGRADED' = 'UP';
+      if (activeErrors.length > 1) status = 'DEGRADED';
+      if (activeErrors.some((e) => e.statusCode >= 500 && !e.resolved && e.errorCode.includes('TIMEOUT'))) {
+        status = 'DEGRADED';
+      }
+
+      return {
+        ...s,
+        status,
+        errorCount: totalErrors.length,
+        lastError: lastErr,
+      };
+    });
+  }
+
+  // --- SERVICE ERROR LOG MANAGEMENT ---
+  public getServiceErrors(serviceName?: string): ServiceErrorLog[] {
+    if (serviceName && serviceName !== 'ALL') {
+      return this.serviceErrors.filter(
+        (e) => e.serviceName.toLowerCase() === serviceName.toLowerCase()
+      );
+    }
+    return [...this.serviceErrors];
+  }
+
+  public addServiceError(
+    err: Omit<ServiceErrorLog, 'id' | 'timestamp'>
+  ): ServiceErrorLog {
+    const newError: ServiceErrorLog = {
+      ...err,
+      id: `ERR-${Date.now().toString().slice(-4)}`,
+      timestamp: new Date().toISOString(),
+      resolved: false,
+    };
+    this.serviceErrors = [newError, ...this.serviceErrors];
+    saveStorage('service_errors', this.serviceErrors);
+    this.errorSubscribers.forEach((cb) => cb(newError));
+    return newError;
+  }
+
+  public resolveServiceError(errorId: string): void {
+    this.serviceErrors = this.serviceErrors.map((e) =>
+      e.id === errorId ? { ...e, resolved: true } : e
+    );
+    saveStorage('service_errors', this.serviceErrors);
+  }
+
+  public clearServiceErrors(serviceName?: string): void {
+    if (serviceName && serviceName !== 'ALL') {
+      this.serviceErrors = this.serviceErrors.filter(
+        (e) => e.serviceName.toLowerCase() !== serviceName.toLowerCase()
+      );
+    } else {
+      this.serviceErrors = [];
+    }
+    saveStorage('service_errors', this.serviceErrors);
+  }
+
+  public onError(callback: (err: ServiceErrorLog) => void): () => void {
+    this.errorSubscribers.push(callback);
+    return () => {
+      this.errorSubscribers = this.errorSubscribers.filter((cb) => cb !== callback);
+    };
+  }
+
+  public simulateServiceError(serviceName: string, errorScenario?: string): ServiceErrorLog {
+    const errorMap: Record<string, Partial<ServiceErrorLog>> = {
+      'Ticket Service': {
+        port: 8083,
+        statusCode: 504,
+        errorCode: 'REDIS_LOCK_TIMEOUT',
+        path: '/api/v1/tickets/lock',
+        message: 'Redis distributed lock timeout: Concurrency lock key "lock:ticket" expired before state persist',
+        rootCause: 'Redis key mutex expired after 3000ms threshold during high concurrent booking spike.',
+      },
+      'Payment Service': {
+        port: 8085,
+        statusCode: 502,
+        errorCode: 'PAYMENT_ACQUIRER_FAILED',
+        path: '/api/v1/payments',
+        message: 'Payment Gateway 502: External bank gateway communication failure',
+        rootCause: 'Connection reset by peer at payment provider gateway endpoint.',
+      },
+      'API Gateway': {
+        port: 8080,
+        statusCode: 429,
+        errorCode: 'RATE_LIMIT_EXCEEDED',
+        path: '/api/v1/events',
+        message: 'Too Many Requests (429): Redis Token Bucket quota exhausted for client IP',
+        rootCause: 'Exceeded maximum permitted rate of 40 requests/sec defined in GatewayRouteLocator.',
+      },
+      'Order Service': {
+        port: 8084,
+        statusCode: 409,
+        errorCode: 'ORDER_CONFLICT',
+        path: '/api/v1/orders',
+        message: 'Optimistic concurrency error: Ticket inventory version mismatch',
+        rootCause: 'Row version conflict during parallel commit of order transaction.',
+      },
+      'User Service': {
+        port: 8081,
+        statusCode: 401,
+        errorCode: 'BAD_CREDENTIALS',
+        path: '/api/v1/auth/login',
+        message: 'Unauthorized: Authentication token failed cryptographic signature verification',
+        rootCause: 'io.jsonwebtoken.security.SignatureException: JWT signature does not match locally computed signature.',
+      },
+      'Notification Service': {
+        port: 8086,
+        statusCode: 503,
+        errorCode: 'KAFKA_CONSUMER_LAG',
+        path: '/api/v1/notifications',
+        message: 'Kafka consumer partition lag exceeded threshold on order-confirmed-topic',
+        rootCause: 'Consumer group "notification-workers" stalled due to downstream email provider rate limit.',
+      },
+    };
+
+    const scenario = errorMap[serviceName] || {
+      port: 8080,
+      statusCode: 500,
+      errorCode: 'INTERNAL_SERVICE_ERROR',
+      path: `/api/v1/${serviceName.toLowerCase().replace(' ', '-')}`,
+      message: `Internal server error encountered in ${serviceName}`,
+      rootCause: `Unexpected runtime exception in microservice ${serviceName}`,
+    };
+
+    return this.addServiceError({
+      serviceName,
+      port: scenario.port || 8080,
+      statusCode: scenario.statusCode || 500,
+      errorCode: scenario.errorCode || 'SERVICE_ERROR',
+      path: scenario.path || '/api',
+      message: errorScenario || scenario.message || 'Service error occurred',
+      rootCause: scenario.rootCause || 'Underlying service failure',
+      correlationId: `err-${Math.random().toString(36).substring(2, 10)}-${Date.now()}`,
+    });
   }
 
   // Reset sample data
