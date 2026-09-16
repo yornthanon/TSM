@@ -17,6 +17,7 @@ import {
   Pencil,
   Trash2,
   ArrowUpDown,
+  Upload,
 } from 'lucide-react';
 import { useLanguage } from '../i18n';
 
@@ -50,6 +51,7 @@ export const EventsView: React.FC<EventsViewProps> = ({
   const [formType, setFormType] = useState<EventType>('CONCERT');
   const [formTickets, setFormTickets] = useState('300');
   const [formPrice, setFormPrice] = useState('25.0');
+  const [formImageUrl, setFormImageUrl] = useState('');
 
   const fetchEvents = async () => {
     setLoading(true);
@@ -76,6 +78,7 @@ export const EventsView: React.FC<EventsViewProps> = ({
     setFormType(event.eventType);
     setFormTickets(String(event.totalTickets));
     setFormPrice(String(event.basePrice));
+    setFormImageUrl(event.imageUrl || '');
     setShowCreateModal(true);
   };
 
@@ -96,6 +99,7 @@ export const EventsView: React.FC<EventsViewProps> = ({
       const payload = {
         title: formTitle,
         description: formDesc,
+        imageUrl: formImageUrl || null,
         location: formLocation || 'Phnom Penh, Cambodia',
         eventDate: new Date(formDate).toISOString(),
         eventType: formType,
@@ -112,6 +116,7 @@ export const EventsView: React.FC<EventsViewProps> = ({
         setEditingEvent(null);
         setFormTitle('');
         setFormDesc('');
+        setFormImageUrl('');
         fetchEvents();
       } else {
         setFeedback(`${isKhmer ? 'មានបញ្ហា' : 'Error'}: ${res.description}`);
@@ -465,6 +470,23 @@ export const EventsView: React.FC<EventsViewProps> = ({
                   onChange={(e) => setFormDesc(e.target.value)}
                   className="w-full px-3 py-2 border border-slate-200 rounded-lg text-slate-900 focus:outline-hidden focus:border-indigo-500"
                 />
+              </div>
+
+              <div>
+                <label className="block text-slate-700 font-semibold mb-1">Cover image</label>
+                <label className="flex items-center gap-3 px-3 py-2.5 border border-dashed border-slate-300 rounded-lg bg-slate-50 hover:bg-indigo-50 hover:border-indigo-300 cursor-pointer transition">
+                  <Upload className="w-4 h-4 text-indigo-600" />
+                  <span className="text-slate-600">{formImageUrl ? 'Replace cover image' : 'Upload cover image'}</span>
+                  <input type="file" accept="image/png,image/jpeg,image/webp" className="hidden" onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (!file) return;
+                    if (file.size > 5 * 1024 * 1024) { setFeedback('Cover image must be 5MB or smaller'); return; }
+                    const reader = new FileReader();
+                    reader.onload = () => setFormImageUrl(String(reader.result || ''));
+                    reader.readAsDataURL(file);
+                  }} />
+                </label>
+                {formImageUrl && <img src={formImageUrl} alt="Event cover preview" className="mt-2 h-24 w-full object-cover rounded-lg border border-slate-200" />}
               </div>
 
               <div className="grid grid-cols-2 gap-3">

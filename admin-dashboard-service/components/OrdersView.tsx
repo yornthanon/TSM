@@ -23,6 +23,7 @@ import {
   Calendar,
   MapPin,
   ShieldCheck,
+  ArrowUpDown,
 } from 'lucide-react';
 
 interface OrdersViewProps {
@@ -42,6 +43,8 @@ export const OrdersView: React.FC<OrdersViewProps> = ({
   const [loading, setLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState<string>('ALL');
   const [searchQuery, setSearchQuery] = useState('');
+  const [sortBy, setSortBy] = useState<'date' | 'amount' | 'status'>('date');
+  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
 
   // Checkout modal
   const [showCheckoutModal, setShowCheckoutModal] = useState(false);
@@ -135,6 +138,11 @@ export const OrdersView: React.FC<OrdersViewProps> = ({
       o.eventTitle.toLowerCase().includes(searchQuery.toLowerCase()) ||
       o.username.toLowerCase().includes(searchQuery.toLowerCase());
     return matchesStatus && matchesSearch;
+  }).sort((a, b) => {
+    const left = sortBy === 'amount' ? a.amount : sortBy === 'status' ? a.orderStatus : new Date(a.orderDate).getTime();
+    const right = sortBy === 'amount' ? b.amount : sortBy === 'status' ? b.orderStatus : new Date(b.orderDate).getTime();
+    const result = typeof left === 'string' ? left.localeCompare(right as string) : (left as number) - (right as number);
+    return sortDirection === 'asc' ? result : -result;
   });
 
   return (
@@ -192,6 +200,13 @@ export const OrdersView: React.FC<OrdersViewProps> = ({
               {s}
             </button>
           ))}
+          <ArrowUpDown className="w-3.5 h-3.5 text-slate-400 ml-2" />
+          <select value={sortBy} onChange={(e) => setSortBy(e.target.value as typeof sortBy)} className="border border-slate-200 rounded-lg px-2 py-1.5 bg-white text-[11px]">
+            <option value="date">Date</option>
+            <option value="amount">Amount</option>
+            <option value="status">Status</option>
+          </select>
+          <button onClick={() => setSortDirection((value) => value === 'asc' ? 'desc' : 'asc')} className="px-2 py-1.5 rounded-lg border border-slate-200 hover:bg-slate-50">{sortDirection === 'asc' ? '↑' : '↓'}</button>
         </div>
       </div>
 

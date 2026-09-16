@@ -20,6 +20,8 @@ public class EventResponse {
 
     private String description;
 
+    private String imageUrl;
+
     private String location;
 
     private LocalDateTime eventDate;
