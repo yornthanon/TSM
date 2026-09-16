@@ -39,6 +39,28 @@
 .admin-operations .gap-5 { gap: 1rem; }
 .admin-operations h3 { font-size: .875rem; line-height: 1.25rem; }
 
+/* Shared page rhythm: compact cards, readable headings, and consistent controls. */
+.admin-shell main > section > [id$="-view"].space-y-6 > :not(:last-child),
+.admin-shell main > section > #admin-sales-dashboard.space-y-6 > :not(:last-child) { margin-top: 1rem; }
+.admin-shell main > section > [id$="-view"] h2,
+.admin-shell main > section > #admin-sales-dashboard h2 { font-size: 1.125rem; line-height: 1.5rem; }
+.admin-shell main > section > [id$="-view"] h3,
+.admin-shell main > section > #admin-sales-dashboard h3 { font-size: .875rem; line-height: 1.25rem; }
+.admin-shell main > section > [id$="-view"] [class~="p-5"],
+.admin-shell main > section > #admin-sales-dashboard [class~="p-5"] { padding: 1rem; }
+.admin-shell main > section > [id$="-view"] [class~="p-6"],
+.admin-shell main > section > #admin-sales-dashboard [class~="p-6"] { padding: 1.25rem; }
+.admin-shell main > section > [id$="-view"] [class~="rounded-xl"],
+.admin-shell main > section > #admin-sales-dashboard [class~="rounded-xl"] { border-radius: .75rem; }
+.admin-shell main > section > [id$="-view"] table th,
+.admin-shell main > section > [id$="-view"] table td,
+.admin-shell main > section > #admin-sales-dashboard table th,
+.admin-shell main > section > #admin-sales-dashboard table td { padding-top: .65rem; padding-bottom: .65rem; }
+.admin-shell main > section > [id$="-view"] button,
+.admin-shell main > section > #admin-sales-dashboard button { transition: transform .15s ease, background-color .15s ease, box-shadow .15s ease; }
+.admin-shell main > section > [id$="-view"] button:active,
+.admin-shell main > section > #admin-sales-dashboard button:active { transform: translateY(1px); }
+
 @media (max-width: 1023px) {
   .admin-shell main { padding-left: 0; }
 }
