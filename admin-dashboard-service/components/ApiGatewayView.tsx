@@ -31,7 +31,7 @@ export const ApiGatewayView: React.FC = () => {
   const fetchRoutes = async () => {
     setLoadingRoutes(true);
     try {
-      const res = await api.request<ApiRoute[]>('GET', '/routes');
+      const res = await api.request<ApiRoute[]>('GET', '/api/routes');
       if (res.data) setRoutes(res.data);
     } finally {
       setLoadingRoutes(false);
@@ -131,7 +131,7 @@ export const ApiGatewayView: React.FC = () => {
       ),
     },
     { method: 'GET', path: '/api/v1/users', body: '' },
-    { method: 'GET', path: '/routes', body: '' },
+    { method: 'GET', path: '/api/routes', body: '' },
   ];
 
   const handleSelectPreset = (preset: typeof sampleEndpoints[0]) => {

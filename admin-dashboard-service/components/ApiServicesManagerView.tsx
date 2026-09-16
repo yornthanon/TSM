@@ -64,7 +64,7 @@ export const ApiServicesManagerView: React.FC = () => {
 
   useEffect(() => {
     refreshData();
-    api.request<ApiRoute[]>('GET', '/routes').then((res) => {
+    api.request<ApiRoute[]>('GET', '/api/routes').then((res) => {
       if (res.data) setRoutes(res.data);
     });
 

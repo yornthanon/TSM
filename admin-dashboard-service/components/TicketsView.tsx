@@ -67,9 +67,10 @@ export const TicketsView: React.FC<TicketsViewProps> = ({ onProceedToOrder }) =>
     setFeedback(null);
     try {
       const res = await api.request<Ticket>('POST', `/api/v1/tickets/${ticket.id}/lock`, {
-        ticketId: ticket.id,
-        durationSeconds: lockDuration,
-        username: api.getCurrentUser().username,
+        eventId: ticket.eventId,
+        quantity: 1,
+        userId: api.getCurrentUser().username,
+        lockDuration: Math.max(1, Math.ceil(lockDuration / 60)),
       });
 
       if (!res.error) {

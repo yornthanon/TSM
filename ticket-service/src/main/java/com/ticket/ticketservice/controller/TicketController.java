@@ -58,9 +58,14 @@ public class TicketController {
     @PostMapping("/{id}/lock")
     public ResponseEntity<ResponseErrorTemplate> lockTicketById(@PathVariable Long id,
                                                                 @RequestBody(required = false) TicketLockRequest request) {
-        TicketLockRequest lockReq = request != null 
-                ? request 
-                : new TicketLockRequest(id, 120);
+        TicketLockRequest lockReq = request;
+        if (lockReq == null) {
+            lockReq = new TicketLockRequest();
+            lockReq.setEventId(id);
+            lockReq.setQuantity(1);
+            lockReq.setUserId("admin");
+            lockReq.setLockDuration(2);
+        }
         return ResponseEntity.ok(ticketService.lockTicket(lockReq));
     }
 

@@ -502,7 +502,7 @@ function saveStorage<T>(key: string, data: T) {
 export class ApiService {
   private static instance: ApiService;
   private gatewayUrl: string = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080';
-  private mode: 'live' | 'simulator' = import.meta.env.VITE_API_MODE === 'live' ? 'live' : 'simulator';
+  private mode: 'live' | 'simulator' = import.meta.env.VITE_API_MODE === 'simulator' ? 'simulator' : 'live';
   private jwtToken: string = localStorage.getItem('ticket_mgmt_access_token') || '';
   private currentUsername: string = 'admin';
   private currentUserRole: string = 'ROLE_ADMIN';
@@ -538,7 +538,7 @@ export class ApiService {
     this.notifications = loadStorage('notifications', INITIAL_NOTIFICATIONS);
     this.routes = loadStorage('routes', INITIAL_ROUTES);
     this.gatewayUrl = localStorage.getItem('ticket_mgmt_gateway_url') || import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080';
-    this.mode = (localStorage.getItem('ticket_mgmt_mode') as any) || (import.meta.env.VITE_API_MODE === 'live' ? 'live' : 'simulator');
+    this.mode = (localStorage.getItem('ticket_mgmt_mode') as any) || (import.meta.env.VITE_API_MODE === 'simulator' ? 'simulator' : 'live');
 
     // Start tick to decrement lock timers
     setInterval(() => {
@@ -1168,7 +1168,7 @@ export class ApiService {
     }
 
     // 14. GATEWAY ROUTES: GET /routes
-    if (clean === '/routes' && method === 'GET') {
+    if ((clean === '/routes' || clean === '/api/routes') && method === 'GET') {
       return {
         description: 'Dynamic routes loaded from database',
         code: '200',
