@@ -501,9 +501,9 @@ function saveStorage<T>(key: string, data: T) {
 
 export class ApiService {
   private static instance: ApiService;
-  private gatewayUrl: string = 'http://localhost:8080/api';
-  private mode: 'live' | 'simulator' = 'simulator';
-  private jwtToken: string = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhZG1pbiIsInJvbGVzIjpbIlJPTEVfQURNSU4iXX0';
+  private gatewayUrl: string = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080';
+  private mode: 'live' | 'simulator' = import.meta.env.VITE_API_MODE === 'live' ? 'live' : 'simulator';
+  private jwtToken: string = localStorage.getItem('ticket_mgmt_access_token') || '';
   private currentUsername: string = 'admin';
   private currentUserRole: string = 'ROLE_ADMIN';
   private logs: ApiRequestLog[] = [];
@@ -537,8 +537,8 @@ export class ApiService {
     }
     this.notifications = loadStorage('notifications', INITIAL_NOTIFICATIONS);
     this.routes = loadStorage('routes', INITIAL_ROUTES);
-    this.gatewayUrl = localStorage.getItem('ticket_mgmt_gateway_url') || 'http://localhost:8080/api';
-    this.mode = (localStorage.getItem('ticket_mgmt_mode') as any) || 'simulator';
+    this.gatewayUrl = localStorage.getItem('ticket_mgmt_gateway_url') || import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080';
+    this.mode = (localStorage.getItem('ticket_mgmt_mode') as any) || (import.meta.env.VITE_API_MODE === 'live' ? 'live' : 'simulator');
 
     // Start tick to decrement lock timers
     setInterval(() => {
@@ -573,6 +573,12 @@ export class ApiService {
 
   public getJwtToken(): string {
     return this.jwtToken;
+  }
+
+  public setJwtToken(token: string) {
+    this.jwtToken = token;
+    if (token) localStorage.setItem('ticket_mgmt_access_token', token);
+    else localStorage.removeItem('ticket_mgmt_access_token');
   }
 
   public getCurrentUser(): { username: string; role: string } {
@@ -681,11 +687,26 @@ export class ApiService {
           body: body ? JSON.stringify(body) : undefined,
         });
 
-        const data = await res.json();
+        const raw = await res.text();
+        let data: any = null;
+        try {
+          data = raw ? JSON.parse(raw) : null;
+        } catch {
+          data = { message: raw || res.statusText };
+        }
         const duration = Math.round(performance.now() - startTime);
         this.recordLog(method, endpoint, res.status, duration, body, data);
 
-        return data;
+        const normalized: ApiResponse<T> = {
+          description: data?.description || data?.message || (res.ok ? 'Request completed' : res.statusText),
+          code: String(data?.code || res.status),
+          data: data?.data ?? (Array.isArray(data) ? data : null),
+          error: Boolean(data?.error ?? data?.is_error ?? !res.ok),
+        };
+
+        const accessToken = data?.data?.accessToken || data?.data?.token || data?.accessToken;
+        if (accessToken) this.setJwtToken(accessToken);
+        return normalized;
       } catch (err: any) {
         const duration = Math.round(performance.now() - startTime);
         const errorResponse: ApiResponse<T> = {
@@ -695,8 +716,10 @@ export class ApiService {
           error: true,
         };
         this.recordLog(method, endpoint, 503, duration, body, errorResponse);
-        // Fall back to local simulator so user experience is not broken
-        return this.handleSimulatedRequest<T>(method, endpoint, body, startTime);
+        return {
+          ...errorResponse,
+          description: `Cannot reach API Gateway at ${this.gatewayUrl}. Start the backend or switch to Simulator mode.`,
+        };
       }
     }
 
@@ -733,6 +756,7 @@ export class ApiService {
       if (user) {
         this.currentUsername = user.username;
         this.currentUserRole = user.role;
+        this.setJwtToken(`jwt.simulated.token.${user.username}.${Date.now()}`);
         return {
           description: 'Login successful',
           code: '200',
