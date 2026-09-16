@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { BarChart3, Bell, Calendar, CreditCard, FileClock, Gift, LayoutDashboard, LogOut, Menu, RefreshCw, Settings2, ShoppingCart, Ticket, TicketCheck, Users, UsersRound, X } from 'lucide-react';
+import { BarChart3, Bell, Calendar, CreditCard, LayoutDashboard, LogOut, Menu, Settings2, ShoppingCart, Ticket, Users, X } from 'lucide-react';
 import { DashboardView } from '../components/DashboardView';
 import { EventsView } from '../components/EventsView';
 import { TicketsView } from '../components/TicketsView';
@@ -20,15 +20,10 @@ const items = [
   { id: 'users', km: 'អ្នកប្រើប្រាស់', en: 'Users', captionKm: 'អ្នកប្រើប្រាស់ និង RBAC', captionEn: 'Users & RBAC', icon: Users },
   { id: 'notifications', km: 'ការជូនដំណឹង', en: 'Notifications', captionKm: 'អ៊ីមែល និង SMS', captionEn: 'Email & SMS delivery', icon: Bell },
   { id: 'reports', km: 'របាយការណ៍ និងវិភាគ', en: 'Reports & Analytics', captionKm: 'ចំណូល និងលទ្ធផល', captionEn: 'Revenue & performance', icon: BarChart3 },
-  { id: 'refunds', km: 'គ្រប់គ្រងការសងប្រាក់', en: 'Refund Management', captionKm: 'ពិនិត្យ និងសងប្រាក់', captionEn: 'Review & payouts', icon: RefreshCw },
-  { id: 'promotions', km: 'ប្រូម៉ូសិន និងកូដបញ្ចុះតម្លៃ', en: 'Promotions & Discounts', captionKm: 'កូដ និងតម្លៃពិសេស', captionEn: 'Codes & special pricing', icon: Gift },
-  { id: 'organizers', km: 'អ្នករៀបចំកម្មវិធី', en: 'Organizer Management', captionKm: 'អ្នករៀបចំ និងកម្មវិធី', captionEn: 'Partners & events', icon: UsersRound },
-  { id: 'checkin', km: 'Check-in សំបុត្រ', en: 'Check-in & Validation', captionKm: 'ផ្ទៀងផ្ទាត់សំបុត្រ', captionEn: 'Validate entry tickets', icon: TicketCheck },
-  { id: 'audit', km: 'កំណត់ត្រាសកម្មភាព', en: 'Audit Logs', captionKm: 'ប្រវត្តិសកម្មភាព', captionEn: 'Activity history', icon: FileClock },
   { id: 'settings', km: 'ការកំណត់ប្រព័ន្ធ', en: 'System Settings', captionKm: 'ចំណូលចិត្ត និងសុវត្ថិភាព', captionEn: 'Preferences & security', icon: Settings2 },
 ];
 
-const adminOperationIds: AdminOperationId[] = ['reports', 'refunds', 'promotions', 'organizers', 'checkin', 'audit', 'settings'];
+const adminOperationIds: AdminOperationId[] = ['reports', 'settings'];
 
 export const AdminDashboardApp: React.FC = () => {
   const { isKhmer } = useLanguage();
