@@ -13,6 +13,8 @@ const translations: Record<Language, Record<string, string>> = {
   },
 };
 
+const originalTextNodes = new WeakMap<Text, string>();
+
 const translateDocument = (language: Language) => {
   const dictionary: Record<string, string> = {
     ...translations[language],
@@ -170,12 +172,16 @@ const translateDocument = (language: Language) => {
   while ((node = walker.nextNode())) nodes.push(node as Text);
   nodes.forEach((textNode) => {
     const raw = textNode.nodeValue || '';
-    const trimmed = raw.trim();
+    if (!originalTextNodes.has(textNode)) originalTextNodes.set(textNode, raw);
+    const sourceText = originalTextNodes.get(textNode) || raw;
+    const trimmed = sourceText.trim();
     if (!trimmed || textNode.parentElement?.closest('script,style,textarea')) return;
-    let translated = raw;
-    Object.entries(dictionary).forEach(([source, target]) => {
-      if (translated.includes(source)) translated = translated.split(source).join(target);
-    });
+    const entries = Object.entries(dictionary).sort(([a], [b]) => b.length - a.length);
+    const escapedSources = entries.map(([source]) => source.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'));
+    const sourcePattern = escapedSources.length > 0 ? new RegExp(escapedSources.join('|'), 'g') : null;
+    const translated = sourcePattern
+      ? sourceText.replace(sourcePattern, (match) => dictionary[match] || match)
+      : sourceText;
     if (translated !== raw) textNode.nodeValue = translated;
   });
   document.querySelectorAll<HTMLElement>('[placeholder], [title], [aria-label]').forEach((element) => {
