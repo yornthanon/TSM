@@ -52,7 +52,11 @@ export const LanguageProvider: React.FC<React.PropsWithChildren> = ({ children }
   const value = useMemo(() => ({
     language,
     isKhmer: language === 'km',
-    setLanguage: (next: Language) => { setLanguageState(next); localStorage.setItem('tsm_language', next); },
+    setLanguage: (next: Language) => {
+      setLanguageState(next);
+      localStorage.setItem('tsm_language', next);
+      window.setTimeout(() => window.location.reload(), 0);
+    },
   }), [language]);
 
   return <LanguageContext.Provider value={value}>{children}</LanguageContext.Provider>;
