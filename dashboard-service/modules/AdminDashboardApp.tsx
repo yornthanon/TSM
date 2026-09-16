@@ -1,0 +1,42 @@
+import React, { useState } from 'react';
+import { Bell, Calendar, CreditCard, LayoutDashboard, LogOut, Menu, ShoppingCart, Ticket, Users, X } from 'lucide-react';
+import { DashboardView } from '../components/DashboardView';
+import { EventsView } from '../components/EventsView';
+import { TicketsView } from '../components/TicketsView';
+import { OrdersView } from '../components/OrdersView';
+import { PaymentsView } from '../components/PaymentsView';
+import { UsersView } from '../components/UsersView';
+import { EventItem, Ticket as TicketType } from '../types';
+
+const items = [
+  { id: 'dashboard', label: 'ផ្ទាំងសង្ខេប', caption: 'Sales overview', icon: LayoutDashboard },
+  { id: 'events', label: 'កម្មវិធី & Shows', caption: 'Events catalog', icon: Calendar },
+  { id: 'tickets', label: 'សំបុត្រ & កៅអី', caption: 'Ticket inventory', icon: Ticket },
+  { id: 'orders', label: 'ការកុម្ម៉ង់', caption: 'Orders & checkout', icon: ShoppingCart },
+  { id: 'payments', label: 'ការទូទាត់', caption: 'Payment ledger', icon: CreditCard },
+  { id: 'users', label: 'អ្នកប្រើប្រាស់', caption: 'Users & RBAC', icon: Users },
+];
+
+export const AdminDashboardApp: React.FC = () => {
+  const [activeTab, setActiveTab] = useState('dashboard');
+  const [mobileOpen, setMobileOpen] = useState(false);
+  const [initialTicket, setInitialTicket] = useState<TicketType | null>(null);
+  const go = (tab: string) => { setActiveTab(tab); setMobileOpen(false); };
+  const handleSelectEvent = (_event: EventItem) => go('orders');
+  const handleProceed = (ticket: TicketType) => { setInitialTicket(ticket); go('orders'); };
+
+  return (
+    <div className="min-h-screen bg-slate-50 text-slate-800">
+      <div className="lg:hidden sticky top-0 z-30 bg-slate-950 text-white px-4 py-3 flex items-center justify-between">
+        <button onClick={() => setMobileOpen(!mobileOpen)} className="p-2 rounded-lg bg-slate-800">{mobileOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}</button>
+        <div className="flex items-center gap-2"><div className="w-8 h-8 rounded-lg bg-indigo-600 flex items-center justify-center font-black text-xs">TSM</div><span className="font-bold">Admin Dashboard</span></div><div className="w-5" />
+      </div>
+      <aside className={`fixed inset-y-0 left-0 z-40 w-72 bg-slate-950 text-white border-r border-slate-800 transition-transform lg:translate-x-0 ${mobileOpen ? 'translate-x-0' : '-translate-x-full'}`}>
+        <div className="p-6 border-b border-slate-800"><div className="flex items-center gap-3"><div className="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-500 to-violet-600 flex items-center justify-center font-black">TSM</div><div><div className="font-bold tracking-tight">Admin Dashboard</div><div className="text-[11px] text-slate-400 font-mono">BUSINESS OPERATIONS</div></div></div><div className="mt-5 rounded-xl bg-indigo-500/10 border border-indigo-400/20 px-3 py-2.5"><div className="text-[10px] uppercase tracking-widest text-indigo-300 font-bold">Workspace</div><div className="text-sm font-semibold mt-1">Sales & Revenue Portal</div></div></div>
+        <nav className="p-4 space-y-1"><div className="px-3 pb-2 text-[10px] uppercase tracking-widest text-slate-500 font-bold">Admin modules</div>{items.map(({ id, label, caption, icon: Icon }) => <button key={id} onClick={() => go(id)} className={`w-full text-left flex items-center gap-3 px-3 py-3 rounded-xl transition ${activeTab === id ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-950/40' : 'text-slate-400 hover:bg-slate-900 hover:text-white'}`}><Icon className="w-5 h-5 shrink-0" /><span className="min-w-0"><span className="block text-sm font-semibold truncate">{label}</span><span className={`block text-[10px] mt-0.5 ${activeTab === id ? 'text-indigo-100' : 'text-slate-600'}`}>{caption}</span></span></button>)}</nav>
+        <div className="absolute bottom-0 inset-x-0 p-4 border-t border-slate-800"><div className="flex items-center gap-3 px-2"><div className="w-9 h-9 rounded-full bg-indigo-500/20 text-indigo-300 flex items-center justify-center font-bold text-xs">AD</div><div className="flex-1"><div className="text-sm font-semibold">admin</div><div className="text-[10px] text-emerald-400 font-mono">ROLE_ADMIN · ONLINE</div></div><LogOut className="w-4 h-4 text-slate-500" /></div></div>
+      </aside>
+      <main className="lg:pl-72 min-h-screen flex flex-col"><header className="hidden lg:flex h-20 bg-white border-b border-slate-200 items-center justify-between px-8 sticky top-0 z-20"><div><div className="text-xs uppercase tracking-widest text-indigo-600 font-bold">Admin Dashboard Service</div><h1 className="text-xl font-bold text-slate-900 mt-1">{items.find((item) => item.id === activeTab)?.label}</h1></div><div className="flex items-center gap-3"><div className="px-3 py-2 rounded-lg bg-emerald-50 text-emerald-700 border border-emerald-200 text-xs font-semibold flex items-center gap-2"><span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />Business services healthy</div><div className="w-9 h-9 rounded-full bg-indigo-100 text-indigo-700 flex items-center justify-center"><Bell className="w-4 h-4" /></div></div></header><section className="flex-1 p-4 sm:p-6 lg:p-8 max-w-7xl w-full mx-auto">{activeTab === 'dashboard' && <DashboardView onNavigate={go} />}{activeTab === 'events' && <EventsView onSelectEventForBooking={handleSelectEvent} onNavigateToTickets={() => go('tickets')} />}{activeTab === 'tickets' && <TicketsView onProceedToOrder={handleProceed} />}{activeTab === 'orders' && <OrdersView initialTicket={initialTicket} onClearInitialTicket={() => setInitialTicket(null)} onNavigateToNotifications={() => {}} />}{activeTab === 'payments' && <PaymentsView />}{activeTab === 'users' && <UsersView />}</section><footer className="border-t border-slate-200 bg-white px-8 py-4 text-xs text-slate-500 flex items-center justify-between"><span>TSM Admin Dashboard Service</span><span className="font-mono">business-api · v1.0</span></footer></main>
+    </div>
+  );
+};

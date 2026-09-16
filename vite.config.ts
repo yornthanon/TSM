@@ -8,5 +8,6 @@ export default defineConfig({
   server: {
     port: 3000,
     host: '0.0.0.0',
+    allowedHosts: ['3000-i1xx85ye206qw088tjg3z-12e3dc3c.us1.manus.computer'],
   },
 });
