@@ -1,0 +1,26 @@
+server:
+  port: 8087
+
+spring:
+  application:
+    name: admin-api-service
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus
+  endpoint:
+    health:
+      show-details: always
+
+ticket:
+  gateway:
+    url: http://localhost:8080
+  services:
+    user: http://localhost:8081
+    event: http://localhost:8082
+    ticket: http://localhost:8083
+    order: http://localhost:8084
+    payment: http://localhost:8085
+    notification: http://localhost:8086
