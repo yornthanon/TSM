@@ -36,6 +36,11 @@ const translateDocument = (language: Language) => {
 
 export const LanguageProvider: React.FC<React.PropsWithChildren> = ({ children }) => {
   const [language, setLanguageState] = useState<Language>(() => {
+    const requested = new URLSearchParams(window.location.search).get('lang');
+    if (requested === 'en' || requested === 'km') {
+      localStorage.setItem('tsm_language', requested);
+      return requested;
+    }
     const saved = localStorage.getItem('tsm_language');
     return saved === 'en' || saved === 'km' ? saved : 'km';
   });
