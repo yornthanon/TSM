@@ -15,6 +15,7 @@ import {
   Layers,
   ArrowRight,
 } from 'lucide-react';
+import { useLanguage } from '../i18n';
 
 interface EventsViewProps {
   onSelectEventForBooking?: (event: EventItem) => void;
@@ -25,6 +26,7 @@ export const EventsView: React.FC<EventsViewProps> = ({
   onSelectEventForBooking,
   onNavigateToTickets,
 }) => {
+  const { isKhmer } = useLanguage();
   const [events, setEvents] = useState<EventItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
@@ -139,10 +141,10 @@ export const EventsView: React.FC<EventsViewProps> = ({
         <div>
           <h2 className="text-xl font-bold text-slate-900 tracking-tight flex items-center space-x-2">
             <Calendar className="w-5 h-5 text-indigo-600" />
-            <span>Events & Tickets Catalog</span>
+            <span>{isKhmer ? 'កម្មវិធី និងកាតាឡុកសំបុត្រ' : 'Events & ticket catalog'}</span>
           </h2>
           <p className="text-xs text-slate-500 mt-0.5">
-            Discover upcoming shows, reserve seats, and publish new events (event-service :8082)
+            {isKhmer ? 'ស្វែងរកកម្មវិធី កក់កៅអី និងបង្កើតកម្មវិធីថ្មី' : 'Discover shows, reserve seats, and publish new events'}
           </p>
         </div>
 
@@ -154,7 +156,7 @@ export const EventsView: React.FC<EventsViewProps> = ({
                 viewMode === 'grid' ? 'bg-white text-slate-900 shadow-xs' : 'text-slate-500 hover:text-slate-800'
               }`}
             >
-              Customer Cards
+              {isKhmer ? 'កាតកម្មវិធី' : 'Cards'}
             </button>
             <button
               onClick={() => setViewMode('table')}
@@ -162,7 +164,7 @@ export const EventsView: React.FC<EventsViewProps> = ({
                 viewMode === 'table' ? 'bg-white text-slate-900 shadow-xs' : 'text-slate-500 hover:text-slate-800'
               }`}
             >
-              Organizer Table
+              {isKhmer ? 'តារាង' : 'Table'}
             </button>
           </div>
 
@@ -172,7 +174,7 @@ export const EventsView: React.FC<EventsViewProps> = ({
             className="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg text-xs font-semibold shadow-xs transition flex items-center space-x-1.5"
           >
             <Plus className="w-4 h-4" />
-            <span>Publish Event</span>
+            <span>{isKhmer ? 'បង្កើតកម្មវិធី' : 'Publish event'}</span>
           </button>
         </div>
       </div>
@@ -196,7 +198,7 @@ export const EventsView: React.FC<EventsViewProps> = ({
           <input
             id="event-search-input"
             type="text"
-            placeholder="Search events by title, artist, or venue..."
+            placeholder={isKhmer ? 'ស្វែងរកតាមឈ្មោះ ឬទីតាំង...' : 'Search by title, artist, or venue...'}
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="w-full pl-9 pr-3 py-1.5 border border-slate-200 rounded-lg text-slate-800 placeholder-slate-400 focus:outline-hidden focus:border-indigo-500"
@@ -223,6 +225,8 @@ export const EventsView: React.FC<EventsViewProps> = ({
       {/* Grid View (Customer Perspective) */}
       {viewMode === 'grid' && (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+          {loading && [1, 2, 3].map((item) => <div key={item} className="h-80 rounded-xl bg-white border border-slate-200 animate-pulse" />)}
+          {!loading && filteredEvents.length === 0 && <div className="md:col-span-2 lg:col-span-3 bg-white border border-dashed border-slate-300 rounded-xl p-14 text-center"><Calendar className="w-9 h-9 mx-auto text-slate-300" /><p className="mt-3 text-sm font-semibold text-slate-700">{isKhmer ? 'រកមិនឃើញកម្មវិធី' : 'No events found'}</p><p className="mt-1 text-xs text-slate-400">{isKhmer ? 'សាកល្បងលុប filter ឬស្វែងរកពាក្យផ្សេង' : 'Try clearing filters or searching another term'}</p></div>}
           {filteredEvents.map((ev) => {
             const percentSold = Math.round(
               ((ev.totalTickets - ev.availableTickets) / ev.totalTickets) * 100
@@ -300,7 +304,7 @@ export const EventsView: React.FC<EventsViewProps> = ({
                     className="text-slate-600 hover:text-indigo-600 font-semibold flex items-center space-x-1"
                   >
                     <TicketIcon className="w-3.5 h-3.5" />
-                    <span>View Seats</span>
+                    <span>{isKhmer ? 'មើលកៅអី' : 'View seats'}</span>
                   </button>
 
                   <button
@@ -308,7 +312,7 @@ export const EventsView: React.FC<EventsViewProps> = ({
                     onClick={() => onSelectEventForBooking && onSelectEventForBooking(ev)}
                     className="px-3.5 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg font-semibold shadow-xs transition flex items-center space-x-1"
                   >
-                    <span>Book Ticket</span>
+                    <span>{isKhmer ? 'កក់សំបុត្រ' : 'Book ticket'}</span>
                     <ArrowRight className="w-3 h-3 ml-0.5" />
                   </button>
                 </div>

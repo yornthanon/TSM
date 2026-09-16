@@ -10,8 +10,10 @@ import {
   X,
   Search,
 } from 'lucide-react';
+import { useLanguage } from '../i18n';
 
 export const UsersView: React.FC = () => {
+  const { isKhmer } = useLanguage();
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
@@ -88,10 +90,10 @@ export const UsersView: React.FC = () => {
         <div>
           <h2 className="text-xl font-bold text-slate-900 flex items-center space-x-2">
             <Users className="w-5 h-5 text-indigo-600" />
-            <span>User & RBAC Security Management (user-service :8081)</span>
+            <span>{isKhmer ? 'អ្នកប្រើប្រាស់ និងសិទ្ធិ RBAC' : 'Users & RBAC Security'}</span>
           </h2>
           <p className="text-xs text-slate-500 mt-0.5">
-            Role-Based Access Control, JWT generation, password encryption (BCrypt), and refresh tokens
+            {isKhmer ? 'គ្រប់គ្រងតួនាទី សិទ្ធិ និងគណនីអ្នកប្រើប្រាស់' : 'Manage roles, permissions, and user accounts'}
           </p>
         </div>
 
@@ -100,7 +102,7 @@ export const UsersView: React.FC = () => {
           className="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg text-xs font-semibold shadow-xs transition flex items-center space-x-1.5"
         >
           <UserPlus className="w-4 h-4" />
-          <span>Register New User</span>
+          <span>{isKhmer ? 'បង្កើតអ្នកប្រើប្រាស់' : 'New user'}</span>
         </button>
       </div>
 
@@ -122,7 +124,7 @@ export const UsersView: React.FC = () => {
           <Search className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
           <input
             type="text"
-            placeholder="Search by username, email, or role..."
+            placeholder={isKhmer ? 'ស្វែងរកតាមឈ្មោះ, email ឬតួនាទី...' : 'Search by username, email, or role...'}
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="w-full pl-9 pr-3 py-1.5 border border-slate-200 rounded-lg text-slate-800 placeholder-slate-400 focus:outline-hidden focus:border-indigo-500"
@@ -131,16 +133,19 @@ export const UsersView: React.FC = () => {
       </div>
 
       {/* Users Table */}
-      <div className="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-xs">
+      <div className="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-soft">
+        {loading && <div className="p-8 space-y-3">{[1, 2, 3].map((row) => <div key={row} className="h-10 rounded-lg bg-slate-100 animate-pulse" />)}</div>}
+        {!loading && filteredUsers.length === 0 && <div className="p-12 text-center"><Users className="w-8 h-8 mx-auto text-slate-300" /><p className="mt-3 text-sm font-semibold text-slate-700">{isKhmer ? 'រកមិនឃើញអ្នកប្រើប្រាស់' : 'No users found'}</p><p className="mt-1 text-xs text-slate-400">{isKhmer ? 'សាកល្បងពាក្យស្វែងរកផ្សេងទៀត' : 'Try another search term'}</p></div>}
+        {!loading && filteredUsers.length > 0 && <div className="overflow-x-auto">
         <table className="w-full text-left text-xs">
           <thead className="bg-slate-50 border-b border-slate-200 text-slate-500 uppercase font-semibold">
             <tr>
-              <th className="px-4 py-3">User</th>
+              <th className="px-4 py-3">{isKhmer ? 'អ្នកប្រើប្រាស់' : 'User'}</th>
               <th className="px-4 py-3">Email</th>
-              <th className="px-4 py-3">Phone</th>
-              <th className="px-4 py-3">Role</th>
-              <th className="px-4 py-3">Status</th>
-              <th className="px-4 py-3 text-right">Switch Active Session</th>
+              <th className="px-4 py-3">{isKhmer ? 'ទូរស័ព្ទ' : 'Phone'}</th>
+              <th className="px-4 py-3">{isKhmer ? 'តួនាទី' : 'Role'}</th>
+              <th className="px-4 py-3">{isKhmer ? 'ស្ថានភាព' : 'Status'}</th>
+              <th className="px-4 py-3 text-right">{isKhmer ? 'សកម្មភាព' : 'Actions'}</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100">
@@ -158,7 +163,7 @@ export const UsersView: React.FC = () => {
                           <span>{user.username}</span>
                           {isCurrent && (
                             <span className="px-1.5 py-0.2 rounded bg-emerald-100 text-emerald-800 text-[9px] font-bold">
-                              ACTIVE NOW
+                              {isKhmer ? 'កំពុងប្រើ' : 'ACTIVE NOW'}
                             </span>
                           )}
                         </div>
@@ -198,7 +203,7 @@ export const UsersView: React.FC = () => {
                       }`}
                     >
                       <KeyRound className="w-3 h-3" />
-                      <span>{isCurrent ? 'Logged In' : 'Login as User'}</span>
+                      <span>{isCurrent ? (isKhmer ? 'កំពុងប្រើ' : 'Logged in') : (isKhmer ? 'ចូលជាអ្នកប្រើប្រាស់' : 'Login as user')}</span>
                     </button>
                   </td>
                 </tr>
@@ -206,6 +211,7 @@ export const UsersView: React.FC = () => {
             })}
           </tbody>
         </table>
+        </div>}
       </div>
 
       {/* Register Modal */}
@@ -213,12 +219,12 @@ export const UsersView: React.FC = () => {
         <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
           <div
             id="register-user-modal"
-            className="bg-white border border-slate-200 rounded-xl max-w-md w-full p-6 text-slate-800 shadow-2xl space-y-4 text-xs"
+            className="bg-white border border-slate-200 rounded-xl max-w-md w-full p-6 text-slate-800 shadow-2xl space-y-4 text-xs modal-scroll"
           >
             <div className="flex items-center justify-between border-b border-slate-100 pb-3">
               <div className="flex items-center space-x-2">
                 <UserPlus className="w-5 h-5 text-indigo-600" />
-                <h3 className="font-bold text-base text-slate-900">Register New User</h3>
+                <h3 className="font-bold text-base text-slate-900">{isKhmer ? 'បង្កើតអ្នកប្រើប្រាស់ថ្មី' : 'Register new user'}</h3>
               </div>
               <button
                 onClick={() => setShowAddModal(false)}
@@ -230,7 +236,7 @@ export const UsersView: React.FC = () => {
 
             <form onSubmit={handleRegisterUser} className="space-y-3">
               <div>
-                <label className="block text-slate-700 font-semibold mb-1">Username *</label>
+                  <label className="block text-slate-700 font-semibold mb-1">{isKhmer ? 'ឈ្មោះអ្នកប្រើប្រាស់ *' : 'Username *'}</label>
                 <input
                   type="text"
                   required
@@ -242,7 +248,7 @@ export const UsersView: React.FC = () => {
               </div>
 
               <div>
-                <label className="block text-slate-700 font-semibold mb-1">Email *</label>
+                  <label className="block text-slate-700 font-semibold mb-1">Email *</label>
                 <input
                   type="email"
                   required
@@ -254,7 +260,7 @@ export const UsersView: React.FC = () => {
               </div>
 
               <div>
-                <label className="block text-slate-700 font-semibold mb-1">Phone Number *</label>
+                  <label className="block text-slate-700 font-semibold mb-1">{isKhmer ? 'លេខទូរស័ព្ទ *' : 'Phone number *'}</label>
                 <input
                   type="text"
                   required
@@ -266,7 +272,7 @@ export const UsersView: React.FC = () => {
               </div>
 
               <div>
-                <label className="block text-slate-700 font-semibold mb-1">Role</label>
+                  <label className="block text-slate-700 font-semibold mb-1">{isKhmer ? 'តួនាទី' : 'Role'}</label>
                 <select
                   value={newRole}
                   onChange={(e) => setNewRole(e.target.value as RoleType)}
@@ -284,13 +290,13 @@ export const UsersView: React.FC = () => {
                   onClick={() => setShowAddModal(false)}
                   className="px-3 py-1.5 rounded text-slate-600 hover:bg-slate-100"
                 >
-                  Cancel
+                  {isKhmer ? 'បោះបង់' : 'Cancel'}
                 </button>
                 <button
                   type="submit"
                   className="px-4 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded font-medium shadow-xs"
                 >
-                  Register Account
+                  {isKhmer ? 'បង្កើតគណនី' : 'Create account'}
                 </button>
               </div>
             </form>
