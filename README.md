@@ -282,19 +282,19 @@ docker-compose up --build
 
 # 3. Access the application
 # API Gateway: http://localhost:8080
-# Admin Dashboard: http://localhost:8090 (when implemented)
+# Admin Dashboard: http://localhost:3000
 # Zipkin: http://localhost:9411
 ```
 
-The original backend Docker Compose file is preserved unchanged. To run the existing admin dashboard in Docker as well, use the separate frontend overlay:
+The backend remains containerized, while the admin dashboard runs directly with Node.js/Vite for faster development:
 
 ```bash
-cd Deployment/infrastructure
-VITE_API_BASE_URL=http://localhost:8080 \
-  docker compose -f docker-compose.yaml -f docker-compose.frontend.yaml up --build
+cd TSM
+npm install
+VITE_API_MODE=live VITE_API_BASE_URL=http://localhost:8080 npm run dev -- --host 0.0.0.0
 ```
 
-The dashboard will be available at `http://localhost:8090` and will call the API Gateway at the URL supplied by `VITE_API_BASE_URL`. For hosting on separate domains, set that variable to the public API Gateway URL, for example `https://api.example.com`, when building the frontend image. Do not use the Docker-only hostname `api-gateway` in this browser-facing variable.
+The dashboard will be available at `http://localhost:3000` and will call the API Gateway at `http://localhost:8080`. Do not use Docker-only hostnames such as `api-gateway` in this browser-facing variable.
 
 ### Manual Setup
 
