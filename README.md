@@ -189,7 +189,7 @@ POST /api/v1/orders/create
 
 ### Infrastructure
 
-- **Docker & Docker Compose** — Containerization and orchestration
+- **Docker & Docker Compose** — Optional containerization and orchestration
 - **PostgreSQL** — Primary data store
 - **Redis** — Cache and distributed lock
 - **Kafka** — Event streaming platform
@@ -286,7 +286,42 @@ docker-compose up --build
 # Zipkin: http://localhost:9411
 ```
 
+The original backend Docker Compose file is preserved unchanged. To run the existing admin dashboard in Docker as well, use the separate frontend overlay:
+
+```bash
+cd Deployment/infrastructure
+VITE_API_BASE_URL=http://localhost:8080 \
+  docker compose -f docker-compose.yaml -f docker-compose.frontend.yaml up --build
+```
+
+The dashboard will be available at `http://localhost:8090` and will call the API Gateway at the URL supplied by `VITE_API_BASE_URL`. For hosting on separate domains, set that variable to the public API Gateway URL, for example `https://api.example.com`, when building the frontend image. Do not use the Docker-only hostname `api-gateway` in this browser-facing variable.
+
 ### Manual Setup
+
+Docker is **not required**. The repository includes native scripts for Linux and macOS. You still need native installations of PostgreSQL, Redis, and Kafka because the backend uses them for persistence, locking/rate limiting, and event streaming.
+
+#### Recommended native setup
+
+```bash
+# From the repository root
+chmod +x mvnw setup-local.sh run-local.sh stop-local.sh
+./setup-local.sh
+
+# Start PostgreSQL, Redis, and Kafka using their native services first.
+./run-local.sh
+
+# Stop the Spring services and frontend (data services remain running)
+./stop-local.sh
+```
+
+The native launcher writes service logs to `.local/logs/` and process IDs to `.local/pids/`. It uses `localhost` defaults, so no Docker service-name changes are needed. Kafka must be listening on `localhost:9092`; PostgreSQL must accept the `ticket` user/password configured in `.env`; Redis must listen on `localhost:6379`.
+
+If you only want to view the dashboard without any backend or infrastructure, set `VITE_API_MODE=simulator` in `.env` and run:
+
+```bash
+npm install
+npm run dev -- --host 0.0.0.0
+```
 
 #### 1. Setup Databases
 
@@ -343,7 +378,7 @@ redis-server
 #### 5. Run Frontend (Admin Dashboard)
 
 ```bash
-cd admin-dashboard
+cd admin-dashboard-service
 npm install
 npm run dev
 ```
