@@ -57,7 +57,7 @@ public class CustomUserDetailService implements UserDetailsService {
                     HttpStatus.FORBIDDEN);
         }
 
-        if (user.getLoginAttempts() > user.getMaxAttempts()) {
+        if ((user.getLoginAttempts() == null ? 0 : user.getLoginAttempts()) > (user.getMaxAttempts() == null ? 5 : user.getMaxAttempts())) {
             log.warn("Username {} attempt more than {}", username, user.getMaxAttempts());
             throw new CustomMessageException(
                     "Blocked",
@@ -77,10 +77,10 @@ public class CustomUserDetailService implements UserDetailsService {
     public void saveUserAttemptAuthentication(String username) {
          findActiveUser(username).ifPresent(
                 user -> {
-                    int attempt = user.getLoginAttempts() + 1;
+                    int attempt = (user.getLoginAttempts() == null ? 0 : user.getLoginAttempts()) + 1;
                     user.setLoginAttempts(attempt);
                     user.setUpdatedAt(LocalDateTime.now());
-                    if(user.getLoginAttempts() > user.getMaxAttempts()){
+                    if(user.getLoginAttempts() > (user.getMaxAttempts() == null ? 5 : user.getMaxAttempts())){
                         log.warn("User {} update status to blocked", username);
                         user.setStatus(ApiConstant.BLK.getKey());
                     }

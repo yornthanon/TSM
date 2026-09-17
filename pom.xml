@@ -36,7 +36,7 @@
         <jjwt.version>0.12.6</jjwt.version>
         <spring-cloud.version>2025.1.2</spring-cloud.version>
         <vaadin.version>25.2.6</vaadin.version>
-        <flyway.version>10.10.0</flyway.version>
+        <flyway.version>10.22.0</flyway.version>
     </properties>
 
     <dependencyManagement>
@@ -90,12 +90,17 @@
                 <scope>import</scope>
             </dependency>
 
-            <!-- Flyway -->
-            <dependency>
-                <groupId>org.flywaydb</groupId>
-                <artifactId>flyway-core</artifactId>
-                <version>${flyway.version}</version>
-            </dependency>
+<!-- Flyway -->
+        <dependency>
+            <groupId>org.flywaydb</groupId>
+            <artifactId>flyway-core</artifactId>
+            <version>${flyway.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.flywaydb</groupId>
+            <artifactId>flyway-database-postgresql</artifactId>
+            <version>${flyway.version}</version>
+        </dependency>
         </dependencies>
     </dependencyManagement>
 

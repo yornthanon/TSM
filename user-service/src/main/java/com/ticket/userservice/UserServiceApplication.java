@@ -73,6 +73,8 @@ public class UserServiceApplication {
                 adminUser.setStatus(Constant.ACTIVE);
                 adminUser.setCreatedBy(Constant.SYSTEM);
                 adminUser.setUserType(Constant.USER);
+                adminUser.setLoginAttempts(0);
+                adminUser.setMaxAttempts(5);
                 adminUser.addRole(admin);
                 userRepository.saveAndFlush(adminUser);
                 log.warn("Created default admin '{}' with email '{}'.{}",
