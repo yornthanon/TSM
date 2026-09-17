@@ -26,7 +26,7 @@ start_process() {
   echo $! >"$PID_DIR/$name.pid"
 }
 
-command -v redis-cli >/dev/null 2>&1 && redis-cli -h "${REDIS_HOST:-localhost}" -p "${REDIS_PORT:-6379}" ping >/dev/null 2>&1 || \
+command -v redis-cli >/dev/null 2>&1 && redis-cli -u "${REDIS_URL:-redis://localhost:6379}" ping >/dev/null 2>&1 || \
   echo "WARNING: Redis is not reachable. Start redis-server before using ticket locking/rate limiting."
 command -v nc >/dev/null 2>&1 && nc -z "${KAFKA_HOST:-localhost}" "${KAFKA_PORT:-9092}" >/dev/null 2>&1 || \
   echo "WARNING: Kafka is not reachable. Start Kafka before using orders/notifications."
