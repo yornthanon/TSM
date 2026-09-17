@@ -1,0 +1,171 @@
+# Render Blueprint for TicketManagement
+# Deploy from: https://dashboard.render.com/blueprints
+# Neon and Kafka credentials are intentionally marked sync:false and must be entered once in Render.
+
+services:
+  - type: web
+    name: tsm-admin-dashboard
+    runtime: static
+    branch: main
+    buildCommand: npm ci && npm run build
+    staticPublishPath: ./dist
+    envVars:
+      - key: VITE_API_MODE
+        value: live
+      - key: VITE_API_BASE_URL
+        value: https://tsm-api-gateway.onrender.com
+
+  - type: web
+    name: tsm-api-gateway
+    runtime: docker
+    region: virginia
+    plan: free
+    dockerfilePath: ./api-gateway/Dockerfile
+    dockerContext: .
+    envVars:
+      - key: SPRING_R2DBC_URL
+        sync: false
+      - key: SPRING_DATASOURCE_USERNAME
+        sync: false
+      - key: SPRING_DATASOURCE_PASSWORD
+        sync: false
+      - key: REDIS_HOST
+        sync: false
+      - key: REDIS_PORT
+        value: "6379"
+      - key: USER_SERVICE_URL
+        value: https://tsm-user-service.onrender.com
+      - key: CORS_ALLOWED_ORIGINS
+        value: https://tsm-admin-dashboard.onrender.com
+      - key: JWT_SECRET
+        sync: false
+
+  - type: web
+    name: tsm-user-service
+    runtime: docker
+    region: virginia
+    plan: free
+    dockerfilePath: ./user-service/Dockerfile
+    dockerContext: .
+    envVars:
+      - key: SPRING_DATASOURCE_URL
+        sync: false
+      - key: SPRING_DATASOURCE_USERNAME
+        sync: false
+      - key: SPRING_DATASOURCE_PASSWORD
+        sync: false
+      - key: JWT_SECRET
+        sync: false
+
+  - type: web
+    name: tsm-event-service
+    runtime: docker
+    region: virginia
+    plan: free
+    dockerfilePath: ./event-service/Dockerfile
+    dockerContext: .
+    envVars:
+      - key: SPRING_DATASOURCE_URL
+        sync: false
+      - key: SPRING_DATASOURCE_USERNAME
+        sync: false
+      - key: SPRING_DATASOURCE_PASSWORD
+        sync: false
+
+  - type: web
+    name: tsm-ticket-service
+    runtime: docker
+    region: virginia
+    plan: free
+    dockerfilePath: ./ticket-service/Dockerfile
+    dockerContext: .
+    envVars:
+      - key: SPRING_DATASOURCE_URL
+        sync: false
+      - key: SPRING_DATASOURCE_USERNAME
+        sync: false
+      - key: SPRING_DATASOURCE_PASSWORD
+        sync: false
+      - key: REDIS_HOST
+        sync: false
+      - key: REDIS_PORT
+        value: "6379"
+      - key: EVENT_SERVICE_URL
+        value: https://tsm-event-service.onrender.com/api/v1/events
+
+  - type: web
+    name: tsm-order-service
+    runtime: docker
+    region: virginia
+    plan: free
+    dockerfilePath: ./order-service/Dockerfile
+    dockerContext: .
+    envVars:
+      - key: SPRING_DATASOURCE_URL
+        sync: false
+      - key: SPRING_DATASOURCE_USERNAME
+        sync: false
+      - key: SPRING_DATASOURCE_PASSWORD
+        sync: false
+      - key: EVENT_SERVICE_URL
+        value: https://tsm-event-service.onrender.com/api/v1/events
+      - key: USER_SERVICE_URL
+        value: https://tsm-user-service.onrender.com
+      - key: PAYMENT_SERVICE_URL
+        value: https://tsm-payment-service.onrender.com/api/v1/payments
+      - key: KAFKA_BOOTSTRAP_SERVERS
+        sync: false
+
+  - type: web
+    name: tsm-payment-service
+    runtime: docker
+    region: virginia
+    plan: free
+    dockerfilePath: ./payment-service/Dockerfile
+    dockerContext: .
+    envVars:
+      - key: SPRING_DATASOURCE_URL
+        sync: false
+      - key: SPRING_DATASOURCE_USERNAME
+        sync: false
+      - key: SPRING_DATASOURCE_PASSWORD
+        sync: false
+      - key: USER_SERVICE_URL
+        value: https://tsm-user-service.onrender.com/api/v1/users
+
+  - type: web
+    name: tsm-notification-service
+    runtime: docker
+    region: virginia
+    plan: free
+    dockerfilePath: ./notification-service/Dockerfile
+    dockerContext: .
+    envVars:
+      - key: SPRING_DATASOURCE_URL
+        sync: false
+      - key: SPRING_DATASOURCE_USERNAME
+        sync: false
+      - key: SPRING_DATASOURCE_PASSWORD
+        sync: false
+      - key: KAFKA_BOOTSTRAP_SERVERS
+        sync: false
+      - key: MAIL_HOST
+        sync: false
+      - key: MAIL_PORT
+        value: "587"
+      - key: MAIL_USERNAME
+        sync: false
+      - key: MAIL_PASSWORD
+        sync: false
+      - key: MAIL_FROM
+        sync: false
+
+  - type: keyvalue
+    name: tsm-redis
+    region: virginia
+    plan: free
+    ipAllowList:
+      - source: 0.0.0.0/0
+        description: public access required by Render services
+
+version: "1"
