@@ -84,6 +84,8 @@ services:
       REDIS_HOST: redis
       REDIS_PORT: 6379
       USER_SERVICE_URL: http://user-service:8081
+      CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-http://localhost:8090,http://localhost:3000,http://localhost:5173}
+      ROUTE_URI_HOST_MAP: localhost:8081=user-service,localhost:8082=event-service,localhost:8083=ticket-service,localhost:8084=order-service,localhost:8085=payment-service,localhost:8086=notification-service
     depends_on:
       postgres:
         condition: service_healthy

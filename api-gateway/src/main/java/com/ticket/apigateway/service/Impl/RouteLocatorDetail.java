@@ -10,17 +10,21 @@ import org.springframework.cloud.gateway.route.builder.PredicateSpec;
 import org.springframework.cloud.gateway.route.builder.RouteLocatorBuilder;
 import reactor.core.publisher.Flux;
 
+import java.net.URI;
+import java.util.HashMap;
 import java.util.Map;
 
 public class RouteLocatorDetail implements RouteLocator {
 
     private final ApiRouteRepository apiRouteRepository;
     private final RouteLocatorBuilder routeLocatorBuilder;
+    private final Map<String, String> routeUriHostMap;
 
     public RouteLocatorDetail(ApiRouteRepository apiRouteRepository,
                               RouteLocatorBuilder routeLocatorBuilder) {
         this.apiRouteRepository = apiRouteRepository;
         this.routeLocatorBuilder = routeLocatorBuilder;
+        this.routeUriHostMap = parseRouteUriHostMap(System.getenv("ROUTE_URI_HOST_MAP"));
     }
 
     @Override
@@ -45,7 +49,38 @@ public class RouteLocatorDetail implements RouteLocator {
         if(apiRoute.getMethod() != null && !apiRoute.getMethod().isBlank()) {
             booleanSpec.and().method(apiRoute.getMethod());
         }
-        return booleanSpec.uri(apiRoute.getUri());
+        return booleanSpec.uri(resolveRouteUri(apiRoute.getUri()));
+    }
+
+    private String resolveRouteUri(String routeUri) {
+        if (routeUri == null || routeUri.isBlank() || routeUriHostMap.isEmpty()) {
+            return routeUri;
+        }
+        try {
+            URI parsed = URI.create(routeUri);
+            String mappedHost = routeUriHostMap.get(parsed.getHost() + ":" + parsed.getPort());
+            if (mappedHost == null) {
+                return routeUri;
+            }
+            return new URI(parsed.getScheme(), parsed.getUserInfo(), mappedHost,
+                    parsed.getPort(), parsed.getPath(), parsed.getQuery(), parsed.getFragment()).toString();
+        } catch (Exception ignored) {
+            return routeUri;
+        }
+    }
+
+    private Map<String, String> parseRouteUriHostMap(String mapping) {
+        Map<String, String> result = new HashMap<>();
+        if (mapping == null || mapping.isBlank()) {
+            return result;
+        }
+        for (String entry : mapping.split(",")) {
+            String[] pair = entry.trim().split("=", 2);
+            if (pair.length == 2 && !pair[0].isBlank() && !pair[1].isBlank()) {
+                result.put(pair[0].trim(), pair[1].trim());
+            }
+        }
+        return result;
     }
 
 }
