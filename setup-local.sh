@@ -8,7 +8,7 @@ POSTGRES_USER="${POSTGRES_USER:-ticket}"
 POSTGRES_PASSWORD="${POSTGRES_PASSWORD:-ticket123}"
 POSTGRES_HOST="${POSTGRES_HOST:-localhost}"
 POSTGRES_PORT="${POSTGRES_PORT:-5432}"
-DATABASES=(ticket_user_db ticket_event_db ticket_db ticket_order_db ticket_payment_db ticket_notification_db ticket_admin_db ticket_gateway_db)
+DATABASES=(ticket_db)
 
 fail() { echo "ERROR: $*" >&2; exit 1; }
 need() { command -v "$1" >/dev/null 2>&1 || fail "Missing '$1'. Install it and run this script again."; }

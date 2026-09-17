@@ -6,10 +6,10 @@ import tools.jackson.databind.DeserializationFeature;
 import tools.jackson.databind.SerializationFeature;
 import tools.jackson.databind.json.JsonMapper;
 
-@Configuration
+@Configuration("ticketAppConfig")
 public class AppConfig {
 
-    @Bean
+    @Bean("ticketObjectMapper")
     public JsonMapper objectMapper() {
         return JsonMapper.builder()
                 .configure(SerializationFeature.FAIL_ON_EMPTY_BEANS, false)

@@ -4,6 +4,7 @@ import com.ticket.common.constant.ApiConstant;
 import com.ticket.common.dto.EmptyObject;
 import com.ticket.common.exception.ResponseErrorTemplate;
 import com.ticket.common.dto.request.PaymentRequest;
+import com.ticket.common.internal.InternalTokenProvider;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.MediaType;
@@ -16,9 +17,11 @@ import reactor.core.publisher.Mono;
 public class PaymentClient {
 
     private final WebClient webClient;
+    private final InternalTokenProvider internalTokenProvider;
 
-    public PaymentClient(WebClient.Builder webClient) {
+    public PaymentClient(WebClient.Builder webClient, InternalTokenProvider internalTokenProvider) {
         this.webClient = webClient.build();
+        this.internalTokenProvider = internalTokenProvider;
     }
 
     @Value("${payment.service.url:http://localhost:8085/api/v1/payments}")
@@ -28,6 +31,7 @@ public class PaymentClient {
         return webClient.post()
                 .uri(paymentServiceUrl + "/process")
                 .contentType(MediaType.APPLICATION_JSON)
+                .header(internalTokenProvider.headerName(), internalTokenProvider.getToken())
                 .bodyValue(paymentRequest)
                 .retrieve()
                 .bodyToMono(ResponseErrorTemplate.class)

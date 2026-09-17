@@ -32,17 +32,11 @@ command -v nc >/dev/null 2>&1 && nc -z "${KAFKA_HOST:-localhost}" "${KAFKA_PORT:
   echo "WARNING: Kafka is not reachable. Start Kafka before using orders/notifications."
 
 MVNW="$ROOT_DIR/mvnw"
-start_process user-service "$MVNW" -pl user-service spring-boot:run
-start_process event-service "$MVNW" -pl event-service spring-boot:run
-start_process payment-service "$MVNW" -pl payment-service spring-boot:run
-start_process ticket-service "$MVNW" -pl ticket-service spring-boot:run
-start_process order-service "$MVNW" -pl order-service spring-boot:run
-start_process notification-service "$MVNW" -pl notification-service spring-boot:run
-start_process api-gateway "$MVNW" -pl api-gateway spring-boot:run
+start_process backend "$MVNW" -pl app-monolith spring-boot:run
 start_process frontend npm run dev -- --host 0.0.0.0
 
 echo
 echo "Started native services. Logs: $LOG_DIR"
 echo "Frontend: http://localhost:3000"
-echo "API Gateway: http://localhost:8080"
+echo "Backend (monolith): http://localhost:8080"
 echo "Stop everything with: ./stop-local.sh"

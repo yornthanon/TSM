@@ -1,6 +1,7 @@
 package com.ticket.orderservice.client;
 
 import com.ticket.common.dto.TokenVerificationResponse;
+import com.ticket.common.internal.InternalTokenProvider;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpHeaders;
@@ -16,9 +17,11 @@ import java.util.Map;
 public class UserClient {
 
     private final WebClient webClient;
+    private final InternalTokenProvider internalTokenProvider;
 
-    public UserClient(WebClient.Builder webClient) {
+    public UserClient(WebClient.Builder webClient, InternalTokenProvider internalTokenProvider) {
         this.webClient = webClient.build();
+        this.internalTokenProvider = internalTokenProvider;
     }
 
     @Value("${user.service.url:http://localhost:8081}")
@@ -28,6 +31,7 @@ public class UserClient {
         return webClient.post()
                 .uri(userServiceUrl + "/api/public/users/verify-token")
                 .header(HttpHeaders.AUTHORIZATION, "Bearer " + token)
+                .header(internalTokenProvider.headerName(), internalTokenProvider.getToken())
                 .contentType(MediaType.APPLICATION_JSON)
                 .retrieve()
                 .bodyToMono(TokenVerificationResponse.class)
@@ -45,6 +49,7 @@ public class UserClient {
         return webClient.get()
                 .uri(userServiceUrl + "/api/v1/users/username/{username}", username)
                 .header(HttpHeaders.ACCEPT, MediaType.APPLICATION_JSON_VALUE)
+                .header(internalTokenProvider.headerName(), internalTokenProvider.getToken())
                 .retrieve()
                 .bodyToMono(Map.class)
                 .doOnError(e -> log.error("Error calling user service for username {}: {}", username, e.getMessage()))

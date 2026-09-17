@@ -22,7 +22,7 @@
 - [Getting Started](#getting-started)
 - [API Documentation](#api-documentation)
 - [Deployment](#deployment)
-- [Roadmap](#roadmap)
+- [Roadmap & Known Issues](#-roadmap)
 - [Contributing](#contributing)
 
 ## 🎯 Overview
@@ -252,9 +252,6 @@ ticket-management/
 │       ├── docker-compose.yaml
 │       ├── init-databases.sql
 │       └── README.md
-├── docs/
-│   ├── PROJECT_DOCUMENTATION.md
-│   └── ADMIN_DASHBOARD_PLAN.md
 ├── pom.xml                        # Parent Maven POM
 └── mvnw                           # Maven wrapper (Unix)
 ```
@@ -529,6 +526,20 @@ SPRING_KAFKA_BOOTSTRAP_SERVERS=kafka:9092
 - [ ] Mobile app (React Native)
 - [ ] Kubernetes deployment manifests
 - [ ] CI/CD pipeline
+
+### Query Issues / TODOs
+
+Recorded from the original `PROJECT_DOCUMENTATION.md` (kept here so nothing is lost before the monolith merge):
+
+- [ ] `OrderConfirmedEvent` hardcodes email/phone — should pull real user/event contact data at runtime.
+- [ ] Payment gateway is a mock (`PaymentGatewayServiceImpl`) — integrate a real provider (Stripe/ABA).
+- [ ] Kafka consumer has no DLQ or retry policy — add a dead-letter topic + retry backoff.
+- [ ] Duplicate `spring-webflux` dependency across services — clean up dependency management.
+- [ ] Database hygiene: several services originally defaulted to `ddl-auto=create-drop`; the monolith now uses `ddl-auto=validate` + Flyway so schema drift fails loudly instead of being erased.
+
+Resolved by the monolith refactor:
+- [x] `ddl-auto=validate` + Flyway migrations in production (single shared schema history).
+- [x] `jwt.secret` / all secrets are env-driven only (`JWT_SECRET`), no hardcoded fallback in the merged app.
 
 ## 🤝 Contributing
 

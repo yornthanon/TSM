@@ -58,11 +58,16 @@ public class RouteLocatorDetail implements RouteLocator {
         }
         try {
             URI parsed = URI.create(routeUri);
-            String mappedHost = routeUriHostMap.get(parsed.getHost() + ":" + parsed.getPort());
-            if (mappedHost == null) {
+            String mappedValue = routeUriHostMap.get(parsed.getHost() + ":" + parsed.getPort());
+            if (mappedValue == null) {
                 return routeUri;
             }
-            return new URI(parsed.getScheme(), parsed.getUserInfo(), mappedHost,
+            // Full base URL (external hosting, e.g. https://user-service.example.com)
+            if (mappedValue.contains("://")) {
+                return mappedValue;
+            }
+            // Docker container name (same scheme/port, host replaced)
+            return new URI(parsed.getScheme(), parsed.getUserInfo(), mappedValue,
                     parsed.getPort(), parsed.getPath(), parsed.getQuery(), parsed.getFragment()).toString();
         } catch (Exception ignored) {
             return routeUri;

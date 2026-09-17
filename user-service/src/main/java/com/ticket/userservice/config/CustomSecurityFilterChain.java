@@ -1,8 +1,10 @@
 package com.ticket.userservice.config;
 
+import com.ticket.common.internal.InternalTokenProvider;
 import com.ticket.userservice.config.properties.JwtConfigProperties;
 import com.ticket.userservice.filter.CustomAccessDeniedHandler;
 import com.ticket.userservice.filter.CustomAuthenticationProvider;
+import com.ticket.userservice.filter.InternalAuthFilter;
 import com.ticket.userservice.filter.JwtAuthenticationFilter;
 import com.ticket.userservice.filter.JwtAuthenticationInternalFilter;
 import com.ticket.userservice.service.JwtService;
@@ -34,6 +36,7 @@ public class CustomSecurityFilterChain extends JwtConfigProperties {
     private final CustomUserDetailService customUserDetailService;
     private final CustomAuthenticationProvider customAuthenticationProvider;
     private final PasswordEncoder passwordEncoder;
+    private final InternalTokenProvider internalTokenProvider;
 
     @Autowired
     public void userAuthenticationGlobalConfig(AuthenticationManagerBuilder authenticationManagerBuilder) {
@@ -52,7 +55,9 @@ public class CustomSecurityFilterChain extends JwtConfigProperties {
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(
                                 "/api/v1/auth/**",
-                                "/api/public/users/**",
+                                "/api/public/**",
+                                "/health",
+                                "/actuator/**",
                                 "/swagger-ui/**",
                                 "/swagger-ui.html",
                                 "/v3/api-docs/**",
@@ -84,7 +89,9 @@ public class CustomSecurityFilterChain extends JwtConfigProperties {
                                 jwtService, objectMapper, getUrl(), authenticationManager, customUserDetailService),
                         UsernamePasswordAuthenticationFilter.class)
                 .addFilterAfter(new JwtAuthenticationInternalFilter(jwtService, objectMapper, this),
-                        UsernamePasswordAuthenticationFilter.class);
+                        UsernamePasswordAuthenticationFilter.class)
+                .addFilterAfter(new InternalAuthFilter(internalTokenProvider),
+                        JwtAuthenticationInternalFilter.class);
 
         return httpSecurity.build();
     }
