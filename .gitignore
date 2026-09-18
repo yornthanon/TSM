@@ -10,6 +10,9 @@ dist/
 *.log
 .npm/
 
+# Local runtime state (pids, logs) from native launcher scripts
+.local/
+
 ### STS ###
 .apt_generated
 .classpath
