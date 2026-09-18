@@ -31,7 +31,7 @@ export const useTickets = () =>
   useQuery<Ticket[]>({ queryKey: QUERY_KEYS.tickets, queryFn: () => get<Ticket[]>('/api/v1/tickets', []) });
 
 export const useOrders = () =>
-  useQuery({ queryKey: QUERY_KEYS.orders, queryFn: () => get('/api/v1/orders', []) });
+  useQuery<Order[]>({ queryKey: QUERY_KEYS.orders, queryFn: () => get<Order[]>('/api/v1/orders', []) });
 
 export const useEventTickets = (eventId: number | undefined) => {
   const events = useEvents();

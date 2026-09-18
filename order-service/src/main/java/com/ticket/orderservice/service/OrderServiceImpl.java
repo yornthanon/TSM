@@ -60,25 +60,24 @@ public class OrderServiceImpl implements OrderService{
                     new EmptyObject(),
                     true);
         }
-        // Payment processing logic would go here
 
         // Create order in the database
         Order order = orderMapper.toEntity(orderRequest);
-        order.setEventId(orderRequest.getEventId()); // need to check event service
-        order.setTicketId(orderRequest.getTicketId()); // need to check ticket service
+        order.setEventId(orderRequest.getEventId());
+        order.setTicketId(orderRequest.getTicketId());
         order.setUsername(username);
         order.setOrderStatus(OrderStatus.PROCESSING);
         order.setOrderDate(LocalDateTime.now());
 
         orderRepository.save(order);
 
-        // Process payment: can move to new method or service
+        // Process payment
         PaymentRequest paymentRequest = new PaymentRequest();
         paymentRequest.setOrderId(order.getId());
         paymentRequest.setUsername(username);
         paymentRequest.setAmount(orderRequest.getAmount());
         paymentRequest.setCurrency("USD");
-        paymentRequest.setPaymentMethod(PaymentMethod.CREDIT_CARD);
+        paymentRequest.setPaymentMethod(orderRequest.getPaymentMethod() != null ? orderRequest.getPaymentMethod() : PaymentMethod.CREDIT_CARD);
         paymentRequest.setDescription("Payment for order ID: " + order.getId());
 
         ResponseErrorTemplate paymentResponse = paymentClient.processingPayment(paymentRequest)
@@ -99,34 +98,51 @@ public class OrderServiceImpl implements OrderService{
         order.setPaymentId(paymentId);
         orderRepository.save(order);
 
-        // Kafka is intentionally disabled for the Render deployment.
-        Map userData = userClient.getUserByUsername(username).block();
-        Map eventData = eventClient.getEventById(orderRequest.getEventId()).block();
-
-        String email = "no-reply@ticketmanagement.com";
-        String phoneNumber = "";
-        String eventTitle = "Event #" + orderRequest.getEventId();
-        String eventLocation = "";
-        LocalDateTime eventDate = LocalDateTime.now();
-
-        if (userData != null && userData.get("data") instanceof Map data) {
-            Object emailObj = data.get("email");
-            Object phoneObj = data.get("phoneNumber");
-            if (emailObj != null) email = emailObj.toString();
-            if (phoneObj != null) phoneNumber = phoneObj.toString();
-        }
-        if (eventData != null && eventData.get("data") instanceof Map data) {
-            Object titleObj = data.get("title");
-            Object locObj = data.get("location");
-            Object dateObj = data.get("eventDate");
-            if (titleObj != null) eventTitle = titleObj.toString();
-            if (locObj != null) eventLocation = locObj.toString();
-            if (dateObj != null) {
-                try {
-                    eventDate = LocalDateTime.parse(dateObj.toString());
-                } catch (Exception ignored) {
+        // Publish Kafka event for notification service
+        try {
+            Map eventData = eventClient.getEventById(orderRequest.getEventId()).block();
+            
+            String eventTitle = "Event #" + orderRequest.getEventId();
+            String eventLocation = "";
+            LocalDateTime eventDate = LocalDateTime.now();
+            
+            if (eventData != null && eventData.get("data") instanceof Map data) {
+                Object titleObj = data.get("title");
+                Object locObj = data.get("location");
+                Object dateObj = data.get("eventDate");
+                if (titleObj != null) eventTitle = titleObj.toString();
+                if (locObj != null) eventLocation = locObj.toString();
+                if (dateObj != null) {
+                    try {
+                        eventDate = LocalDateTime.parse(dateObj.toString());
+                    } catch (Exception ignored) {
+                    }
                 }
             }
+
+            // Use email/phone from request (frontend provides these) or fallback to user service
+            String email = orderRequest.getRecipientEmail();
+            String phoneNumber = orderRequest.getPhoneNumber();
+            
+            if (!StringUtils.hasText(email) || !StringUtils.hasText(phoneNumber)) {
+                Map userData = userClient.getUserByUsername(username).block();
+                if (userData != null && userData.get("data") instanceof Map data) {
+                    if (!StringUtils.hasText(email)) {
+                        Object emailObj = data.get("email");
+                        if (emailObj != null) email = emailObj.toString();
+                    }
+                    if (!StringUtils.hasText(phoneNumber)) {
+                        Object phoneObj = data.get("phoneNumber");
+                        if (phoneObj != null) phoneNumber = phoneObj.toString();
+                    }
+                }
+            }
+
+            // TODO: Publish Kafka event to order-confirmed-topic
+            // orderConfirmedKafkaProducer.sendOrderConfirmedEvent(order, email, phoneNumber, eventTitle, eventLocation, eventDate);
+            
+        } catch (Exception e) {
+            log.error("Failed to prepare notification data for order {}: {}", order.getId(), e.getMessage());
         }
 
         return new ResponseErrorTemplate(

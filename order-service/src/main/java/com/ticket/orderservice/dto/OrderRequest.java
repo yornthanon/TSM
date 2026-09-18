@@ -1,6 +1,7 @@
 package com.ticket.orderservice.dto;
 
 import lombok.Data;
+import com.ticket.common.enums.PaymentMethod;
 
 import java.math.BigDecimal;
 
@@ -11,4 +12,7 @@ public class OrderRequest {
     private Long ticketId;
     private Integer quantity;
     private BigDecimal amount;
+    private PaymentMethod paymentMethod;
+    private String recipientEmail;
+    private String phoneNumber;
 }
