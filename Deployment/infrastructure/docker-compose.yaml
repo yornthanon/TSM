@@ -87,6 +87,10 @@ services:
       DEFAULT_ADMIN_USERNAME: ${DEFAULT_ADMIN_USERNAME:-admin}
       DEFAULT_ADMIN_PASSWORD: ${DEFAULT_ADMIN_PASSWORD:-admin123}
       DEFAULT_ADMIN_EMAIL: ${DEFAULT_ADMIN_EMAIL:-admin@ticketmanagement.com}
+      # Map internal service names to hosted backend URLs
+      # Format: internal-host:port=https://your-hosted-url.com
+      # Example: user-service:8081=https://api.yourdomain.com/user-service,event-service:8082=https://api.yourdomain.com/event-service
+      ROUTE_URI_HOST_MAP: ${ROUTE_URI_HOST_MAP:-}
     depends_on:
       postgres:
         condition: service_healthy
