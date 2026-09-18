@@ -1,0 +1,168 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Inter", "system-ui", "sans-serif";
+  
+  --color-primary: #F6821F;
+  --color-primary-hover: #E8761A;
+  --color-primary-light: #FFF4ED;
+  
+  --color-dark-bg: #1D1F2F;
+  --color-dark-bg-secondary: #40445C;
+  --color-dark-card: #25283D;
+  
+  --color-light-bg: #FFFFFF;
+  --color-light-bg-secondary: #F6F7F9;
+  
+  --color-border: #E6E8EE;
+  --color-border-dark: #3D415A;
+  
+  --color-text-primary: #1D1F2F;
+  --color-text-secondary: #6B7280;
+  --color-text-muted: #9CA3AF;
+  --color-text-dark: #FFFFFF;
+  --color-text-dark-secondary: #B8BCC8;
+  
+  --shadow-subtle: 0 8px 24px rgba(29, 31, 47, 0.08);
+  --shadow-card: 0 2px 8px rgba(29, 31, 47, 0.06);
+  --shadow-hover: 0 12px 32px rgba(29, 31, 47, 0.12);
+  
+  --radius-sm: 6px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --radius-xl: 16px;
+  
+  --transition-fast: 150ms ease;
+  --transition-normal: 250ms ease;
+  --transition-slow: 350ms ease;
+}
+
+@layer base {
+  html {
+    font-family: var(--font-sans);
+    scroll-behavior: smooth;
+  }
+  
+  body {
+    @apply bg-light-bg text-text-primary antialiased;
+  }
+  
+  * {
+    @apply border-border;
+  }
+}
+
+@layer components {
+  .btn {
+    @apply inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-lg font-medium text-sm transition-all duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+  
+  .btn-primary {
+    @apply btn bg-primary text-white hover:bg-primary-hover focus-visible:ring-primary shadow-sm hover:shadow-md;
+  }
+  
+  .btn-secondary {
+    @apply btn bg-light-bg-secondary text-text-primary border border-border hover:bg-light-bg hover:border-border/80 focus-visible:ring-text-muted;
+  }
+  
+  .btn-ghost {
+    @apply btn text-text-secondary hover:text-text-primary hover:bg-light-bg-secondary focus-visible:ring-text-muted;
+  }
+  
+  .btn-danger {
+    @apply btn bg-red-50 text-red-600 border border-red-100 hover:bg-red-100 focus-visible:ring-red-500;
+  }
+  
+  .btn-sm {
+    @apply px-3 py-1.5 text-xs gap-1.5;
+  }
+  
+  .btn-lg {
+    @apply px-7 py-3 text-base gap-2;
+  }
+  
+  .card {
+    @apply bg-light-bg rounded-xl border border-border shadow-card hover:shadow-hover transition-shadow duration-300;
+  }
+  
+  .card-dark {
+    @apply bg-dark-card border-border-dark rounded-xl shadow-card hover:shadow-hover transition-shadow duration-300;
+  }
+  
+  .input {
+    @apply w-full px-4 py-2.5 rounded-lg border border-border bg-light-bg text-text-primary placeholder:text-text-muted focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all duration-200 disabled:bg-light-bg-secondary disabled:cursor-not-allowed;
+  }
+  
+  .label {
+    @apply block text-sm font-medium text-text-primary mb-1.5;
+  }
+  
+  .badge {
+    @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium;
+  }
+  
+  .badge-success {
+    @apply badge bg-green-50 text-green-700 border border-green-100;
+  }
+  
+  .badge-warning {
+    @apply badge bg-yellow-50 text-yellow-700 border border-yellow-100;
+  }
+  
+  .badge-error {
+    @apply badge bg-red-50 text-red-700 border border-red-100;
+  }
+  
+  .badge-info {
+    @apply badge bg-blue-50 text-blue-700 border border-blue-100;
+  }
+  
+  .badge-neutral {
+    @apply badge bg-gray-50 text-gray-700 border border-gray-100;
+  }
+  
+  .section-container {
+    @apply max-w-7xl mx-auto px-4 sm:px-6 lg:px-8;
+  }
+  
+  .section-title {
+    @apply text-3xl sm:text-4xl font-bold text-text-primary tracking-tight;
+  }
+  
+  .section-subtitle {
+    @apply text-lg sm:text-xl text-text-secondary mt-2 max-w-2xl;
+  }
+}
+
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+  
+  .animate-fade-in {
+    animation: fadeIn 0.5s ease-out;
+  }
+  
+  .animate-slide-up {
+    animation: slideUp 0.5s ease-out;
+  }
+  
+  .animate-slide-down {
+    animation: slideDown 0.3s ease-out;
+  }
+  
+  @keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+  
+  @keyframes slideUp {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  
+  @keyframes slideDown {
+    from { opacity: 0; transform: translateY(-10px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+}
