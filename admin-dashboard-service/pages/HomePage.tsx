@@ -1,10 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { CalendarDays, MapPin, Search, Ticket, TrendingUp, Sparkles, ShieldCheck, ArrowRight, Music, Trophy, Mic2, GraduationCap, PartyPopper, ChevronRight } from 'lucide-react';
+import { CalendarDays, MapPin, Search, Ticket, TrendingUp, Sparkles, ShieldCheck, ArrowRight, Music, Trophy, Mic2, GraduationCap, PartyPopper, ChevronRight, Star, Zap, Users } from 'lucide-react';
 import { useEvents } from '../lib/catalog';
 import { useLanguage } from '../i18n';
 import { EventCard } from '../components/store/EventCard';
-import { Spinner } from '../components/ui/Button';
+import { Spinner, Badge } from '../components/ui';
 
 const categories = [
   { type: 'CONCERT', label: 'Concerts', labelKm: 'ប្រគំតន្ត្រី', icon: Music, gradient: 'from-violet-600 to-fuchsia-500' },
