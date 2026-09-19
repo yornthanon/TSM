@@ -1,41 +1,37 @@
-import React from 'react';
-import { clsx } from './Button';
+'use client';
 
-export const StatCard: React.FC<{
+import React from 'react';
+import { cn } from './utils';
+
+export interface StatCardProps {
   label: string;
-  value: React.ReactNode;
-  detail?: React.ReactNode;
-  icon: React.ElementType;
-  tone?: 'brand' | 'green' | 'amber' | 'rose' | 'sky' | 'slate';
-  trend?: number;
-}> = ({ label, value, detail, icon: Icon, tone = 'brand', trend }) => {
-  const tones = {
-    brand: 'bg-brand-50 text-brand-700',
-    green: 'bg-emerald-50 text-emerald-700',
-    amber: 'bg-amber-50 text-amber-700',
-    rose: 'bg-rose-50 text-rose-700',
-    sky: 'bg-sky-50 text-sky-700',
-    slate: 'bg-slate-100 text-slate-600',
-  };
+  value: string | number;
+  detail?: string;
+  icon?: React.ReactNode;
+  trend?: { value: string; positive?: boolean };
+  className?: string;
+}
+
+export function StatCard({ label, value, detail, icon, trend, className }: StatCardProps) {
   return (
-    <div className="bg-white rounded-2xl border border-line shadow-card p-5 flex items-start gap-4">
-      <div className={clsx('w-11 h-11 rounded-xl flex items-center justify-center shrink-0', tones[tone])}>
-        <Icon className="w-5 h-5" />
-      </div>
-      <div className="min-w-0">
-        <div className="text-[11px] font-semibold uppercase tracking-wider text-ink-soft">{label}</div>
-        <div className="font-display text-2xl font-bold text-ink mt-1 truncate">{value}</div>
-        <div className="flex items-center gap-2 mt-1 text-xs text-ink-soft">
-          {detail}
-          {typeof trend === 'number' && trend !== 0 && (
-            <span className={clsx('font-semibold', trend > 0 ? 'text-emerald-600' : 'text-rose-600')}>
-              {trend > 0 ? '▲' : '▼'} {Math.abs(trend)}%
-            </span>
+    <div className={cn('card p-6', className)}>
+      <div className="flex items-start justify-between gap-4">
+        <div className="min-w-0">
+          <p className="text-xs font-medium text-slate-400 truncate">{label}</p>
+          <p className="mt-2 text-3xl font-bold text-slate-100 tabular-nums">{value}</p>
+          {detail && <p className="mt-1 text-xs text-slate-500">{detail}</p>}
+          {trend && (
+            <p className={cn('mt-1 text-xs font-medium flex items-center gap-1', trend.positive ? 'text-emerald-400' : 'text-rose-400')}>
+              {trend.value}
+            </p>
           )}
         </div>
+        {icon && (
+          <div className="flex-shrink-0 w-12 h-12 rounded-xl bg-slate-800/50 border border-slate-700 flex items-center justify-center text-slate-400">
+            {icon}
+          </div>
+        )}
       </div>
     </div>
   );
-};
-
-export default StatCard;
+}

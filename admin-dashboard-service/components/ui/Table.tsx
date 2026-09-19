@@ -1,73 +1,118 @@
-import React from 'react';
-import { clsx } from './Button';
+'use client';
 
-export interface Column<T> {
-  key: string;
-  header: React.ReactNode;
-  render?: (row: T, index: number) => React.ReactNode;
+import React, { forwardRef } from 'react';
+import { cn } from './utils';
+
+export interface Column<T = unknown> {
+  id: string;
+  header?: React.ReactNode;
+  cell?: (row: T) => React.ReactNode;
   className?: string;
+  headerClassName?: string;
 }
 
-export const Table = <T,>({
-  columns,
-  rows,
-  keyExtractor,
-  emptyTitle = 'No data',
-  emptyMessage,
-  onRowClick,
-  maxHeight,
-}: {
+export interface TableProps<T = unknown> {
   columns: Column<T>[];
-  rows: T[];
-  keyExtractor: (row: T, index: number) => string;
-  emptyTitle?: string;
+  data: T[];
+  keyExtractor: (row: T) => string;
+  className?: string;
   emptyMessage?: string;
-  onRowClick?: (row: T) => void;
-  maxHeight?: number;
-}) => (
-  <div className={clsx('overflow-x-auto', maxHeight && 'overflow-y-auto')} style={maxHeight ? { maxHeight } : undefined}>
-    <table className="w-full text-sm min-w-full">
-      <thead>
-        <tr className="border-b border-line">
-          {columns.map((col) => (
-            <th
-              key={col.key}
-              className={clsx(
-                'px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-wider text-ink-soft whitespace-nowrap',
-                col.className
+  striped?: boolean;
+  hoverable?: boolean;
+  loading?: boolean;
+  rowClassName?: (row: T) => string;
+}
+
+export function Table<T = unknown>({
+  columns,
+  data,
+  keyExtractor,
+  className,
+  emptyMessage = 'No data available',
+  striped = true,
+  hoverable = true,
+  loading = false,
+  rowClassName,
+}: TableProps<T>) {
+  if (loading) {
+    return (
+      <div className={cn('table-container overflow-hidden', className)}>
+        <table className="w-full">
+          <thead className="bg-slate-950 border-b border-slate-800">
+            <tr>
+              {columns.map((col) => (
+                <th key={col.id} className={cn('px-4 py-3 text-xs font-semibold text-slate-400 uppercase tracking-wider', col.headerClassName)}>
+                  <div className="skeleton h-4 w-3/4" />
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {[...Array(5)].map((_, i) => (
+              <tr key={i} className={cn('border-b border-slate-800/50', striped && i % 2 === 0 && 'bg-slate-950/50')}>
+                {columns.map((col) => (
+                  <td key={col.id} className="px-4 py-3">
+                    <div className="skeleton h-4 w-full" />
+                  </td>
+                ))}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    );
+  }
+
+  if (data.length === 0) {
+    return (
+      <div className={cn('table-container', className)}>
+        <div className="bg-slate-900 border border-slate-800 rounded-xl">
+          <div className="px-6 py-12 text-center">
+            <p className="text-slate-400">{emptyMessage}</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className={cn('table-container overflow-x-auto', className)}>
+      <table className="w-full text-sm">
+        <thead className="bg-slate-950 border-b border-slate-800">
+          <tr>
+            {columns.map((col) => (
+              <th
+                key={col.id}
+                className={cn(
+                  'px-4 py-3 text-xs font-semibold text-slate-400 uppercase tracking-wider text-left',
+                  col.headerClassName
+                )}
+              >
+                {col.header}
+              </th>
+            ))}
+          </tr>
+        </thead>
+        <tbody className="divide-y divide-slate-800/50">
+          {data.map((row, rowIndex) => (
+            <tr
+              key={keyExtractor(row)}
+              className={cn(
+                'transition-colors duration-100',
+                hoverable && 'hover:bg-slate-800/50',
+                striped && rowIndex % 2 === 0 && 'bg-slate-950/50',
+                rowClassName?.(row)
               )}
             >
-              {col.header}
-            </th>
-          ))}
-        </tr>
-      </thead>
-      <tbody>
-        {rows.length === 0 ? (
-          <tr>
-            <td colSpan={columns.length} className="px-4 py-12 text-center">
-              <div className="text-sm font-semibold text-ink-soft">{emptyTitle}</div>
-              {emptyMessage && <div className="text-xs text-ink-soft/70 mt-1">{emptyMessage}</div>}
-            </td>
-          </tr>
-        ) : (
-          rows.map((row, index) => (
-            <tr
-              key={keyExtractor(row, index)}
-              onClick={onRowClick ? () => onRowClick(row) : undefined}
-              className={clsx('border-b border-line last:border-0 transition', onRowClick && 'cursor-pointer hover:bg-brand-50/40')}
-            >
               {columns.map((col) => (
-                <td key={col.key} className={clsx('px-4 py-3 text-ink whitespace-nowrap', col.className)}>
-                  {col.render ? col.render(row, index) : String((row as Record<string, unknown>)[col.key] ?? '')}
+                <td key={col.id} className={cn('px-4 py-3 text-slate-100', col.className)}>
+                  {col.cell ? col.cell(row) : (row as Record<string, unknown>)[col.id] as React.ReactNode}
                 </td>
               ))}
             </tr>
-          ))
-        )}
-      </tbody>
-    </table>
-  </div>
-);
-
-export default Table;
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}

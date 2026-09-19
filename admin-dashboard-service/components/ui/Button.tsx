@@ -1,64 +1,72 @@
-import React from 'react';
-import { clsx } from 'clsx';
-import { twMerge } from 'tailwind-merge';
+'use client';
 
-type Variant = 'primary' | 'secondary' | 'ghost' | 'danger' | 'success' | 'outline';
-type Size = 'xs' | 'sm' | 'md' | 'lg' | 'icon';
+import React, { forwardRef } from 'react';
+import { Slot } from '@radix-ui/react-slot';
+import { cva, type VariantProps } from 'class-variance-authority';
+import { cn } from './utils';
 
-const variantClasses: Record<Variant, string> = {
-  primary: 'bg-gradient-brand text-white shadow-glow hover:brightness-110 active:brightness-95',
-  secondary: 'bg-ink text-white hover:bg-ink-soft active:brightness-95',
-  ghost: 'bg-transparent text-ink-soft hover:bg-line/70 hover:text-ink',
-  danger: 'bg-rose-600 text-white hover:bg-rose-500 active:brightness-95',
-  success: 'bg-emerald-600 text-white hover:bg-emerald-500 active:brightness-95',
-  outline: 'bg-white text-ink border border-line shadow-card hover:border-brand-300 hover:text-brand-700',
-};
+const buttonVariants = cva(
+  'inline-flex items-center justify-center font-medium rounded-lg transition-colors duration-150 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none',
+  {
+    variants: {
+      variant: {
+        primary: 'bg-orange-500 text-white hover:bg-orange-600 active:bg-orange-700 focus-visible:ring-orange-500 focus-visible:ring-offset-slate-950 dark:focus-visible:ring-offset-slate-950',
+        secondary: 'bg-slate-800 text-slate-100 hover:bg-slate-700 active:bg-slate-600 focus-visible:ring-slate-500 focus-visible:ring-offset-slate-950 dark:focus-visible:ring-offset-slate-950',
+        ghost: 'bg-transparent text-slate-300 hover:bg-slate-800 hover:text-white active:bg-slate-700 focus-visible:ring-slate-500 focus-visible:ring-offset-slate-950 dark:focus-visible:ring-offset-slate-950',
+        danger: 'bg-rose-500 text-white hover:bg-rose-600 active:bg-rose-700 focus-visible:ring-rose-500 focus-visible:ring-offset-slate-950 dark:focus-visible:ring-offset-slate-950',
+        outline: 'border border-slate-700 bg-transparent text-slate-100 hover:bg-slate-800 active:bg-slate-700 focus-visible:ring-slate-500 focus-visible:ring-offset-slate-950 dark:focus-visible:ring-offset-slate-950',
+        link: 'text-orange-400 hover:text-orange-300 underline-offset-2 hover:underline focus-visible:ring-orange-500 focus-visible:ring-offset-slate-950 dark:focus-visible:ring-offset-slate-950',
+      },
+      size: {
+        xs: 'h-8 px-2.5 text-xs gap-1.5',
+        sm: 'h-9 px-3 text-sm gap-2',
+        md: 'h-10 px-4 text-sm gap-2',
+        lg: 'h-11 px-6 text-base gap-2.5',
+        xl: 'h-12 px-8 text-lg gap-3',
+        icon: 'h-10 w-10 p-0',
+      },
+    },
+    defaultVariants: {
+      variant: 'primary',
+      size: 'md',
+    },
+  }
+);
 
-const sizeClasses: Record<Size, string> = {
-  xs: 'px-2.5 py-1.5 text-xs gap-1.5',
-  sm: 'px-3 py-2 text-sm gap-2',
-  md: 'px-4 py-2.5 text-sm gap-2',
-  lg: 'px-6 py-3 text-base gap-2.5',
-  icon: 'p-2',
-};
-
-export interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
-  variant?: Variant;
-  size?: Size;
+export interface ButtonProps
+  extends React.ButtonHTMLAttributes<HTMLButtonElement>,
+    VariantProps<typeof buttonVariants> {
   loading?: boolean;
+  asChild?: boolean;
 }
 
-export const Button: React.FC<ButtonProps> = ({
-  variant = 'primary',
-  size = 'md',
-  loading = false,
-  className,
-  children,
-  disabled,
-  ...props
-}) => (
-  <button
-    className={twMerge(
-      clsx(
-        'inline-flex items-center justify-center font-semibold rounded-xl transition disabled:opacity-50 disabled:pointer-events-none select-none',
-        variantClasses[variant],
-        sizeClasses[size],
-        className
-      )
-    )}
-    disabled={disabled || loading}
-    {...props}
-  >
-    {loading && <Spinner className="w-4 h-4" />}
-    {children}
-  </button>
+export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
+  ({ className, variant, size, loading, asChild = false, children, disabled, ...props }, ref) => {
+    const Comp = asChild ? Slot : 'button';
+    return (
+      <Comp
+        className={cn(buttonVariants({ variant, size, className }))}
+        ref={ref}
+        disabled={disabled || loading}
+        aria-busy={loading}
+        {...props}
+      >
+        {loading ? (
+          <>
+            <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+              <path className="opacity-90" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" />
+            </svg>
+            <span className="sr-only">Loading</span>
+          </>
+        ) : (
+          children
+        )}
+      </Comp>
+    );
+  }
 );
 
-export const Spinner: React.FC<{ className?: string }> = ({ className = 'w-5 h-5' }) => (
-  <svg className={clsx('animate-spin', className)} viewBox="0 0 24 24" fill="none">
-    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-    <path className="opacity-90" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" />
-  </svg>
-);
+Button.displayName = 'Button';
 
-export { clsx };
+export { cn } from './utils';

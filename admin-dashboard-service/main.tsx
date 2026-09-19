@@ -6,6 +6,7 @@ import './index.css';
 import { LanguageProvider } from './i18n';
 import { AuthProvider } from './lib/auth';
 import { BookingProvider } from './lib/booking';
+import { ThemeProvider } from './lib/theme';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -16,13 +17,15 @@ const queryClient = new QueryClient({
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
     <QueryClientProvider client={queryClient}>
-      <LanguageProvider>
-        <AuthProvider>
-          <BookingProvider>
-            <App />
-          </BookingProvider>
-        </AuthProvider>
-      </LanguageProvider>
+      <ThemeProvider>
+        <LanguageProvider>
+          <AuthProvider>
+            <BookingProvider>
+              <App />
+            </BookingProvider>
+          </AuthProvider>
+        </LanguageProvider>
+      </ThemeProvider>
     </QueryClientProvider>
   </React.StrictMode>
 );

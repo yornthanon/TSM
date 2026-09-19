@@ -1,42 +1,112 @@
-import React from 'react';
-import { clsx } from './Button';
+'use client';
 
-export const Label: React.FC<React.LabelHTMLAttributes<HTMLLabelElement>> = ({ className, ...props }) => (
-  <label className={clsx('block text-[13px] font-semibold text-ink mb-1.5', className)} {...props} />
+import React, { forwardRef } from 'react';
+import { cn } from './utils';
+
+export interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {
+  error?: boolean;
+}
+
+export const Input = forwardRef<HTMLInputElement, InputProps>(
+  ({ className, error, disabled, ...props }, ref) => {
+    return (
+      <input
+        ref={ref}
+        disabled={disabled}
+        className={cn(
+          'w-full h-10 px-3 text-sm bg-slate-800 border text-slate-100 placeholder:text-slate-500 rounded-lg transition-all duration-150',
+          'focus:outline-none focus:ring-1 disabled:opacity-50 disabled:cursor-not-allowed',
+          error
+            ? 'border-rose-500 focus:border-rose-500 focus:ring-rose-500'
+            : 'border-slate-700 focus:border-orange-500 focus:ring-orange-500',
+          className
+        )}
+        {...props}
+      />
+    );
+  }
 );
+Input.displayName = 'Input';
 
-const fieldBase =
-  'w-full rounded-xl border border-line bg-white px-3.5 py-2.5 text-sm text-ink placeholder:text-ink-soft/50 transition focus:outline-none focus:border-brand-400 focus:ring-4 focus:ring-brand-500/10';
+export interface TextareaProps extends React.TextareaHTMLAttributes<HTMLTextAreaElement> {
+  error?: boolean;
+}
 
-export const Input: React.FC<React.InputHTMLAttributes<HTMLInputElement>> = ({ className, ...props }) => (
-  <input className={clsx(fieldBase, 'min-h-0', className)} {...props} />
+export const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(
+  ({ className, error, disabled, ...props }, ref) => {
+    return (
+      <textarea
+        ref={ref}
+        disabled={disabled}
+        className={cn(
+          'w-full px-3 py-3 text-sm bg-slate-800 border text-slate-100 placeholder:text-slate-500 rounded-lg transition-all duration-150 resize-none',
+          'focus:outline-none focus:ring-1 disabled:opacity-50 disabled:cursor-not-allowed',
+          error
+            ? 'border-rose-500 focus:border-rose-500 focus:ring-rose-500'
+            : 'border-slate-700 focus:border-orange-500 focus:ring-orange-500',
+          className
+        )}
+        {...props}
+      />
+    );
+  }
 );
+Textarea.displayName = 'Textarea';
 
-export const Select: React.FC<React.SelectHTMLAttributes<HTMLSelectElement>> = ({ className, children, ...props }) => (
-  <select className={clsx(fieldBase, 'min-h-0 appearance-none pr-9 bg-no-repeat bg-[right_0.75rem_center] bg-[length:14px]', className)}
-    style={{
-      backgroundImage:
-        "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20' fill='%239a93c9'%3E%3Cpath fill-rule='evenodd' d='M5.23 7.21a.75.75 0 011.06.02L10 11.17l3.71-3.94a.75.75 0 111.08 1.04l-4.25 4.5a.75.75 0 01-1.08 0l-4.25-4.5a.75.75 0 01.02-1.06z' clip-rule='evenodd'/%3E%3C/svg%3E\")",
-    }}
-    {...props}
-  >
-    {children}
-  </select>
-);
+export interface SelectProps extends React.SelectHTMLAttributes<HTMLSelectElement> {
+  error?: boolean;
+}
 
-export const Textarea: React.FC<React.TextareaHTMLAttributes<HTMLTextAreaElement>> = ({ className, ...props }) => (
-  <textarea className={clsx(fieldBase, className)} {...props} />
+export const Select = forwardRef<HTMLSelectElement, SelectProps>(
+  ({ className, error, disabled, ...props }, ref) => {
+    return (
+      <select
+        ref={ref}
+        disabled={disabled}
+        className={cn(
+          'w-full h-10 px-3 pr-8 text-sm bg-slate-800 border text-slate-100 rounded-lg transition-all duration-150 appearance-none',
+          'focus:outline-none focus:ring-1 disabled:opacity-50 disabled:cursor-not-allowed',
+          error
+            ? 'border-rose-500 focus:border-rose-500 focus:ring-rose-500'
+            : 'border-slate-700 focus:border-orange-500 focus:ring-orange-500',
+          className
+        )}
+        {...props}
+      />
+    );
+  }
 );
+Select.displayName = 'Select';
 
-export const Field: React.FC<{ label?: string; hint?: string; children: React.ReactNode; className?: string }> = ({
-  label,
-  hint,
-  children,
-  className,
-}) => (
-  <div className={clsx('space-y-0.5', className)}>
-    {label && <Label>{label}</Label>}
-    {children}
-    {hint && <p className="text-[11px] text-ink-soft mt-1">{hint}</p>}
-  </div>
+export interface LabelProps extends React.LabelHTMLAttributes<HTMLLabelElement> {}
+
+export const Label = forwardRef<HTMLLabelElement, LabelProps>(
+  ({ className, ...props }, ref) => {
+    return (
+      <label
+        ref={ref}
+        className={cn('block text-xs font-medium text-slate-300 mb-1.5', className)}
+        {...props}
+      />
+    );
+  }
 );
+Label.displayName = 'Label';
+
+export interface FieldProps extends React.HTMLAttributes<HTMLDivElement> {
+  label?: React.ReactNode;
+  hint?: React.ReactNode;
+  error?: React.ReactNode;
+  children: React.ReactNode;
+}
+
+export function Field({ label, hint, error, children, className, ...props }: FieldProps) {
+  return (
+    <div className={cn('space-y-1.5', className)} {...props}>
+      {label && <Label>{label}</Label>}
+      <div>{children}</div>
+      {error && <p className="text-xs text-rose-400" role="alert">{error}</p>}
+      {hint && !error && <p className="text-xs text-slate-500">{hint}</p>}
+    </div>
+  );
+}
