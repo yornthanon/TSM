@@ -6,7 +6,7 @@ import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { User, Lock, Mail, Phone, ArrowRight } from 'lucide-react';
-import { useLanguage } from '../../i18n';
+import { useLanguage } from '../i18n';
 import { useAuth } from '../../lib/auth';
 import { Button, Field, Input, Card, CardHeader, CardContent } from '../ui';
 
