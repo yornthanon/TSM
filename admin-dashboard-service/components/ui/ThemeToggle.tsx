@@ -4,13 +4,13 @@ import React from 'react';
 import { Sun, Moon, Monitor } from 'lucide-react';
 import { useTheme } from '../../lib/theme';
 import {
-  Dialog,
-  DialogTrigger,
-  DialogContent,
-  DialogItem,
-  DialogSeparator,
-} from '@radix-ui/react-dialog';
-import { cn } from './Button';
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+} from '../ui';
+import { cn } from '../ui/utils';
 
 type Theme = 'light' | 'dark' | 'system';
 
@@ -24,8 +24,8 @@ export function ThemeToggle() {
   ];
 
   return (
-    <Dialog open={false} onOpenChange={() => {}}>
-      <DialogTrigger asChild>
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
         <button
           className={cn(
             'relative h-9 w-9 rounded-lg bg-slate-800/50 border border-slate-700/50',
@@ -40,15 +40,15 @@ export function ThemeToggle() {
             <Sun className="w-5 h-5 text-slate-300" />
           )}
         </button>
-      </DialogTrigger>
-      <DialogContent
+      </DropdownMenuTrigger>
+      <DropdownMenuContent
         className="bg-slate-900 border-slate-800 rounded-xl shadow-xl min-w-[160px] p-1"
         sideOffset={8}
         align="end"
         side="bottom"
       >
         {themes.map((t) => (
-          <DialogItem
+          <DropdownMenuItem
             key={t.value}
             onSelect={() => setTheme(t.value)}
             className={cn(
@@ -62,10 +62,10 @@ export function ThemeToggle() {
             </span>
             {t.label}
             {theme === t.value && <span className="ml-auto text-orange-400">✓</span>}
-          </DialogItem>
+          </DropdownMenuItem>
         ))}
-        <DialogSeparator className="my-1 border-slate-800" />
-        <DialogItem
+        <DropdownMenuSeparator className="my-1 border-slate-800" />
+        <DropdownMenuItem
           onSelect={() => setTheme(resolvedTheme === 'dark' ? 'light' : 'dark')}
           className="flex items-center gap-3 px-3 py-2 rounded-lg text-sm hover:bg-slate-800 transition-colors cursor-pointer"
         >
@@ -73,8 +73,8 @@ export function ThemeToggle() {
             {resolvedTheme === 'dark' ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
           </span>
           Switch to {resolvedTheme === 'dark' ? 'Light' : 'Dark'}
-        </DialogItem>
-      </DialogContent>
-    </Dialog>
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
   );
 }

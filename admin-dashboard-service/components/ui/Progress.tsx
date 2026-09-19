@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { forwardRef } from 'react';
 import * as ProgressPrimitive from '@radix-ui/react-progress';
 import { cn } from './utils';
 

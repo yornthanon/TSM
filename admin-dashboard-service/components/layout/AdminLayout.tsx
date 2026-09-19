@@ -15,6 +15,7 @@ import {
   Menu,
   X,
   ChevronLeft,
+  ChevronRight,
   Search,
   Command,
   User,
@@ -36,6 +37,7 @@ import {
   Tooltip,
   TooltipTrigger,
   TooltipContent,
+  Separator,
 } from '../ui';
 import { ThemeToggle } from '../ui/ThemeToggle';
 import { cn } from '../ui/utils';

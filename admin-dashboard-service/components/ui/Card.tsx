@@ -3,7 +3,7 @@
 import React, { forwardRef } from 'react';
 import { cn } from './utils';
 
-export interface CardProps extends React.HTMLAttributes<HTMLDivElement> {}
+export interface CardProps extends Omit<React.HTMLAttributes<HTMLDivElement>, 'title'> {}
 
 export const Card = forwardRef<HTMLDivElement, CardProps>(({ className, ...props }, ref) => (
   <div
@@ -14,7 +14,7 @@ export const Card = forwardRef<HTMLDivElement, CardProps>(({ className, ...props
 ));
 Card.displayName = 'Card';
 
-export interface CardHeaderProps extends React.HTMLAttributes<HTMLDivElement> {
+export interface CardHeaderProps extends Omit<React.HTMLAttributes<HTMLDivElement>, 'title'> {
   title?: React.ReactNode;
   subtitle?: React.ReactNode;
   action?: React.ReactNode;

@@ -33,7 +33,7 @@ export const Avatar = forwardRef<HTMLSpanElement, AvatarProps>(
     return (
       <AvatarPrimitive.Root ref={ref} className={cn('relative inline-flex shrink-0 overflow-hidden rounded-full', sizeClasses[size], className)} {...props}>
         <AvatarPrimitive.Image
-          src={src}
+          src={src ?? undefined}
           alt={alt}
           className="aspect-square h-full w-full object-cover"
         />
