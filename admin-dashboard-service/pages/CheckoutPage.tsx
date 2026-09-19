@@ -7,7 +7,7 @@ import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { ArrowLeft, CreditCard, Loader2, CheckCircle2, Mail, Phone, User, Shield } from 'lucide-react';
 import { useBooking } from '../../lib/booking';
-import { useLanguage } from '../../i18n';
+import { useLanguage } from '../i18n';
 import { useAuth } from '../../lib/auth';
 import { api } from '../../services/apiClient';
 import { Button, Card, CardContent, CardHeader, Field, Input, Select, Badge, Skeleton, Tabs, TabsList, TabsTrigger, TabsContent, Progress } from '../ui';

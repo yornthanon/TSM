@@ -5,7 +5,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { CheckCircle2, Printer, Home, Mail, CalendarDays, MapPin, Ticket, Download } from 'lucide-react';
 import { useOrders } from '../../lib/catalog';
 import { useBooking } from '../../lib/booking';
-import { useLanguage } from '../../i18n';
+import { useLanguage } from '../i18n';
 import { Button, Card, CardContent, Badge } from '../ui';
 import { formatDate, formatMoney } from '../../lib/format';
 import { Order } from '../../types';

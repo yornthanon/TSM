@@ -4,7 +4,7 @@ import React, { useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { CalendarDays, Ticket, Search, Download } from 'lucide-react';
 import { useOrders, useEvents } from '../../lib/catalog';
-import { useLanguage } from '../../i18n';
+import { useLanguage } from '../i18n';
 import { EmptyState, Badge, Input, Button, Skeleton } from '../ui';
 import { formatDate, formatMoney } from '../../lib/format';
 

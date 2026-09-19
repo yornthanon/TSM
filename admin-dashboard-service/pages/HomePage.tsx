@@ -4,7 +4,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { CalendarDays, MapPin, Search, Ticket, TrendingUp, Sparkles, ShieldCheck, ArrowRight, Music, Trophy, Mic2, GraduationCap, PartyPopper, ChevronRight, Star, Zap, Users } from 'lucide-react';
 import { useEvents } from '../../lib/catalog';
-import { useLanguage } from '../../i18n';
+import { useLanguage } from '../i18n';
 import { EventCard } from '../store/EventCard';
 import { Button, Badge, Skeleton } from '../ui';
 

@@ -4,7 +4,7 @@ import React, { useMemo, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { Search, SlidersHorizontal, X, Grid, List } from 'lucide-react';
 import { useEvents } from '../../lib/catalog';
-import { useLanguage } from '../../i18n';
+import { useLanguage } from '../i18n';
 import { EventCard } from '../store/EventCard';
 import { EmptyState, Input, Select, Badge, Button, Skeleton } from '../ui';
 import { EventType, EventStatus } from '../../types';

@@ -4,7 +4,7 @@ import React, { useMemo } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { ArrowLeft, CalendarDays, MapPin, Ticket, Users, Clock, ChevronRight } from 'lucide-react';
 import { useEventTickets, buildSeatMap, useEvents } from '../../lib/catalog';
-import { useLanguage } from '../../i18n';
+import { useLanguage } from '../i18n';
 import { useBooking } from '../../lib/booking';
 import { SeatMap } from '../store/SeatMap';
 import { Badge, Card, CardContent, CardHeader, StatCard, Button, Skeleton } from '../ui';
