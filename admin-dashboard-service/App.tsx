@@ -23,14 +23,14 @@ const PublicRoutes = () => (
       <Route
         element={
           <ProtectedRoute>
-            <Routes>
-              <Route path="/checkout" element={<CheckoutPage />} />
-              <Route path="/orders/:id" element={<OrderSuccessPage />} />
-              <Route path="/tickets" element={<MyTicketsPage />} />
-            </Routes>
+            <Outlet />
           </ProtectedRoute>
         }
-      />
+      >
+        <Route path="/checkout" element={<CheckoutPage />} />
+        <Route path="/orders/:id" element={<OrderSuccessPage />} />
+        <Route path="/tickets" element={<MyTicketsPage />} />
+      </Route>
     </Routes>
   </StoreLayout>
 );
