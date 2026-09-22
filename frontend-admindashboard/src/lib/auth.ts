@@ -1,16 +1,31 @@
 import { api } from './api';
-import type { User, LoginCredentials, AuthResponse, ChangePasswordData } from '../types/api';
+import type { User, LoginCredentials } from '../types/api';
 
 const USER_KEY = 'user';
 const TOKEN_KEY = 'auth_token';
 
+interface ChangePasswordData {
+  oldPassword: string;
+  newPassword: string;
+}
+
 export const auth = {
   login: async (credentials: LoginCredentials): Promise<User> => {
-    const response = await api.post<AuthResponse>('/auth/login', credentials);
-    localStorage.setItem(TOKEN_KEY, response.token);
-    localStorage.setItem(USER_KEY, JSON.stringify(response.user));
-    api.setAuthToken(response.token);
-    return response.user;
+    const response = await api.post<{ access_token: string; refresh_token: string }>('/auth/login', {
+      username: credentials.username,
+      password: credentials.password,
+    });
+
+    localStorage.setItem(TOKEN_KEY, response.access_token);
+    api.setAuthToken(response.access_token);
+
+    const backendUser = await api.get<User>(`/users/username/${encodeURIComponent(credentials.username)}`);
+    const user: User = {
+      ...backendUser,
+      role: backendUser.userType || 'AGENT',
+    };
+    localStorage.setItem(USER_KEY, JSON.stringify(user));
+    return user;
   },
 
   logout: (): void => {
@@ -46,7 +61,11 @@ export const auth = {
   },
 
   changePassword: async (data: ChangePasswordData): Promise<void> => {
-    await api.post('/auth/change-password', data);
+    const user = auth.getUser();
+    if (!user) throw new Error('Not authenticated');
+    await api.put(`/users/${user.id}/change-password`, undefined, {
+      params: { oldPassword: data.oldPassword, newPassword: data.newPassword },
+    });
   },
 };
 

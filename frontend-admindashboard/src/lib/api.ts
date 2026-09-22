@@ -1,12 +1,12 @@
 import axios, {
-  AxiosError,
-  AxiosInstance,
-  AxiosRequestConfig,
-  InternalAxiosRequestConfig,
+  type AxiosError,
+  type AxiosInstance,
+  type AxiosRequestConfig,
+  type InternalAxiosRequestConfig,
 } from 'axios';
 import type { ApiErrorResponse } from '../types/api';
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'https://api.yourdomain.com/api';
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080/api/v1';
 
 class ApiClient {
   private client: AxiosInstance;
@@ -38,7 +38,14 @@ class ApiClient {
     );
 
     this.client.interceptors.response.use(
-      (response) => response,
+      (response) => {
+        const data = response.data as Record<string, unknown> | undefined;
+        if (data && typeof data === 'object' && 'is_error' in data && (data as { is_error: boolean }).is_error) {
+          const message = (data as { message?: string }).message || 'An error occurred';
+          return Promise.reject(new Error(message));
+        }
+        return response;
+      },
       async (error: AxiosError<ApiErrorResponse>) => {
         const originalRequest = error.config as AxiosRequestConfig & { _retry?: boolean };
 
@@ -74,7 +81,10 @@ class ApiClient {
   private formatError(error: AxiosError<ApiErrorResponse>): Error {
     if (error.response?.data) {
       const apiError = error.response.data;
-      return new Error(apiError.message || apiError.error || 'An error occurred');
+      if (typeof apiError === 'object' && apiError !== null && 'message' in apiError) {
+        return new Error((apiError as { message?: string }).message || 'An error occurred');
+      }
+      return new Error(JSON.stringify(apiError));
     }
     if (error.message) {
       return new Error(error.message);
@@ -83,28 +93,33 @@ class ApiClient {
   }
 
   public async get<T>(url: string, config?: AxiosRequestConfig): Promise<T> {
-    const response = await this.client.get<T>(url, config);
-    return response.data;
+    const response = await this.client.get(url, config);
+    const data = response.data as Record<string, unknown>;
+    return data.data as T;
   }
 
   public async post<T>(url: string, data?: unknown, config?: AxiosRequestConfig): Promise<T> {
-    const response = await this.client.post<T>(url, data, config);
-    return response.data;
+    const response = await this.client.post(url, data, config);
+    const responseData = response.data as Record<string, unknown>;
+    return responseData.data as T;
   }
 
   public async put<T>(url: string, data?: unknown, config?: AxiosRequestConfig): Promise<T> {
-    const response = await this.client.put<T>(url, data, config);
-    return response.data;
+    const response = await this.client.put(url, data, config);
+    const responseData = response.data as Record<string, unknown>;
+    return responseData.data as T;
   }
 
   public async patch<T>(url: string, data?: unknown, config?: AxiosRequestConfig): Promise<T> {
-    const response = await this.client.patch<T>(url, data, config);
-    return response.data;
+    const response = await this.client.patch(url, data, config);
+    const responseData = response.data as Record<string, unknown>;
+    return responseData.data as T;
   }
 
   public async delete<T>(url: string, config?: AxiosRequestConfig): Promise<T> {
-    const response = await this.client.delete<T>(url, config);
-    return response.data;
+    const response = await this.client.delete(url, config);
+    const responseData = response.data as Record<string, unknown>;
+    return responseData.data as T;
   }
 
   public setAuthToken(token: string | null): void {
