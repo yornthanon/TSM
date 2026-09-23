@@ -35,6 +35,7 @@ public class CustomCorsFilter implements Filter {
 
         if(HttpMethod.OPTIONS.name().equalsIgnoreCase(((HttpServletRequest) servletRequest).getMethod())) {
             httpServletResponse.setStatus(HttpServletResponse.SC_OK);
+            return;
         }
         filterChain.doFilter(servletRequest, servletResponse);
     }

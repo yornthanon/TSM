@@ -16,16 +16,25 @@ export const auth = {
       password: credentials.password,
     });
 
+    if (!response?.access_token) {
+      throw new Error('Login succeeded but the server did not return an access token');
+    }
+
     localStorage.setItem(TOKEN_KEY, response.access_token);
     api.setAuthToken(response.access_token);
 
-    const backendUser = await api.get<User>(`/users/username/${encodeURIComponent(credentials.username)}`);
-    const user: User = {
-      ...backendUser,
-      role: backendUser.userType || 'AGENT',
-    };
-    localStorage.setItem(USER_KEY, JSON.stringify(user));
-    return user;
+    try {
+      const backendUser = await api.get<User>(`/users/username/${encodeURIComponent(credentials.username)}`);
+      const user: User = {
+        ...backendUser,
+        role: backendUser.userType || 'AGENT',
+      };
+      localStorage.setItem(USER_KEY, JSON.stringify(user));
+      return user;
+    } catch (error) {
+      auth.logout();
+      throw error;
+    }
   },
 
   logout: (): void => {
