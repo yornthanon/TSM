@@ -6,7 +6,11 @@ import axios, {
 } from 'axios';
 import type { ApiErrorResponse } from '../types/api';
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080/api/v1';
+// VITE_API_BASE_URL is the documented deployment variable. Keep VITE_API_URL
+// as a backwards-compatible alias, and avoid calling localhost from a hosted
+// browser when neither variable is configured.
+const API_BASE_URL =
+  import.meta.env.VITE_API_BASE_URL || import.meta.env.VITE_API_URL || '/api/v1';
 
 class ApiClient {
   private client: AxiosInstance;
