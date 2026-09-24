@@ -1,5 +1,5 @@
 import React from 'react';
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { HashRouter, Routes, Route } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Toaster } from 'sonner';
 import { ErrorBoundary } from './components/ErrorBoundary';
@@ -28,7 +28,7 @@ const App: React.FC = () => {
   return (
     <ErrorBoundary>
       <QueryClientProvider client={queryClient}>
-        <BrowserRouter>
+        <HashRouter>
           <Routes>
             <Route path="/login" element={<Login />} />
             <Route
@@ -49,7 +49,7 @@ const App: React.FC = () => {
             </Route>
             <Route path="*" element={<Navigate to="/admin" replace />} />
           </Routes>
-        </BrowserRouter>
+        </HashRouter>
         <Toaster richColors position="bottom-right" />
       </QueryClientProvider>
     </ErrorBoundary>
