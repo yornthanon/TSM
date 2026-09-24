@@ -40,7 +40,7 @@ public class JwtAuthenticationInternalFilter extends OncePerRequestFilter {
         log.info("Do filter uri {}", request.getRequestURI());
 
         if(StringUtils.hasText(accessToken) && accessToken.startsWith(jwtConfigProperties.getPrefix())) {
-            accessToken = accessToken.substring((jwtConfigProperties.getPrefix()).length());
+            accessToken = accessToken.substring((jwtConfigProperties.getPrefix()).length()).trim();
             try {
                 if(jwtService.isValidToken(accessToken)){
                     Claims claims = jwtService.extractClaims(accessToken);
