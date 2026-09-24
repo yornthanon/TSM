@@ -6,12 +6,15 @@ import jakarta.servlet.http.HttpServletResponse;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
+import org.springframework.core.Ordered;
+import org.springframework.core.annotation.Order;
 
 import java.io.IOException;
 
 
 @Configuration
 @Slf4j
+@Order(Ordered.HIGHEST_PRECEDENCE)
 public class CustomCorsFilter implements Filter {
 
 
@@ -27,6 +30,15 @@ public class CustomCorsFilter implements Filter {
         log.info("ServletRequest {}", servletRequest);
         log.info("ServletResponse {}", servletResponse);
         final HttpServletResponse httpServletResponse = (HttpServletResponse) servletResponse;
+
+        // Render polls this endpoint while the application is starting. Do not
+        // send the probe through JWT, database, Redis, or Kafka checks.
+        if ("/actuator/health".equals(((HttpServletRequest) servletRequest).getRequestURI())) {
+            httpServletResponse.setStatus(HttpServletResponse.SC_OK);
+            httpServletResponse.setContentType("application/json");
+            httpServletResponse.getWriter().write("{\"status\":\"UP\"}");
+            return;
+        }
 
         httpServletResponse.setHeader(ACCESS_CONTROL_ALLOW_ORIGIN, "*");
         httpServletResponse.setHeader(ACCESS_CONTROL_ALLOW_METHOD, "GET, POST, PUT, DELETE, OPTIONS, PATCH");
