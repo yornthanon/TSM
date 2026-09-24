@@ -24,7 +24,13 @@ export const auth = {
     api.setAuthToken(response.access_token);
 
     try {
-      const backendUser = await api.get<User>(`/users/username/${encodeURIComponent(credentials.username)}`);
+      let backendUser: User;
+      try {
+        backendUser = await api.get<User>(`/users/email/${encodeURIComponent(credentials.username)}`);
+      } catch {
+        // Preserve compatibility with accounts that log in using their username.
+        backendUser = await api.get<User>(`/users/username/${encodeURIComponent(credentials.username)}`);
+      }
       const user: User = {
         ...backendUser,
         role: backendUser.userType || 'AGENT',
