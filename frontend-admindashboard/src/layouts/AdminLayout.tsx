@@ -1,38 +1,39 @@
 import React, { useState } from 'react';
 import { NavLink, Outlet, useLocation, useNavigate, Link } from 'react-router-dom';
 import {
+  BarChart3,
+  ChevronDown,
+  CircleHelp,
+  Inbox,
   LayoutDashboard,
-  Ticket,
-  Kanban,
-  Mail,
-  Activity,
-  Settings,
   LogOut,
   Menu,
-  X,
-  ChevronDown,
-  User,
+  MessageCircle,
   Plus,
+  Search,
+  Settings,
+  Ticket,
+  Users,
+  X,
 } from 'lucide-react';
 import { cn } from '../utils';
 import { auth } from '../lib/auth';
 import type { User as AppUser } from '../types/api';
 
 const navItems = [
-  { to: '/admin', icon: LayoutDashboard, label: 'Dashboard', end: true },
-  { to: '/admin/tickets', icon: Ticket, label: 'Tickets' },
-  { to: '/admin/kanban', icon: Kanban, label: 'Kanban board' },
-  { to: '/admin/contacts', icon: Mail, label: 'Contacts' },
-  { to: '/admin/api-monitor', icon: Activity, label: 'API Monitor' },
-  { to: '/admin/settings', icon: Settings, label: 'Settings' },
+  { to: '/admin', icon: LayoutDashboard, label: 'Overview', end: true },
+  { to: '/admin/tickets', icon: Inbox, label: 'Inbox' },
+  { to: '/admin/kanban', icon: Ticket, label: 'Tickets' },
+  { to: '/admin/contacts', icon: Users, label: 'Contacts' },
+  { to: '/admin/api-monitor', icon: BarChart3, label: 'Reports' },
 ];
 
 const pageTitles: Record<string, string> = {
-  '/admin': 'Dashboard',
-  '/admin/tickets': 'Tickets',
-  '/admin/kanban': 'Kanban board',
+  '/admin': 'Overview',
+  '/admin/tickets': 'Inbox',
+  '/admin/kanban': 'Tickets',
   '/admin/contacts': 'Contacts',
-  '/admin/api-monitor': 'API Monitor',
+  '/admin/api-monitor': 'Reports',
   '/admin/settings': 'Settings',
 };
 
@@ -42,8 +43,8 @@ export const AdminLayout: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const user = auth.getUser() as AppUser | null;
-  const title = pageTitles[location.pathname] || 'Ticket Manager';
-  const initials = (user?.email || user?.username || 'U').charAt(0).toUpperCase();
+  const title = pageTitles[location.pathname] || 'Workspace';
+  const initials = (user?.email || user?.username || 'A').slice(0, 2).toUpperCase();
 
   const handleLogout = () => {
     auth.logout();
@@ -51,91 +52,81 @@ export const AdminLayout: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-800 flex">
-      <aside
-        className={cn(
-          'fixed inset-y-0 left-0 z-50 w-72 bg-slate-950 text-white transform transition-transform duration-200 lg:translate-x-0 shadow-xl',
-          sidebarOpen ? 'translate-x-0' : '-translate-x-full'
-        )}
-      >
-        <div className="h-20 flex items-center gap-3 px-6 border-b border-white/10">
-          <div className="h-10 w-10 rounded-xl bg-orange-500 flex items-center justify-center text-white font-extrabold shadow-lg shadow-orange-500/20">TM</div>
-          <div>
-            <p className="font-bold tracking-tight">Ticket Manager</p>
-            <p className="text-[11px] text-slate-400">ADMIN CONSOLE</p>
+    <div className="min-h-screen bg-[#f7f7f8] text-[#292933] flex">
+      <aside className={cn(
+        'fixed inset-y-0 left-0 z-50 flex w-[248px] flex-col bg-[#24242d] text-white transition-transform duration-200 lg:translate-x-0',
+        sidebarOpen ? 'translate-x-0' : '-translate-x-full'
+      )}>
+        <div className="flex h-[72px] items-center gap-3 border-b border-white/[0.08] px-5">
+          <div className="flex h-9 w-9 items-center justify-center rounded-[11px] bg-[#7c5cff] shadow-[0_6px_18px_rgba(124,92,255,.35)]">
+            <MessageCircle className="h-[19px] w-[19px] fill-white" />
           </div>
-          <button aria-label="Close menu" className="lg:hidden ml-auto p-2 text-slate-400 hover:text-white" onClick={() => setSidebarOpen(false)}>
-            <X className="h-5 w-5" />
+          <div className="min-w-0 flex-1">
+            <p className="truncate text-[15px] font-semibold tracking-[-0.02em]">Supportly</p>
+            <p className="text-[10px] font-medium uppercase tracking-[0.14em] text-white/40">Workspace</p>
+          </div>
+          <button aria-label="Close menu" className="rounded-lg p-1.5 text-white/50 hover:bg-white/10 hover:text-white lg:hidden" onClick={() => setSidebarOpen(false)}><X className="h-4 w-4" /></button>
+        </div>
+
+        <div className="px-3 pt-5">
+          <button className="flex w-full items-center gap-2 rounded-[10px] border border-white/[0.08] bg-white/[0.06] px-3 py-2.5 text-left hover:bg-white/[0.1]">
+            <span className="flex h-6 w-6 items-center justify-center rounded-md bg-[#f8b84e] text-[10px] font-bold text-[#50320b]">A</span>
+            <span className="min-w-0 flex-1"><span className="block truncate text-xs font-semibold">Acme workspace</span><span className="block text-[10px] text-white/40">Team inbox</span></span>
+            <ChevronDown className="h-3.5 w-3.5 text-white/40" />
           </button>
         </div>
-        <div className="px-4 pt-6 pb-3 text-[11px] font-semibold uppercase tracking-wider text-slate-500">Workspace</div>
-        <nav className="px-3 space-y-1">
-          {navItems.map((item) => (
-            <NavLink
-              key={item.to}
-              to={item.to}
-              end={item.end}
-              className={({ isActive }) => cn(
-                'flex items-center gap-3 px-3 py-3 rounded-xl text-sm font-medium transition-colors',
-                isActive ? 'bg-orange-500 text-white shadow-md shadow-orange-950/30' : 'text-slate-400 hover:bg-white/10 hover:text-white'
-              )}
-              onClick={() => setSidebarOpen(false)}
-            >
-              <item.icon className="h-[18px] w-[18px]" />
-              {item.label}
-            </NavLink>
-          ))}
-        </nav>
-        <div className="absolute bottom-0 left-0 right-0 p-4 border-t border-white/10">
-          <div className="flex items-center gap-3 rounded-xl bg-white/5 px-3 py-3">
-            <div className="h-9 w-9 rounded-full bg-orange-500/20 flex items-center justify-center text-orange-300 font-bold text-sm">{initials}</div>
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-semibold text-white truncate">{user?.email || user?.username || 'Admin'}</p>
-              <p className="text-xs text-slate-400 truncate">{user?.role || 'Administrator'}</p>
-            </div>
-            <button aria-label="Log out" onClick={handleLogout} className="p-1.5 text-slate-400 hover:text-red-300" title="Log out">
-              <LogOut className="h-4 w-4" />
-            </button>
+
+        <div className="px-3 pt-7">
+          <p className="px-3 pb-2 text-[10px] font-semibold uppercase tracking-[0.14em] text-white/35">Workspace</p>
+          <nav className="space-y-1">
+            {navItems.map((item) => (
+              <NavLink key={item.to} to={item.to} end={item.end} onClick={() => setSidebarOpen(false)} className={({ isActive }) => cn(
+                'group flex items-center gap-3 rounded-[10px] px-3 py-2.5 text-[13px] font-medium transition-colors',
+                isActive ? 'bg-[#7c5cff] text-white shadow-[0_5px_16px_rgba(124,92,255,.25)]' : 'text-white/55 hover:bg-white/[0.07] hover:text-white'
+              )}>
+                <item.icon className="h-[17px] w-[17px]" strokeWidth={1.8} />
+                <span className="flex-1">{item.label}</span>
+              </NavLink>
+            ))}
+          </nav>
+        </div>
+
+        <div className="px-3 pt-7">
+          <p className="px-3 pb-2 text-[10px] font-semibold uppercase tracking-[0.14em] text-white/35">Manage</p>
+          <NavLink to="/admin/settings" className={({ isActive }) => cn('flex items-center gap-3 rounded-[10px] px-3 py-2.5 text-[13px] font-medium transition-colors', isActive ? 'bg-white/10 text-white' : 'text-white/55 hover:bg-white/[0.07] hover:text-white')}>
+            <Settings className="h-[17px] w-[17px]" strokeWidth={1.8} /> Settings
+          </NavLink>
+        </div>
+
+        <div className="mt-auto space-y-3 border-t border-white/[0.08] p-4">
+          <div className="flex items-center gap-2.5 rounded-[10px] px-2 py-1.5">
+            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-[#d8cfff] text-[11px] font-bold text-[#5540b7]">{initials}</div>
+            <div className="min-w-0 flex-1"><p className="truncate text-xs font-semibold text-white/85">{user?.email || user?.username || 'Admin user'}</p><p className="text-[10px] text-white/40">Administrator</p></div>
+            <button aria-label="Log out" onClick={handleLogout} className="rounded-md p-1.5 text-white/35 hover:bg-white/10 hover:text-white"><LogOut className="h-3.5 w-3.5" /></button>
           </div>
         </div>
       </aside>
 
-      {sidebarOpen && <div className="fixed inset-0 z-40 bg-slate-950/60 backdrop-blur-sm lg:hidden" onClick={() => setSidebarOpen(false)} />}
+      {sidebarOpen && <div className="fixed inset-0 z-40 bg-[#17171d]/60 backdrop-blur-sm lg:hidden" onClick={() => setSidebarOpen(false)} />}
 
-      <div className="flex-1 lg:ml-72 flex flex-col min-h-screen min-w-0">
-        <header className="sticky top-0 z-30 h-20 bg-white/95 backdrop-blur border-b border-slate-200 flex items-center justify-between px-4 sm:px-6 lg:px-8">
+      <div className="flex min-h-screen min-w-0 flex-1 flex-col lg:ml-[248px]">
+        <header className="sticky top-0 z-30 flex h-[72px] items-center justify-between border-b border-[#e8e8ec] bg-white/90 px-4 backdrop-blur sm:px-7">
           <div className="flex items-center gap-3">
-            <button aria-label="Open menu" className="lg:hidden p-2 -ml-2 text-slate-500 hover:bg-slate-100 rounded-lg" onClick={() => setSidebarOpen(true)}><Menu className="h-5 w-5" /></button>
-            <div>
-              <p className="text-xs font-medium text-slate-400">Ticket Manager</p>
-              <h1 className="text-lg font-bold text-slate-900">{title}</h1>
-            </div>
+            <button aria-label="Open menu" className="rounded-lg p-2 text-[#777783] hover:bg-[#f3f3f5] lg:hidden" onClick={() => setSidebarOpen(true)}><Menu className="h-5 w-5" /></button>
+            <div className="hidden items-center gap-2 text-xs text-[#9b9ba6] sm:flex"><span>Workspace</span><span>/</span><span className="font-medium text-[#50505c]">{title}</span></div>
+            <h1 className="text-[15px] font-semibold tracking-[-0.02em] text-[#292933] sm:hidden">{title}</h1>
           </div>
-          <div className="flex items-center gap-2 sm:gap-4">
-            <Link to="/admin/tickets" className="hidden sm:inline-flex items-center gap-2 rounded-lg bg-orange-500 px-3 py-2 text-sm font-semibold text-white hover:bg-orange-600 transition-colors shadow-sm">
-              <Plus className="h-4 w-4" /> New ticket
-            </Link>
-            <div className="relative">
-              <button className="flex items-center gap-2 p-1.5 rounded-lg hover:bg-slate-100 transition-colors" onClick={() => setUserMenuOpen(!userMenuOpen)}>
-                <div className="h-9 w-9 rounded-full bg-orange-100 flex items-center justify-center text-orange-600 font-bold text-sm">{initials}</div>
-                <span className="hidden md:block text-sm font-semibold text-slate-700 max-w-32 truncate">{user?.email || user?.username || 'Admin'}</span>
-                <ChevronDown className="h-4 w-4 text-slate-400" />
-              </button>
-              {userMenuOpen && (
-                <>
-                  <div className="fixed inset-0 z-10" onClick={() => setUserMenuOpen(false)} />
-                  <div className="absolute right-0 mt-2 w-52 bg-white rounded-xl shadow-xl border border-slate-200 py-1 z-20">
-                    <Link to="/admin/settings" className="flex items-center gap-2 px-4 py-3 text-sm text-slate-700 hover:bg-slate-50" onClick={() => setUserMenuOpen(false)}><User className="h-4 w-4" /> Profile settings</Link>
-                    <button onClick={handleLogout} className="w-full flex items-center gap-2 px-4 py-3 text-sm text-red-600 hover:bg-red-50"><LogOut className="h-4 w-4" /> Logout</button>
-                  </div>
-                </>
-              )}
+          <div className="flex items-center gap-2">
+            <button className="hidden items-center gap-2 rounded-lg border border-[#e7e7eb] bg-white px-3 py-2 text-xs text-[#94949e] shadow-sm transition hover:border-[#d3d0e8] hover:text-[#5c5c68] md:flex"><Search className="h-3.5 w-3.5" /> Search <span className="ml-5 rounded border border-[#e8e8ed] px-1.5 py-0.5 text-[10px]">⌘ K</span></button>
+            <button aria-label="Help" className="rounded-lg p-2 text-[#8b8b96] hover:bg-[#f5f5f7] hover:text-[#575762]"><CircleHelp className="h-[17px] w-[17px]" /></button>
+            <Link to="/admin/tickets" className="inline-flex items-center gap-1.5 rounded-[9px] bg-[#7c5cff] px-3 py-2 text-xs font-semibold text-white shadow-[0_4px_12px_rgba(124,92,255,.2)] transition hover:bg-[#6d4feb]"><Plus className="h-3.5 w-3.5" /> New conversation</Link>
+            <div className="relative ml-1">
+              <button aria-label="Open profile menu" className="flex items-center gap-1.5 rounded-lg p-1 hover:bg-[#f5f5f7]" onClick={() => setUserMenuOpen((open) => !open)}><div className="flex h-8 w-8 items-center justify-center rounded-full bg-[#e6e1ff] text-[11px] font-bold text-[#5c46c4]">{initials}</div><ChevronDown className="hidden h-3.5 w-3.5 text-[#9999a3] sm:block" /></button>
+              {userMenuOpen && <><div className="fixed inset-0 z-10" onClick={() => setUserMenuOpen(false)} /><div className="absolute right-0 z-20 mt-2 w-48 rounded-xl border border-[#e8e8ec] bg-white py-1 shadow-[0_12px_30px_rgba(30,30,45,.12)]"><Link to="/admin/settings" onClick={() => setUserMenuOpen(false)} className="block px-3.5 py-2.5 text-xs text-[#545461] hover:bg-[#f7f7f9]">Profile settings</Link><button onClick={handleLogout} className="w-full px-3.5 py-2.5 text-left text-xs text-[#d34c62] hover:bg-[#fff5f6]">Log out</button></div></>}
             </div>
           </div>
         </header>
-        <main className="flex-1 p-4 sm:p-6 lg:p-8 overflow-auto">
-          <div className="mx-auto w-full max-w-[1440px]"><Outlet /></div>
-        </main>
+        <main className="flex-1 overflow-auto px-4 py-6 sm:px-7 sm:py-8"><div className="mx-auto w-full max-w-[1380px]"><Outlet /></div></main>
       </div>
     </div>
   );

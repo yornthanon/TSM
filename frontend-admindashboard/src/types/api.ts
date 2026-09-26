@@ -69,15 +69,17 @@ export interface ActivityLog {
 }
 
 export interface TicketStats {
-  totalTickets: number;
-  pendingTickets: number;
-  solvedTickets: number;
-  averageResponseTime: number;
-  customerSatisfaction: number;
-  ticketsByStatus: Record<TicketStatus, number>;
-  ticketsByPriority: Record<TicketPriority, number>;
-  ticketsByCategory: Record<string, number>;
-  recentTrend: Array<{ date: string; count: number }>;
+  totalTickets?: number;
+  pendingTickets?: number;
+  solvedTickets?: number;
+  averageResponseTime?: number;
+  customerSatisfaction?: number;
+  ticketsByStatus?: Record<string, number>;
+  ticketsByPriority?: Record<string, number>;
+  ticketsByCategory?: Record<string, number>;
+  recentTrend?: Array<{ date: string; count: number }>;
+  total?: number;
+  byStatus?: Record<string, number>;
 }
 
 export interface AuthResponse {

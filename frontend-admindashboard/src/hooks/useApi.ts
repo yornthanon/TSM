@@ -32,8 +32,14 @@ export function useTickets(
 ) {
   return useQuery({
     queryKey: queryKeys.tickets(params),
-    queryFn: () =>
-      api.get<PaginatedResponse<Ticket>>('/tickets', { params }),
+    queryFn: async () => {
+      const response = await api.get<PaginatedResponse<Ticket> | Ticket[]>('/tickets', { params });
+      if (!Array.isArray(response)) return response;
+      return {
+        data: response,
+        meta: { total: response.length, page: params?.page || 1, limit: params?.limit || response.length, totalPages: 1 },
+      };
+    },
     ...options,
   });
 }
