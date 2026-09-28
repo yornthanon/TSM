@@ -374,17 +374,23 @@ redis-server
 
 #### 5. Run Frontend (Admin Dashboard)
 
+From the repository root — the root `package.json` delegates to `frontend-admindashboard/`:
+
 ```bash
-cd admin-dashboard-service
-npm install
-npm run dev
+npm run setup   # installs frontend-admindashboard dependencies
+npm run dev     # or: npm run build / npm run lint
 ```
+
+See `frontend-admindashboard/.env.example` for `VITE_API_BASE_URL`, which must be
+the API root and end in `/api/v1`.
 
 ## 📚 API Documentation
 
+The authoritative, verified endpoint reference is [`docs/api-contract.md`](docs/api-contract.md).
+
 ### Base URL
 ```
-http://localhost:8080/api
+http://localhost:8080/api/v1
 ```
 
 ### Authentication

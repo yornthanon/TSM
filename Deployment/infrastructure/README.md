@@ -21,29 +21,32 @@ docker-compose up --build -d
 
 ## Services
 
+This compose file runs the **monolith** (`app-monolith`), which packages every
+service module into one process on port 8080. It does **not** start the
+individual microservices or the API gateway — see the root `README.md` for that
+topology.
+
 | Service | Port | Description |
 |---------|------|-------------|
-| API Gateway | 8080 | Entry point for all requests |
-| User Service | 8081 | User management & JWT authentication |
-| Event Service | 8082 | Event management |
-| Ticket Service | 8083 | Ticket management with Redis locking |
-| Order Service | 8084 | Order processing with Kafka events |
-| Payment Service | 8085 | Payment processing |
-| Notification Service | 8086 | Kafka-based notifications |
-| Admin Service | 8090 | Vaadin admin UI |
-| PostgreSQL | 5432 | Database |
-| Redis | 6379 | Caching & locking |
-| Kafka | 9092 | Event streaming |
+| app-monolith | 8080 | All domain modules (user, event, ticket, order, payment, notification) in one process |
+| PostgreSQL | 5432 | Database (`ticket_db`, single shared schema) |
+| Redis | 6379 | Ticket locking & caching |
+| Kafka | 9092 | Event streaming, KRaft mode (no ZooKeeper) |
 | Zipkin | 9411 | Distributed tracing |
+
+The admin dashboard is a separate Vite app and is **not** built by this compose
+file. Run it from the repository root with `npm run dev`.
 
 ## Environment Variables
 
-Create a `.env` file in the same directory to override defaults:
+Create a `.env` file in the repository root to override defaults:
 
 ```env
 POSTGRES_USER=ticket
 POSTGRES_PASSWORD=ticket123
-JWT_SECRET=your-secret-key-here
+# Must be Base64 decoding to 32-64 bytes, or every login returns 500.
+# Generate with: openssl rand -base64 32
+JWT_SECRET=wM0mBxIDFKh1FOCWfA++ZCSk8d1I8ztVZAOxdqxtiXxOmb8yF9UCwIZ8MMCGHptU
 ```
 
 ## Useful Commands
@@ -103,17 +106,20 @@ lsof -i :8080
 **Kafka connection issues:**
 ```bash
 # Check Kafka logs
-docker-compose logs kafka
+docker compose logs kafka
 
-# Verify Zookeeper is running
-docker-compose logs zookeeper
+# Verify the broker is healthy (KRaft mode - there is no ZooKeeper container)
+docker compose ps kafka
+
+# Talk to the broker directly
+docker compose exec kafka kafka-broker-api-versions --bootstrap-server localhost:9092
 ```
 
 **Database connection issues:**
 ```bash
 # Check PostgreSQL is healthy
-docker-compose ps postgres
+docker compose ps postgres
 
-# Connect to PostgreSQL
-docker-compose exec postgres psql -U ticket -d ticket_user_db
+# Connect to PostgreSQL (the monolith uses the single ticket_db)
+docker compose exec postgres psql -U ticket -d ticket_db
 ```
