@@ -8,7 +8,7 @@
     "predev": "node scripts/ensure-frontend-deps.mjs",
     "dev": "npm --prefix frontend-admindashboard run dev",
     "prebuild": "node scripts/ensure-frontend-deps.mjs",
-    "build": "npm --prefix frontend-admindashboard run build",
+    "build": "npm --prefix frontend-admindashboard run build && node scripts/publish-dist.mjs",
     "lint": "npm --prefix frontend-admindashboard run lint",
     "preview": "npm --prefix frontend-admindashboard run preview"
   }
