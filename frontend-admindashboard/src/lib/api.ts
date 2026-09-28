@@ -6,11 +6,21 @@ import axios, {
 } from 'axios';
 import type { ApiErrorResponse } from '../types/api';
 
-// VITE_API_BASE_URL is the documented deployment variable. Keep VITE_API_URL
-// as a backwards-compatible alias, and avoid calling localhost from a hosted
-// browser when neither variable is configured.
-const API_BASE_URL =
-  import.meta.env.VITE_API_BASE_URL || import.meta.env.VITE_API_URL || '/api/v1';
+/**
+ * Single source of truth for the backend location.
+ *
+ * VITE_API_BASE_URL must be the *API root*, i.e. it has to end in `/api/v1`
+ * because every endpoint below is registered under that prefix. A value such as
+ * `http://localhost:8080` would make `api.post('/auth/login')` resolve to
+ * `/auth/login`, which no controller exposes.
+ *
+ * When unset the app falls back to the same-origin relative path so a reverse
+ * proxy can serve both the SPA and the API from one host.
+ */
+const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || '/api/v1').replace(/\/+$/, '');
+
+/** Prefix every backend route below this root, so hooks never repeat `/api/v1`. */
+export const API_ROOT = '/api/v1';
 
 class ApiClient {
   private client: AxiosInstance;
@@ -140,6 +150,20 @@ class ApiClient {
 
   public isAuthenticated(): boolean {
     return !!this.getAuthToken();
+  }
+
+  /** Resolved backend root, surfaced by the connection diagnostics screen. */
+  public getBaseUrl(): string {
+    return API_BASE_URL;
+  }
+
+  /** Backend origin with the route prefix stripped, for human-readable display. */
+  public getApiOrigin(): string {
+    try {
+      return new URL(API_BASE_URL, window.location.origin).origin;
+    } catch {
+      return API_BASE_URL;
+    }
   }
 }
 

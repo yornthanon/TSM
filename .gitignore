@@ -40,7 +40,11 @@ build/
 
 ### VS Code ###
 .vscode/
+
+# Local env files. Keep the committed templates.
 .env
+.env.*
+!.env.example
 
 # Secrets
 *.pem
