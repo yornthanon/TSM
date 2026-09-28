@@ -33,7 +33,10 @@ export const auth = {
       }
       const user: User = {
         ...backendUser,
-        role: backendUser.userType || 'AGENT',
+        // Authority lives in `roles`, not `userType`: the seeded admin account
+        // has userType USER and roles ["ADMIN"], and the backend only checks
+        // ADMIN. Anything else is treated as a non-admin account.
+        role: backendUser.roles?.includes('ADMIN') ? 'ADMIN' : 'USER',
       };
       localStorage.setItem(USER_KEY, JSON.stringify(user));
       return user;

@@ -222,7 +222,9 @@ public class OrderServiceImpl implements OrderService{
     @Override
     public ResponseErrorTemplate getStats() {
         List<Order> orders = orderRepository.findAll();
+        // orderStatus is nullable until the service assigns one.
         Map<String, Long> byStatus = orders.stream()
+                .filter(o -> o.getOrderStatus() != null)
                 .collect(Collectors.groupingBy(o -> o.getOrderStatus().name(), Collectors.counting()));
 
         Map<String, Object> stats = new LinkedHashMap<>();

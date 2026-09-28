@@ -6,13 +6,16 @@ import { ErrorBoundary } from './components/ErrorBoundary';
 import { AdminLayout } from './layouts/AdminLayout';
 import { RequireAuth } from './components/RequireAuth';
 import { Login } from './pages/Login';
-import { Dashboard } from './pages/admin/Dashboard';
-import { Tickets } from './pages/admin/Tickets';
-import { TicketDetail } from './pages/admin/TicketDetail';
-import { KanbanBoard } from './pages/admin/Kanban';
-import { Contacts } from './pages/admin/Contacts';
-import { ApiMonitor } from './pages/admin/ApiMonitor';
-import { Settings } from './pages/admin/Settings';
+import Dashboard from './pages/admin/Dashboard';
+import Events from './pages/admin/Events';
+import EventDetail from './pages/admin/EventDetail';
+import Inventory from './pages/admin/Inventory';
+import Orders from './pages/admin/Orders';
+import Payments from './pages/admin/Payments';
+import Notifications from './pages/admin/Notifications';
+import Users from './pages/admin/Users';
+import Access from './pages/admin/Access';
+import System from './pages/admin/System';
 import { Navigate } from 'react-router-dom';
 
 const queryClient = new QueryClient({
@@ -40,12 +43,15 @@ const App: React.FC = () => {
               }
             >
               <Route index element={<Dashboard />} />
-              <Route path="tickets" element={<Tickets />} />
-              <Route path="tickets/:id" element={<TicketDetail />} />
-              <Route path="kanban" element={<KanbanBoard />} />
-              <Route path="contacts" element={<Contacts />} />
-              <Route path="api-monitor" element={<ApiMonitor />} />
-              <Route path="settings" element={<Settings />} />
+              <Route path="events" element={<Events />} />
+              <Route path="events/:id" element={<EventDetail />} />
+              <Route path="inventory" element={<Inventory />} />
+              <Route path="orders" element={<Orders />} />
+              <Route path="payments" element={<Payments />} />
+              <Route path="notifications" element={<Notifications />} />
+              <Route path="users" element={<Users />} />
+              <Route path="access" element={<Access />} />
+              <Route path="system" element={<System />} />
             </Route>
             <Route path="*" element={<Navigate to="/admin" replace />} />
           </Routes>

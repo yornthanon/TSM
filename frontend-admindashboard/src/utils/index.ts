@@ -5,27 +5,6 @@ export function cn(...inputs: ClassValue[]): string {
   return twMerge(clsx(inputs));
 }
 
-export function formatDate(date: string | Date, options?: Intl.DateTimeFormatOptions): string {
-  const d = new Date(date);
-  return d.toLocaleDateString('en-US', {
-    year: 'numeric',
-    month: 'short',
-    day: 'numeric',
-    ...options,
-  });
-}
-
-export function formatDateTime(date: string | Date): string {
-  const d = new Date(date);
-  return d.toLocaleString('en-US', {
-    year: 'numeric',
-    month: 'short',
-    day: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-  });
-}
-
 export function formatRelativeTime(date: string | Date): string {
   const d = new Date(date);
   const now = new Date();
@@ -46,8 +25,37 @@ export function truncate(str: string, length: number): string {
   return str.slice(0, length).trim() + '...';
 }
 
+/**
+ * Status -> badge colour. Handles both the event-ticketing statuses the backend
+ * actually returns (upper case) and the legacy helpdesk values, because the
+ * lookup is case-insensitive.
+ */
 export function getStatusColor(status: string): string {
   const colors: Record<string, string> = {
+    // Events
+    draft: 'bg-gray-100 text-gray-800',
+    upcoming: 'bg-blue-100 text-blue-800',
+    active: 'bg-green-100 text-green-800',
+    ongoing: 'bg-purple-100 text-purple-800',
+    completed: 'bg-green-100 text-green-800',
+    cancelled: 'bg-red-100 text-red-800',
+    postponed: 'bg-orange-100 text-orange-800',
+    rescheduled: 'bg-yellow-100 text-yellow-800',
+    // Tickets
+    available: 'bg-green-100 text-green-800',
+    locked: 'bg-yellow-100 text-yellow-800',
+    sold: 'bg-blue-100 text-blue-800',
+    expired: 'bg-gray-100 text-gray-800',
+    // Orders
+    pending: 'bg-yellow-100 text-yellow-800',
+    processing: 'bg-blue-100 text-blue-800',
+    // Payments
+    refunded: 'bg-purple-100 text-purple-800',
+    failed: 'bg-red-100 text-red-800',
+    // Notifications
+    sent: 'bg-green-100 text-green-800',
+    retry: 'bg-yellow-100 text-yellow-800',
+    // Legacy helpdesk values, kept so nothing renders unstyled.
     open: 'bg-blue-100 text-blue-800',
     in_progress: 'bg-yellow-100 text-yellow-800',
     review: 'bg-purple-100 text-purple-800',
@@ -58,17 +66,59 @@ export function getStatusColor(status: string): string {
     medium: 'bg-yellow-100 text-yellow-800',
     low: 'bg-blue-100 text-blue-800',
   };
-  return colors[status] || 'bg-gray-100 text-gray-800';
+  return colors[status.toLowerCase()] || 'bg-gray-100 text-gray-800';
 }
 
-export function getPriorityColor(priority: string): string {
-  const colors: Record<string, string> = {
-    critical: 'bg-red-100 text-red-800 border-red-200',
-    high: 'bg-orange-100 text-orange-800 border-orange-200',
-    medium: 'bg-yellow-100 text-yellow-800 border-yellow-200',
-    low: 'bg-blue-100 text-blue-800 border-blue-200',
-  };
-  return colors[priority] || colors.medium;
+export function formatCurrency(value: number | null | undefined, currency = 'USD'): string {
+  if (value === null || value === undefined || Number.isNaN(value)) return '-';
+  return new Intl.NumberFormat('en-US', {
+    style: 'currency',
+    currency,
+    minimumFractionDigits: 2,
+  }).format(value);
+}
+
+/**
+ * LocalDateTime strings from the backend have no zone suffix. `new Date()` would
+ * parse them as local time on some engines and UTC on others, so the value is
+ * normalised to an explicit local-time Date first.
+ */
+export function parseLocalDateTime(value: string | Date): Date {
+  if (value instanceof Date) return value;
+  const normalised = /[Zz]|[+-]\d{2}:?\d{2}$/.test(value) ? value : `${value.replace(' ', 'T')}Z`;
+  const d = new Date(normalised);
+  return Number.isNaN(d.getTime()) ? new Date(NaN) : d;
+}
+
+export function formatDate(date: string | Date | null | undefined, options?: Intl.DateTimeFormatOptions): string {
+  if (date === null || date === undefined || date === '') return '-';
+  const d = parseLocalDateTime(date);
+  if (Number.isNaN(d.getTime())) return '-';
+  return d.toLocaleDateString('en-US', {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric',
+    ...options,
+  });
+}
+
+export function formatDateTime(date: string | Date | null | undefined): string {
+  if (date === null || date === undefined || date === '') return '-';
+  const d = parseLocalDateTime(date);
+  if (Number.isNaN(d.getTime())) return '-';
+  return d.toLocaleString('en-US', {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+  });
+}
+
+/** Value for an `<input type="datetime-local">` from a LocalDateTime string. */
+export function toDateTimeLocalValue(date: string | null | undefined): string {
+  if (!date) return '';
+  return date.replace(' ', 'T').slice(0, 16);
 }
 
 export function getStatusCodeColor(code: number): string {

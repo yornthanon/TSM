@@ -79,6 +79,10 @@ public class PaymentServiceImpl implements PaymentService{
 
     private PaymentResponse mapToPaymentResponse(Payment payment) {
         return PaymentResponse.builder()
+                // Without these the list response carries no primary key, which
+                // makes the row unaddressable for the refund endpoint.
+                .paymentId(payment.getId())
+                .transactionId(payment.getTransactionId())
                 .orderId(payment.getOrderId())
                 .amount(payment.getAmount())
                 .currency(payment.getCurrency())

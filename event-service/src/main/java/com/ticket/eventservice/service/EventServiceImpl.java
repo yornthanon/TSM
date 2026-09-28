@@ -100,7 +100,10 @@ public class EventServiceImpl implements EventService {
     @Override
     public ResponseErrorTemplate getStats() {
         List<Event> events = eventRepository.findAll();
+        // status is nullable: the create endpoint never defaults it, so grouping
+        // on it unguarded NPEs and turns the whole stats call into a 500.
         Map<String, Long> byStatus = events.stream()
+                .filter(e -> e.getStatus() != null)
                 .collect(Collectors.groupingBy(e -> e.getStatus().name(), Collectors.counting()));
         Map<String, Long> byType = events.stream()
                 .filter(e -> e.getEventType() != null)

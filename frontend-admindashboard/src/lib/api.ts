@@ -22,8 +22,19 @@ const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || '/api/v1').replace(/\
 /** Prefix every backend route below this root, so hooks never repeat `/api/v1`. */
 export const API_ROOT = '/api/v1';
 
+/** Backend origin with the API prefix stripped, resolved once at startup. */
+function apiOrigin(): string {
+  if (API_BASE_URL.startsWith('/')) return ''; // same-origin reverse proxy
+  try {
+    return new URL(API_BASE_URL).origin;
+  } catch {
+    return API_BASE_URL;
+  }
+}
+
 class ApiClient {
   private client: AxiosInstance;
+  private originClient: AxiosInstance;
   private retryCount = 0;
   private maxRetries = 3;
 
@@ -34,6 +45,11 @@ class ApiClient {
       headers: {
         'Content-Type': 'application/json',
       },
+    });
+
+    this.originClient = axios.create({
+      baseURL: apiOrigin(),
+      timeout: 10000,
     });
 
     this.setupInterceptors();
@@ -112,6 +128,28 @@ class ApiClient {
     return data.data as T;
   }
 
+  /**
+   * Returns the whole response body instead of unwrapping `data`.
+   *
+   * Needed for endpoints that are not wrapped in the `ResponseErrorTemplate`
+   * envelope, such as Spring's `/actuator/health`.
+   */
+  public async getRaw<T>(path: string, config?: AxiosRequestConfig): Promise<T> {
+    const response = await this.client.get(path, config);
+    return response.data as T;
+  }
+
+  /**
+   * Calls a path against the backend *origin* rather than the `/api/v1` root.
+   *
+   * Actuator is exposed by the monolith at `/actuator/health`, outside the API
+   * prefix - requesting `/api/v1/actuator/health` returns a 500 error envelope.
+   */
+  public async getFromOrigin<T>(path: string, config?: AxiosRequestConfig): Promise<T> {
+    const response = await this.originClient.get(path, config);
+    return response.data as T;
+  }
+
   public async post<T>(url: string, data?: unknown, config?: AxiosRequestConfig): Promise<T> {
     const response = await this.client.post(url, data, config);
     const responseData = response.data as Record<string, unknown>;
@@ -159,11 +197,7 @@ class ApiClient {
 
   /** Backend origin with the route prefix stripped, for human-readable display. */
   public getApiOrigin(): string {
-    try {
-      return new URL(API_BASE_URL, window.location.origin).origin;
-    } catch {
-      return API_BASE_URL;
-    }
+    return apiOrigin() || window.location.origin;
   }
 }
 

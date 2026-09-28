@@ -182,7 +182,9 @@ public class TicketServiceImpl implements TicketService {
     @Override
     public ResponseErrorTemplate getStats() {
         List<Ticket> tickets = ticketRepository.findAll();
+        // ticketStatus is nullable for the same reason as event status.
         Map<String, Long> byStatus = tickets.stream()
+                .filter(t -> t.getTicketStatus() != null)
                 .collect(Collectors.groupingBy(t -> t.getTicketStatus().name(), Collectors.counting()));
 
         Map<String, Object> stats = new HashMap<>();
