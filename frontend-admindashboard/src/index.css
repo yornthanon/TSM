@@ -133,14 +133,15 @@
 /* TicketDesk's IDE-inspired shell: graphite surfaces, cool blue focus, and quiet cyan detail. */
 :root {
   color-scheme: dark;
-  --ide-bg: #1e1f22;
-  --ide-surface: #2b2d30;
-  --ide-surface-raised: #313335;
-  --ide-border: #3c3f41;
-  --ide-text: #d7dae0;
-  --ide-muted: #9da0a8;
+  --ide-bg: #0f141b;
+  --ide-chrome: #1e1f22;
+  --ide-surface: #18191c;
+  --ide-surface-raised: #1b1c20;
+  --ide-border: #2b2d30;
+  --ide-text: #dfe1e5;
+  --ide-muted: #868a91;
   --ide-blue: #3574f0;
-  --ide-cyan: #53b6e3;
+  --ide-cyan: #4ec9b0;
   --primary: var(--ide-blue);
   --primary-hover: #2f6fdd;
 }
@@ -150,8 +151,10 @@ body {
   min-height: 100vh;
   background: var(--ide-bg) !important;
   color: var(--ide-text) !important;
-  font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font-family: 'Plus Jakarta Sans', 'Kantumruy Pro', ui-sans-serif, system-ui, sans-serif;
 }
+.font-jetbrains { font-family: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace; }
+.font-khmer { font-family: 'Kantumruy Pro', 'Plus Jakarta Sans', sans-serif; }
 ::selection { background: rgba(53, 116, 240, .38); color: #fff; }
 button, a, input, select, textarea { transition: color 140ms ease, background-color 140ms ease, border-color 140ms ease, box-shadow 140ms ease; }
 button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible {
@@ -171,13 +174,13 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
 .bg-white { background-color: var(--ide-surface) !important; }
 .bg-white\/90 { background-color: rgba(30, 31, 34, .92) !important; }
 .text-primary { color: var(--ide-blue) !important; }
-.input { background-color: #242629 !important; border-color: var(--ide-border) !important; color: var(--ide-text) !important; }
+.input { background-color: #141416 !important; border-color: var(--ide-border) !important; color: var(--ide-text) !important; }
 .input::placeholder { color: #777b84 !important; }
 .btn-primary, .bg-primary { background-color: var(--ide-blue); }
 .btn-primary:hover, .hover\:bg-primary-hover:hover { background-color: #2f6fdd; }
 .ide-statusbar {
   min-height: 28px;
-  background: #252629;
+  background: var(--ide-chrome);
   border-top: 1px solid var(--ide-border);
   color: #aeb2bb;
   font: 11px/1.2 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
@@ -188,3 +191,9 @@ main > .mx-auto { animation: soft-reveal 220ms ease-out both; }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; scroll-behavior: auto !important; transition-duration: .01ms !important; }
 }
+
+/* Keep legacy Tailwind color literals aligned with the ChatBot IDE palette. */
+[class*="border-[#3c3f41]"] { border-color: var(--ide-border) !important; }
+[class*="text-[#d7dae0]"] { color: var(--ide-text) !important; }
+[class*="text-[#c4c7ce]"] { color: #bcbec4 !important; }
+[class*="text-[#9da0a8]"] { color: var(--ide-muted) !important; }

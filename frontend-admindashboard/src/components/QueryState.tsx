@@ -13,6 +13,8 @@ interface QueryStateProps {
   emptyAction?: React.ReactNode;
   /** Number of skeleton rows to show while loading a table. */
   rows?: number;
+  /** Use metric-card placeholders instead of table-row placeholders. */
+  loadingVariant?: 'rows' | 'cards';
   children: React.ReactNode;
 }
 
@@ -31,9 +33,19 @@ export const QueryState: React.FC<QueryStateProps> = ({
   emptyDescription,
   emptyAction,
   rows = 5,
+  loadingVariant = 'rows',
   children,
 }) => {
   if (isLoading) {
+    if (loadingVariant === 'cards') {
+      return (
+        <div className="grid grid-cols-2 gap-3 lg:grid-cols-4" aria-busy="true" aria-live="polite">
+          {Array.from({ length: rows }).map((_, i) => (
+            <Skeleton key={i} className="h-[108px] w-full rounded-xl" />
+          ))}
+        </div>
+      );
+    }
     return (
       <div className="space-y-2.5" aria-busy="true" aria-live="polite">
         {Array.from({ length: rows }).map((_, i) => (
@@ -71,10 +83,17 @@ interface StatCardProps {
 }
 
 const TONES: Record<NonNullable<StatCardProps['tone']>, string> = {
-  default: 'text-[#d7dae0]',
-  good: 'text-emerald-600',
-  warn: 'text-amber-600',
-  bad: 'text-rose-600',
+  default: 'text-[#dfe1e5]',
+  good: 'text-[#4ec9b0]',
+  warn: 'text-[#ffc66d]',
+  bad: 'text-[#f07178]',
+};
+
+const ICON_TONES: Record<NonNullable<StatCardProps['tone']>, string> = {
+  default: 'bg-[#3574f0]/10 text-[#3574f0]',
+  good: 'bg-[#4ec9b0]/10 text-[#4ec9b0]',
+  warn: 'bg-[#ffc66d]/10 text-[#ffc66d]',
+  bad: 'bg-[#f07178]/10 text-[#f07178]',
 };
 
 export const StatCard: React.FC<StatCardProps> = ({
@@ -84,17 +103,17 @@ export const StatCard: React.FC<StatCardProps> = ({
   icon: Icon,
   tone = 'default',
 }) => (
-  <div className="rounded-xl border border-[#3c3f41] bg-white p-4 shadow-sm">
+  <div className="rounded-xl border border-[#27292d] bg-[#18191c] p-4 shadow-sm transition-colors hover:border-[#393b40]">
     <div className="flex items-center justify-between gap-2">
-      <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-[#9da0a8]">
+      <p className="text-xs font-medium text-[#868a91]">
         {label}
       </p>
-      {Icon && <Icon className="h-4 w-4 text-[#7d8188]" strokeWidth={1.8} />}
+      {Icon && <span className={cn('flex h-7 w-7 items-center justify-center rounded-lg', ICON_TONES[tone])}><Icon className="h-3.5 w-3.5" strokeWidth={1.8} /></span>}
     </div>
-    <p className={cn('mt-1.5 text-2xl font-semibold tracking-[-0.03em]', TONES[tone])}>
+    <p className={cn('mt-2 font-jetbrains text-2xl font-semibold tracking-[-0.03em] tabular-nums', TONES[tone])}>
       {value}
     </p>
-    {hint && <p className="mt-0.5 text-[11px] text-[#9da0a8]">{hint}</p>}
+    {hint && <p className="mt-1 text-[11px] text-[#868a91]">{hint}</p>}
   </div>
 );
 
