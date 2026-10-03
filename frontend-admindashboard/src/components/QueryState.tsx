@@ -71,7 +71,7 @@ interface StatCardProps {
 }
 
 const TONES: Record<NonNullable<StatCardProps['tone']>, string> = {
-  default: 'text-[#292933]',
+  default: 'text-[#d7dae0]',
   good: 'text-emerald-600',
   warn: 'text-amber-600',
   bad: 'text-rose-600',
@@ -84,17 +84,17 @@ export const StatCard: React.FC<StatCardProps> = ({
   icon: Icon,
   tone = 'default',
 }) => (
-  <div className="rounded-xl border border-[#e8e8ec] bg-white p-4 shadow-sm">
+  <div className="rounded-xl border border-[#3c3f41] bg-white p-4 shadow-sm">
     <div className="flex items-center justify-between gap-2">
-      <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-[#9b9ba6]">
+      <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-[#9da0a8]">
         {label}
       </p>
-      {Icon && <Icon className="h-4 w-4 text-[#b6b6c0]" strokeWidth={1.8} />}
+      {Icon && <Icon className="h-4 w-4 text-[#7d8188]" strokeWidth={1.8} />}
     </div>
     <p className={cn('mt-1.5 text-2xl font-semibold tracking-[-0.03em]', TONES[tone])}>
       {value}
     </p>
-    {hint && <p className="mt-0.5 text-[11px] text-[#9b9ba6]">{hint}</p>}
+    {hint && <p className="mt-0.5 text-[11px] text-[#9da0a8]">{hint}</p>}
   </div>
 );
 
@@ -107,8 +107,8 @@ interface PageHeaderProps {
 export const PageHeader: React.FC<PageHeaderProps> = ({ title, description, actions }) => (
   <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
     <div>
-      <h1 className="text-xl font-semibold tracking-[-0.02em] text-[#292933]">{title}</h1>
-      {description && <p className="mt-1 text-[13px] text-[#777783]">{description}</p>}
+      <h1 className="text-xl font-semibold tracking-[-0.02em] text-[#d7dae0]">{title}</h1>
+      {description && <p className="mt-1 text-[13px] text-[#9da0a8]">{description}</p>}
     </div>
     {actions && <div className="flex flex-wrap items-center gap-2">{actions}</div>}
   </div>
@@ -120,7 +120,7 @@ interface TdProps extends React.TdHTMLAttributes<HTMLTableCellElement> {}
 export const Th: React.FC<ThProps> = ({ className, ...props }) => (
   <th
     className={cn(
-      'px-3 py-2.5 text-left text-[11px] font-semibold uppercase tracking-[0.06em] text-[#9b9ba6]',
+      'px-3 py-2.5 text-left text-[11px] font-semibold uppercase tracking-[0.06em] text-[#9da0a8]',
       className
     )}
     {...props}
@@ -128,14 +128,14 @@ export const Th: React.FC<ThProps> = ({ className, ...props }) => (
 );
 
 export const Td: React.FC<TdProps> = ({ className, ...props }) => (
-  <td className={cn('px-3 py-3 text-[13px] text-[#3d3d47]', className)} {...props} />
+  <td className={cn('px-3 py-3 text-[13px] text-[#c4c7ce]', className)} {...props} />
 );
 
 export const Table: React.FC<{ children: React.ReactNode; className?: string }> = ({
   children,
   className,
 }) => (
-  <div className="overflow-x-auto rounded-xl border border-[#e8e8ec] bg-white shadow-sm">
+  <div className="overflow-x-auto rounded-xl border border-[#3c3f41] bg-white shadow-sm">
     <table className={cn('w-full min-w-[640px] border-collapse', className)}>{children}</table>
   </div>
 );
@@ -147,7 +147,7 @@ export const Pager: React.FC<{
   pageSize?: number;
   onChange: (page: number) => void;
 }> = ({ page, totalPages, total, pageSize = 10, onChange }) => (
-  <div className="mt-3 flex items-center justify-between text-xs text-[#777783]">
+  <div className="mt-3 flex items-center justify-between text-xs text-[#9da0a8]">
     <span>
       {total === 0
         ? 'No rows'
@@ -156,7 +156,7 @@ export const Pager: React.FC<{
     <div className="flex items-center gap-2">
       <button
         type="button"
-        className="rounded-lg border border-[#e7e7eb] px-2.5 py-1 disabled:opacity-40"
+        className="rounded-lg border border-[#3c3f41] px-2.5 py-1 disabled:opacity-40"
         disabled={page <= 1}
         onClick={() => onChange(page - 1)}
       >
@@ -167,7 +167,7 @@ export const Pager: React.FC<{
       </span>
       <button
         type="button"
-        className="rounded-lg border border-[#e7e7eb] px-2.5 py-1 disabled:opacity-40"
+        className="rounded-lg border border-[#3c3f41] px-2.5 py-1 disabled:opacity-40"
         disabled={page >= totalPages}
         onClick={() => onChange(page + 1)}
       >

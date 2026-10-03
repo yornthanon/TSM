@@ -5,6 +5,7 @@ import { useCreateGroup, useCreateRole, useGroups, usePermissions, useRoles } fr
 import { PageHeader, QueryState, StatCard } from '../../components/QueryState';
 import { Badge, Button, Card, Input, Modal } from '../../components/ui';
 import { formatDate } from '../../utils';
+import { MfaSettings } from './MfaSettings';
 
 const Access: React.FC = () => {
   const roles = useRoles();
@@ -59,13 +60,13 @@ const Access: React.FC = () => {
         <div className="grid gap-4 lg:grid-cols-2">
           <ListCard title="Roles" isEmpty={(roles.data?.length ?? 0) === 0}>
             {(roles.data ?? []).map((role) => (
-              <li key={role.id} className="flex items-start justify-between gap-3 border-t border-[#f0f0f3] py-2.5 first:border-t-0">
+              <li key={role.id} className="flex items-start justify-between gap-3 border-t border-[#3c3f41] py-2.5 first:border-t-0">
                 <div className="min-w-0">
-                  <p className="text-[13px] font-medium text-[#292933]">{role.name}</p>
+                  <p className="text-[13px] font-medium text-[#d7dae0]">{role.name}</p>
                   {role.description && (
-                    <p className="mt-0.5 text-[12px] text-[#9b9ba6]">{role.description}</p>
+                    <p className="mt-0.5 text-[12px] text-[#9da0a8]">{role.description}</p>
                   )}
-                  <p className="mt-0.5 text-[11px] text-[#b6b6c0]">
+                  <p className="mt-0.5 text-[11px] text-[#7d8188]">
                     Created {formatDate(role.created_at)} by {role.created_by ?? 'system'}
                   </p>
                 </div>
@@ -76,11 +77,11 @@ const Access: React.FC = () => {
 
           <ListCard title="Groups" isEmpty={(groups.data?.length ?? 0) === 0}>
             {(groups.data ?? []).map((group) => (
-              <li key={group.id} className="flex items-start justify-between gap-3 border-t border-[#f0f0f3] py-2.5 first:border-t-0">
+              <li key={group.id} className="flex items-start justify-between gap-3 border-t border-[#3c3f41] py-2.5 first:border-t-0">
                 <div className="min-w-0">
-                  <p className="text-[13px] font-medium text-[#292933]">{group.name}</p>
+                  <p className="text-[13px] font-medium text-[#d7dae0]">{group.name}</p>
                   {group.description && (
-                    <p className="mt-0.5 text-[12px] text-[#9b9ba6]">{group.description}</p>
+                    <p className="mt-0.5 text-[12px] text-[#9da0a8]">{group.description}</p>
                   )}
                 </div>
                 <Badge status={group.status ?? 'UNKNOWN'} />
@@ -94,7 +95,7 @@ const Access: React.FC = () => {
                 <span
                   key={permission.id}
                   title={permission.description ?? undefined}
-                  className="rounded-md bg-[#f5f5f7] px-2 py-1 text-[11px] font-medium text-[#5c5c68]"
+                  className="rounded-md bg-[#313335] px-2 py-1 text-[11px] font-medium text-[#c4c7ce]"
                 >
                   {permission.name}
                 </span>
@@ -103,6 +104,10 @@ const Access: React.FC = () => {
           </ListCard>
         </div>
       </QueryState>
+
+      <div className="mt-4">
+        <MfaSettings />
+      </div>
 
       {roleModal && (
         <NameModal
@@ -148,11 +153,11 @@ const ListCard: React.FC<{
   children: React.ReactNode;
 }> = ({ title, isEmpty, className, children }) => (
   <Card className={className}>
-    <div className="border-b border-[#f0f0f3] px-4 py-3">
-      <h2 className="text-[13px] font-semibold text-[#292933]">{title}</h2>
+    <div className="border-b border-[#3c3f41] px-4 py-3">
+      <h2 className="text-[13px] font-semibold text-[#d7dae0]">{title}</h2>
     </div>
     <div className="px-4 py-2">
-      {isEmpty ? <p className="py-3 text-[13px] text-[#9b9ba6]">None</p> : <ul>{children}</ul>}
+      {isEmpty ? <p className="py-3 text-[13px] text-[#9da0a8]">None</p> : <ul>{children}</ul>}
     </div>
   </Card>
 );

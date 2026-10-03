@@ -79,7 +79,7 @@ const Users: React.FC = () => {
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value)}
             aria-label="Filter by status"
-            className="rounded-lg border border-[#e7e7eb] bg-white px-3 py-2 text-[13px] text-[#3d3d47]"
+            className="rounded-lg border border-[#3c3f41] bg-white px-3 py-2 text-[13px] text-[#c4c7ce]"
           >
             <option value="">All statuses</option>
             <option value="ACTIVE">Active</option>
@@ -109,23 +109,23 @@ const Users: React.FC = () => {
           </thead>
           <tbody>
             {paged.visible.map((user) => (
-              <tr key={user.id} className="border-t border-[#f0f0f3]">
+              <tr key={user.id} className="border-t border-[#3c3f41]">
                 <Td>
                   <p className="font-medium">{user.username}</p>
                   {(user.firstName || user.lastName) && (
-                    <p className="mt-0.5 text-[12px] text-[#9b9ba6]">
+                    <p className="mt-0.5 text-[12px] text-[#9da0a8]">
                       {[user.firstName, user.lastName].filter(Boolean).join(' ')}
                     </p>
                   )}
                 </Td>
-                <Td className="text-[#777783]">{user.email ?? '-'}</Td>
-                <Td className="text-[#777783]">
+                <Td className="text-[#9da0a8]">{user.email ?? '-'}</Td>
+                <Td className="text-[#9da0a8]">
                   {(user.roles ?? []).length > 0 ? user.roles!.join(', ') : '-'}
                 </Td>
                 <Td>
                   <Badge status={user.status ?? 'UNKNOWN'} />
                 </Td>
-                <Td className="whitespace-nowrap text-[#777783]">
+                <Td className="whitespace-nowrap text-[#9da0a8]">
                   {user.lastLogin ? formatDateTime(user.lastLogin) : 'Never'}
                 </Td>
                 <Td>
@@ -269,7 +269,7 @@ const EditUserModal: React.FC<{
         <Input label="Last name" value={form.lastName} onChange={update('lastName')} />
         <Input label="Email" type="email" value={form.email} onChange={update('email')} />
         <Input label="Phone" value={form.phoneNumber} onChange={update('phoneNumber')} />
-        <p className="text-[11px] text-[#9b9ba6]">
+        <p className="text-[11px] text-[#9da0a8]">
           Username and role assignments are owned by the auth service and are not editable here.
         </p>
       </div>

@@ -13,8 +13,8 @@ import com.ticket.ticketservice.mapper.TicketMapper;
 import com.ticket.ticketservice.repository.TicketRepository;
 import com.ticket.ticketservice.service.TicketService;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Duration;
 import java.time.LocalDateTime;
@@ -25,15 +25,12 @@ import java.util.stream.Collectors;
 @Service
 public class TicketServiceImpl implements TicketService {
 
-    private final RedisTemplate<String, String> redisTemplate;
     private final TicketMapper ticketMapper;
     private final EventClient eventClient;
     private final TicketRepository ticketRepository;
 
-    public TicketServiceImpl(RedisTemplate<String, String> redisTemplate,
-                             TicketMapper ticketMapper, EventClient eventClient,
+    public TicketServiceImpl(TicketMapper ticketMapper, EventClient eventClient,
                              TicketRepository ticketRepository) {
-        this.redisTemplate = redisTemplate;
         this.ticketMapper = ticketMapper;
         this.eventClient = eventClient;
         this.ticketRepository = ticketRepository;
@@ -94,54 +91,57 @@ public class TicketServiceImpl implements TicketService {
     }
 
     @Override
+    @Transactional
     public ResponseErrorTemplate lockTicket(TicketLockRequest ticketLockRequest) {
-
-        var lockKey = "ticket:lock:" + ticketLockRequest.getEventId() + ":" + ticketLockRequest.getUserId();
-        String lockValue = ticketLockRequest.getEventId()+"_"+ UUID.randomUUID();
-
-        Boolean lockAcquired = redisTemplate.opsForValue()
-                .setIfAbsent(lockKey, lockValue, Duration.ofMinutes(ticketLockRequest.getLockDuration()));
-        if(Boolean.FALSE.equals(lockAcquired)) {
+        if (ticketLockRequest == null || ticketLockRequest.getEventId() == null
+                || ticketLockRequest.getQuantity() == null || ticketLockRequest.getQuantity() < 1
+                || ticketLockRequest.getLockDuration() == null || ticketLockRequest.getLockDuration() < 1
+                || ticketLockRequest.getLockDuration() > 30) {
             return new ResponseErrorTemplate(
-                    ApiConstant.TICKET_LOCKED.getDescription(),
-                    ApiConstant.TICKET_LOCKED.getKey(),
+                    "Provide a valid event, quantity, and lock duration (1–30 minutes).",
+                    ApiConstant.INVALID_REQUEST.getKey(),
                     new EmptyObject(),
                     true
             );
         }
 
-        try {
-            List<Ticket> availableTickets = ticketRepository.findAllByEventIdAndTicketStatus(
-                    ticketLockRequest.getEventId(), TicketStatus.AVAILABLE);
-            if (availableTickets.size() < ticketLockRequest.getQuantity()) {
-                return new ResponseErrorTemplate(
-                        ApiConstant.TICKET_NOT_AVAILABLE.getDescription(),
-                        ApiConstant.TICKET_NOT_AVAILABLE.getKey(),
-                        new EmptyObject(),
-                        true
-                );
-            }
-            List<Ticket> ticketsToLock = availableTickets.subList(0, ticketLockRequest.getQuantity());
-            ticketsToLock.forEach(
-                    ticket -> {
-                        ticket.setTicketStatus(TicketStatus.LOCKED);
-                        ticket.setLockedBy(ticketLockRequest.getUserId());
-                        ticket.setLockedUntil(LocalDateTime.now().plusMinutes(ticketLockRequest.getLockDuration()));
-                    }
-            );
+        LocalDateTime now = LocalDateTime.now();
+        List<Ticket> expiredTickets = ticketRepository.findExpiredTicketsForUpdate(
+                ticketLockRequest.getEventId(), TicketStatus.LOCKED, now);
+        expiredTickets.forEach(ticket -> {
+            ticket.setTicketStatus(TicketStatus.AVAILABLE);
+            ticket.setLockedBy(null);
+            ticket.setLockedUntil(null);
+        });
+        if (!expiredTickets.isEmpty()) ticketRepository.saveAll(expiredTickets);
 
-            List<TicketResponse> tickets = ticketRepository.saveAll(ticketsToLock).stream()
-                    .map(ticketMapper::toResponse)
-                    .toList();
+        List<Ticket> availableTickets = ticketRepository.findTicketsForUpdate(
+                ticketLockRequest.getEventId(), TicketStatus.AVAILABLE);
+        if (availableTickets.size() < ticketLockRequest.getQuantity()) {
             return new ResponseErrorTemplate(
-                    ApiConstant.SUCCESS.getDescription(),
-                    ApiConstant.SUCCESS.getKey(),
-                    tickets,
-                    false
+                    ApiConstant.TICKET_NOT_AVAILABLE.getDescription(),
+                    ApiConstant.TICKET_NOT_AVAILABLE.getKey(),
+                    new EmptyObject(),
+                    true
             );
-        }finally {
-            redisTemplate.delete(lockKey);
         }
+
+        List<Ticket> ticketsToLock = new ArrayList<>(availableTickets.subList(0, ticketLockRequest.getQuantity()));
+        ticketsToLock.forEach(ticket -> {
+            ticket.setTicketStatus(TicketStatus.LOCKED);
+            ticket.setLockedBy(ticketLockRequest.getUserId());
+            ticket.setLockedUntil(now.plusMinutes(ticketLockRequest.getLockDuration()));
+        });
+
+        List<TicketResponse> tickets = ticketRepository.saveAll(ticketsToLock).stream()
+                .map(ticketMapper::toResponse)
+                .toList();
+        return new ResponseErrorTemplate(
+                ApiConstant.SUCCESS.getDescription(),
+                ApiConstant.SUCCESS.getKey(),
+                tickets,
+                false
+        );
     }
 
     @Override

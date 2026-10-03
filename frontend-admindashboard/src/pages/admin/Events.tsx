@@ -133,7 +133,7 @@ const Events: React.FC = () => {
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value)}
             aria-label="Filter by status"
-            className="rounded-lg border border-[#e7e7eb] bg-white px-3 py-2 text-[13px] text-[#3d3d47]"
+            className="rounded-lg border border-[#3c3f41] bg-white px-3 py-2 text-[13px] text-[#c4c7ce]"
           >
             <option value="">All statuses</option>
             {EVENT_STATUSES.map((status) => (
@@ -176,23 +176,23 @@ const Events: React.FC = () => {
           </thead>
           <tbody>
             {paged.visible.map((event) => (
-              <tr key={event.id} className="border-t border-[#f0f0f3]">
+              <tr key={event.id} className="border-t border-[#3c3f41]">
                 <Td>
                   <Link
                     to={`/admin/events/${event.id}`}
-                    className="font-medium text-[#292933] hover:text-[#7c5cff] hover:underline"
+                    className="font-medium text-[#d7dae0] hover:text-[#3574f0] hover:underline"
                   >
                     {event.title}
                   </Link>
                   {event.location && (
-                    <p className="text-[11px] text-[#9b9ba6]">{event.location}</p>
+                    <p className="text-[11px] text-[#9da0a8]">{event.location}</p>
                   )}
                 </Td>
-                <Td className="whitespace-nowrap text-[#777783]">
+                <Td className="whitespace-nowrap text-[#9da0a8]">
                   {formatDateTime(event.eventDate)}
                 </Td>
-                <Td className="text-[#777783]">{event.eventType ?? '-'}</Td>
-                <Td className="text-[#777783]">{event.capacity ?? '-'}</Td>
+                <Td className="text-[#9da0a8]">{event.eventType ?? '-'}</Td>
+                <Td className="text-[#9da0a8]">{event.capacity ?? '-'}</Td>
                 <Td className="font-medium">{formatCurrency(event.basePrice)}</Td>
                 <Td>
                   <Badge status={event.status ?? 'UNSET'} />
@@ -203,7 +203,7 @@ const Events: React.FC = () => {
                       to={`/admin/events/${event.id}`}
                       title="View inventory"
                       aria-label={`View ${event.title}`}
-                      className="rounded-md p-1.5 text-[#8b8b96] hover:bg-[#f5f5f7]"
+                      className="rounded-md p-1.5 text-[#9da0a8] hover:bg-[#313335]"
                     >
                       <Eye className="h-3.5 w-3.5" />
                     </Link>
@@ -212,7 +212,7 @@ const Events: React.FC = () => {
                       title="Edit"
                       aria-label={`Edit ${event.title}`}
                       onClick={() => openEdit(event)}
-                      className="rounded-md p-1.5 text-[#8b8b96] hover:bg-[#f5f5f7]"
+                      className="rounded-md p-1.5 text-[#9da0a8] hover:bg-[#313335]"
                     >
                       <Pencil className="h-3.5 w-3.5" />
                     </button>
@@ -375,13 +375,13 @@ const EventFormModal: React.FC<{
           {...register('title')}
         />
         <div>
-          <label htmlFor="event-description" className="mb-1.5 block text-xs font-medium text-[#5c5c68]">
+          <label htmlFor="event-description" className="mb-1.5 block text-xs font-medium text-[#c4c7ce]">
             Description
           </label>
           <textarea
             id="event-description"
             rows={3}
-            className="w-full rounded-lg border border-[#e7e7eb] px-3 py-2 text-[13px] text-[#292933] outline-none focus:border-[#c4b5fd] focus:ring-2 focus:ring-[#7c5cff]/15"
+            className="w-full rounded-lg border border-[#3c3f41] px-3 py-2 text-[13px] text-[#d7dae0] outline-none focus:border-[#c4b5fd] focus:ring-2 focus:ring-[#3574f0]/15"
             placeholder="What is this event about?"
             {...register('description')}
           />
@@ -424,12 +424,12 @@ const EventFormModal: React.FC<{
         </div>
         <div className="grid grid-cols-2 gap-3">
           <div>
-            <label htmlFor="event-type" className="mb-1.5 block text-xs font-medium text-[#5c5c68]">
+            <label htmlFor="event-type" className="mb-1.5 block text-xs font-medium text-[#c4c7ce]">
               Type
             </label>
             <select
               id="event-type"
-              className="w-full rounded-lg border border-[#e7e7eb] bg-white px-3 py-2 text-[13px]"
+              className="w-full rounded-lg border border-[#3c3f41] bg-white px-3 py-2 text-[13px]"
               {...register('eventType')}
             >
               {EVENT_TYPES.map((type) => (
@@ -440,12 +440,12 @@ const EventFormModal: React.FC<{
             </select>
           </div>
           <div>
-            <label htmlFor="event-status" className="mb-1.5 block text-xs font-medium text-[#5c5c68]">
+            <label htmlFor="event-status" className="mb-1.5 block text-xs font-medium text-[#c4c7ce]">
               Status
             </label>
             <select
               id="event-status"
-              className="w-full rounded-lg border border-[#e7e7eb] bg-white px-3 py-2 text-[13px]"
+              className="w-full rounded-lg border border-[#3c3f41] bg-white px-3 py-2 text-[13px]"
               {...register('status')}
             >
               {EVENT_STATUSES.map((status) => (

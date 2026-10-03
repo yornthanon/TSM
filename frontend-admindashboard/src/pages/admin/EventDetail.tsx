@@ -127,10 +127,10 @@ const EventDetail: React.FC = () => {
 
       <div className="grid gap-4 lg:grid-cols-3">
         <Card className="lg:col-span-1">
-          <div className="border-b border-[#f0f0f3] px-4 py-3">
-            <h2 className="text-[13px] font-semibold text-[#292933]">Details</h2>
+          <div className="border-b border-[#3c3f41] px-4 py-3">
+            <h2 className="text-[13px] font-semibold text-[#d7dae0]">Details</h2>
           </div>
-          <dl className="divide-y divide-[#f0f0f3]">
+          <dl className="divide-y divide-[#3c3f41]">
             <Detail label="Type" value={data.eventType ?? '-'} />
             <Detail label="Status" badge={data.status ?? 'UNSET'} />
             <Detail label="Date" value={formatDateTime(data.eventDate)} />
@@ -160,7 +160,7 @@ const EventDetail: React.FC = () => {
 
         <div className="space-y-4 lg:col-span-2">
           <section>
-            <h2 className="mb-2 text-[13px] font-semibold text-[#292933]">Inventory</h2>
+            <h2 className="mb-2 text-[13px] font-semibold text-[#d7dae0]">Inventory</h2>
             <QueryState
               isLoading={tickets.isLoading}
               error={tickets.error}
@@ -182,14 +182,14 @@ const EventDetail: React.FC = () => {
                 </thead>
                 <tbody>
                   {pagedTickets.visible.map((ticket) => (
-                    <tr key={ticket.id} className="border-t border-[#f0f0f3]">
+                    <tr key={ticket.id} className="border-t border-[#3c3f41]">
                       <Td className="font-medium">{ticket.seatNumber}</Td>
-                      <Td className="text-[#777783]">{ticket.ticketType ?? '-'}</Td>
+                      <Td className="text-[#9da0a8]">{ticket.ticketType ?? '-'}</Td>
                       <Td>{formatCurrency(ticket.price)}</Td>
                       <Td>
                         <Badge status={ticket.ticketStatus ?? 'UNKNOWN'} />
                       </Td>
-                      <Td className="whitespace-nowrap text-[#777783]">
+                      <Td className="whitespace-nowrap text-[#9da0a8]">
                         {ticket.lockedUntil ? formatDateTime(ticket.lockedUntil) : '-'}
                       </Td>
                     </tr>
@@ -206,7 +206,7 @@ const EventDetail: React.FC = () => {
           </section>
 
           <section>
-            <h2 className="mb-2 text-[13px] font-semibold text-[#292933]">Orders</h2>
+            <h2 className="mb-2 text-[13px] font-semibold text-[#d7dae0]">Orders</h2>
             <QueryState
               isLoading={orders.isLoading}
               error={orders.error}
@@ -229,15 +229,15 @@ const EventDetail: React.FC = () => {
                 </thead>
                 <tbody>
                   {pagedOrders.visible.map((order) => (
-                    <tr key={order.id} className="border-t border-[#f0f0f3]">
+                    <tr key={order.id} className="border-t border-[#3c3f41]">
                       <Td className="font-medium">#{order.id}</Td>
-                      <Td className="text-[#777783]">#{order.ticketId}</Td>
-                      <Td className="text-[#777783]">{order.quantity}</Td>
+                      <Td className="text-[#9da0a8]">#{order.ticketId}</Td>
+                      <Td className="text-[#9da0a8]">{order.quantity}</Td>
                       <Td className="font-medium">{formatCurrency(order.amount)}</Td>
                       <Td>
                         <Badge status={order.orderStatus ?? 'UNKNOWN'} />
                       </Td>
-                      <Td className="whitespace-nowrap text-[#777783]">
+                      <Td className="whitespace-nowrap text-[#9da0a8]">
                         {formatDateTime(order.orderDate)}
                       </Td>
                     </tr>
@@ -261,7 +261,7 @@ const EventDetail: React.FC = () => {
 const BackLink: React.FC = () => (
   <Link
     to="/admin/events"
-    className="mb-3 inline-flex items-center gap-1.5 text-[13px] text-[#777783] hover:text-[#292933]"
+    className="mb-3 inline-flex items-center gap-1.5 text-[13px] text-[#9da0a8] hover:text-[#d7dae0]"
   >
     <ArrowLeft className="h-3.5 w-3.5" />
     All events
@@ -275,9 +275,9 @@ const Detail: React.FC<{
   icon?: React.ElementType;
 }> = ({ label, value, badge, icon: Icon }) => (
   <div className="flex items-start justify-between gap-3 px-4 py-2.5">
-    <dt className="shrink-0 text-[12px] font-medium text-[#9b9ba6]">{label}</dt>
-    <dd className="flex min-w-0 items-center gap-1.5 text-right text-[13px] text-[#3d3d47]">
-      {Icon && <Icon className="h-3.5 w-3.5 shrink-0 text-[#b6b6c0]" strokeWidth={1.8} />}
+    <dt className="shrink-0 text-[12px] font-medium text-[#9da0a8]">{label}</dt>
+    <dd className="flex min-w-0 items-center gap-1.5 text-right text-[13px] text-[#c4c7ce]">
+      {Icon && <Icon className="h-3.5 w-3.5 shrink-0 text-[#7d8188]" strokeWidth={1.8} />}
       {badge ? <Badge status={badge} /> : <span className="truncate">{value}</span>}
     </dd>
   </div>

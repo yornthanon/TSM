@@ -14,6 +14,7 @@ export const auth = {
     const response = await api.post<{ access_token: string; refresh_token: string }>('/auth/login', {
       username: credentials.username,
       password: credentials.password,
+      ...(credentials.totpCode ? { totpCode: credentials.totpCode } : {}),
     });
 
     if (!response?.access_token) {

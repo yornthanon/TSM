@@ -111,7 +111,7 @@ const Inventory: React.FC = () => {
             value={eventFilter}
             onChange={(e) => setEventFilter(e.target.value)}
             aria-label="Filter by event"
-            className="rounded-lg border border-[#e7e7eb] bg-white px-3 py-2 text-[13px] text-[#3d3d47]"
+            className="rounded-lg border border-[#3c3f41] bg-white px-3 py-2 text-[13px] text-[#c4c7ce]"
           >
             <option value="">All events</option>
             {(events.data ?? []).map((event) => (
@@ -124,7 +124,7 @@ const Inventory: React.FC = () => {
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value)}
             aria-label="Filter by status"
-            className="rounded-lg border border-[#e7e7eb] bg-white px-3 py-2 text-[13px] text-[#3d3d47]"
+            className="rounded-lg border border-[#3c3f41] bg-white px-3 py-2 text-[13px] text-[#c4c7ce]"
           >
             <option value="">All statuses</option>
             {TICKET_STATUSES.map((status) => (
@@ -164,18 +164,18 @@ const Inventory: React.FC = () => {
           </thead>
           <tbody>
             {paged.visible.map((ticket) => (
-              <tr key={ticket.id} className="border-t border-[#f0f0f3]">
+              <tr key={ticket.id} className="border-t border-[#3c3f41]">
                 <Td className="font-medium">{ticket.seatNumber}</Td>
-                <Td className="text-[#777783]">
+                <Td className="text-[#9da0a8]">
                   {eventTitleById.get(ticket.eventId) ?? `Event #${ticket.eventId}`}
                 </Td>
-                <Td className="text-[#777783]">{ticket.ticketType ?? '-'}</Td>
+                <Td className="text-[#9da0a8]">{ticket.ticketType ?? '-'}</Td>
                 <Td className="font-medium">{formatCurrency(ticket.price)}</Td>
                 <Td>
                   <Badge status={ticket.ticketStatus ?? 'UNKNOWN'} />
                 </Td>
-                <Td className="text-[#777783]">{ticket.lockedBy ?? '-'}</Td>
-                <Td className="whitespace-nowrap text-[#777783]">
+                <Td className="text-[#9da0a8]">{ticket.lockedBy ?? '-'}</Td>
+                <Td className="whitespace-nowrap text-[#9da0a8]">
                   {ticket.lockedUntil ? formatDateTime(ticket.lockedUntil) : '-'}
                 </Td>
                 <Td>
@@ -191,7 +191,7 @@ const Inventory: React.FC = () => {
                           onError: (e) => toast.error(e.message),
                         })
                       }
-                      className="rounded-md p-1.5 text-[#8b8b96] hover:bg-[#f5f5f7] disabled:opacity-40"
+                      className="rounded-md p-1.5 text-[#9da0a8] hover:bg-[#313335] disabled:opacity-40"
                     >
                       <Unlock className="h-3.5 w-3.5" />
                     </button>
@@ -292,16 +292,16 @@ const TicketFormModal: React.FC<{
       }
     >
       {events.length === 0 ? (
-        <p className="text-[13px] text-[#777783]">Create an event first - a seat must belong to one.</p>
+        <p className="text-[13px] text-[#9da0a8]">Create an event first - a seat must belong to one.</p>
       ) : (
         <form id="ticket-form" onSubmit={handleSubmit((values) => onSubmit(values))} className="space-y-3">
           <div>
-            <label htmlFor="ticket-event" className="mb-1.5 block text-xs font-medium text-[#5c5c68]">
+            <label htmlFor="ticket-event" className="mb-1.5 block text-xs font-medium text-[#c4c7ce]">
               Event
             </label>
             <select
               id="ticket-event"
-              className="w-full rounded-lg border border-[#e7e7eb] bg-white px-3 py-2 text-[13px]"
+              className="w-full rounded-lg border border-[#3c3f41] bg-white px-3 py-2 text-[13px]"
               {...register('eventId')}
             >
               <option value="">Select an event</option>
@@ -330,12 +330,12 @@ const TicketFormModal: React.FC<{
             {...register('price')}
           />
           <div>
-            <label htmlFor="ticket-type" className="mb-1.5 block text-xs font-medium text-[#5c5c68]">
+            <label htmlFor="ticket-type" className="mb-1.5 block text-xs font-medium text-[#c4c7ce]">
               Tier
             </label>
             <select
               id="ticket-type"
-              className="w-full rounded-lg border border-[#e7e7eb] bg-white px-3 py-2 text-[13px]"
+              className="w-full rounded-lg border border-[#3c3f41] bg-white px-3 py-2 text-[13px]"
               {...register('ticketType')}
             >
               {TICKET_TYPES.map((type) => (

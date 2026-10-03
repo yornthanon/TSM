@@ -90,7 +90,7 @@ const Payments: React.FC = () => {
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value)}
             aria-label="Filter by status"
-            className="rounded-lg border border-[#e7e7eb] bg-white px-3 py-2 text-[13px] text-[#3d3d47]"
+            className="rounded-lg border border-[#3c3f41] bg-white px-3 py-2 text-[13px] text-[#c4c7ce]"
           >
             <option value="">All statuses</option>
             {PAYMENT_STATUSES.map((status) => (
@@ -124,19 +124,19 @@ const Payments: React.FC = () => {
           </thead>
           <tbody>
             {paged.visible.map((payment) => (
-              <tr key={payment.paymentId ?? `${payment.orderId}-${payment.paymentDate}`} className="border-t border-[#f0f0f3]">
-                <Td className="font-mono text-[11px] text-[#777783]">
+              <tr key={payment.paymentId ?? `${payment.orderId}-${payment.paymentDate}`} className="border-t border-[#3c3f41]">
+                <Td className="font-mono text-[11px] text-[#9da0a8]">
                   {payment.transactionId ?? '-'}
                 </Td>
                 <Td className="font-medium">#{payment.orderId}</Td>
                 <Td className="font-medium">
                   {formatCurrency(payment.amount, payment.currency || 'USD')}
                 </Td>
-                <Td className="text-[#777783]">{payment.currency ?? '-'}</Td>
+                <Td className="text-[#9da0a8]">{payment.currency ?? '-'}</Td>
                 <Td>
                   <Badge status={payment.paymentStatus ?? 'UNKNOWN'} />
                 </Td>
-                <Td className="whitespace-nowrap text-[#777783]">
+                <Td className="whitespace-nowrap text-[#9da0a8]">
                   {formatDateTime(payment.paymentDate)}
                 </Td>
                 <Td>
@@ -147,7 +147,7 @@ const Payments: React.FC = () => {
                       aria-label={`Refund payment ${payment.transactionId ?? payment.orderId}`}
                       disabled={refundPayment.isPending || !canRefund(payment)}
                       onClick={() => setRefundTarget(payment)}
-                      className="rounded-md p-1.5 text-[#8b8b96] hover:bg-[#f5f5f7] disabled:cursor-not-allowed disabled:text-[#c9c9d1]"
+                      className="rounded-md p-1.5 text-[#9da0a8] hover:bg-[#313335] disabled:cursor-not-allowed disabled:text-[#9da0a8]"
                     >
                       <RotateCcw className="h-3.5 w-3.5" />
                     </button>

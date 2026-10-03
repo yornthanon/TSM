@@ -1,22 +1,23 @@
-import React from 'react';
+import React, { lazy, Suspense } from 'react';
 import { HashRouter, Routes, Route } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Toaster } from 'sonner';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { AdminLayout } from './layouts/AdminLayout';
 import { RequireAuth } from './components/RequireAuth';
-import { Login } from './pages/Login';
-import Dashboard from './pages/admin/Dashboard';
-import Events from './pages/admin/Events';
-import EventDetail from './pages/admin/EventDetail';
-import Inventory from './pages/admin/Inventory';
-import Orders from './pages/admin/Orders';
-import Payments from './pages/admin/Payments';
-import Notifications from './pages/admin/Notifications';
-import Users from './pages/admin/Users';
-import Access from './pages/admin/Access';
-import System from './pages/admin/System';
 import { Navigate } from 'react-router-dom';
+
+const Login = lazy(() => import('./pages/Login').then((module) => ({ default: module.Login })));
+const Dashboard = lazy(() => import('./pages/admin/Dashboard'));
+const Events = lazy(() => import('./pages/admin/Events'));
+const EventDetail = lazy(() => import('./pages/admin/EventDetail'));
+const Inventory = lazy(() => import('./pages/admin/Inventory'));
+const Orders = lazy(() => import('./pages/admin/Orders'));
+const Payments = lazy(() => import('./pages/admin/Payments'));
+const Notifications = lazy(() => import('./pages/admin/Notifications'));
+const Users = lazy(() => import('./pages/admin/Users'));
+const Access = lazy(() => import('./pages/admin/Access'));
+const System = lazy(() => import('./pages/admin/System'));
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -32,29 +33,31 @@ const App: React.FC = () => {
     <ErrorBoundary>
       <QueryClientProvider client={queryClient}>
         <HashRouter>
-          <Routes>
-            <Route path="/login" element={<Login />} />
-            <Route
-              path="/admin"
-              element={
-                <RequireAuth>
-                  <AdminLayout />
-                </RequireAuth>
-              }
-            >
-              <Route index element={<Dashboard />} />
-              <Route path="events" element={<Events />} />
-              <Route path="events/:id" element={<EventDetail />} />
-              <Route path="inventory" element={<Inventory />} />
-              <Route path="orders" element={<Orders />} />
-              <Route path="payments" element={<Payments />} />
-              <Route path="notifications" element={<Notifications />} />
-              <Route path="users" element={<Users />} />
-              <Route path="access" element={<Access />} />
-              <Route path="system" element={<System />} />
-            </Route>
-            <Route path="*" element={<Navigate to="/admin" replace />} />
-          </Routes>
+          <Suspense fallback={<div className="flex min-h-[45vh] items-center justify-center text-sm text-gray-400">Opening TicketDesk workspace…</div>}>
+            <Routes>
+              <Route path="/login" element={<Login />} />
+              <Route
+                path="/admin"
+                element={
+                  <RequireAuth>
+                    <AdminLayout />
+                  </RequireAuth>
+                }
+              >
+                <Route index element={<Dashboard />} />
+                <Route path="events" element={<Events />} />
+                <Route path="events/:id" element={<EventDetail />} />
+                <Route path="inventory" element={<Inventory />} />
+                <Route path="orders" element={<Orders />} />
+                <Route path="payments" element={<Payments />} />
+                <Route path="notifications" element={<Notifications />} />
+                <Route path="users" element={<Users />} />
+                <Route path="access" element={<Access />} />
+                <Route path="system" element={<System />} />
+              </Route>
+              <Route path="*" element={<Navigate to="/admin" replace />} />
+            </Routes>
+          </Suspense>
         </HashRouter>
         <Toaster richColors position="bottom-right" />
       </QueryClientProvider>

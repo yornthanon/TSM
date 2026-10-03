@@ -60,10 +60,10 @@ const System: React.FC = () => {
 
       <div className="grid gap-4 lg:grid-cols-2">
         <Card>
-          <div className="border-b border-[#f0f0f3] px-4 py-3">
-            <h2 className="text-[13px] font-semibold text-[#292933]">Connection</h2>
+          <div className="border-b border-[#3c3f41] px-4 py-3">
+            <h2 className="text-[13px] font-semibold text-[#d7dae0]">Connection</h2>
           </div>
-          <dl className="divide-y divide-[#f0f0f3]">
+          <dl className="divide-y divide-[#3c3f41]">
             <Row label="API base URL" value={api.getBaseUrl()} onCopy={copy} />
             <Row label="API origin" value={api.getApiOrigin()} onCopy={copy} />
             <Row
@@ -71,16 +71,16 @@ const System: React.FC = () => {
               value={health.dataUpdatedAt ? formatRelativeTime(new Date(health.dataUpdatedAt)) : '-'}
             />
           </dl>
-          <p className="border-t border-[#f0f0f3] px-4 py-3 text-[11px] text-[#9b9ba6]">
-            The base URL comes from <code className="rounded bg-[#f5f5f7] px-1">VITE_API_BASE_URL</code>{' '}
-            and must end in <code className="rounded bg-[#f5f5f7] px-1">/api/v1</code>. Restart the dev
+          <p className="border-t border-[#3c3f41] px-4 py-3 text-[11px] text-[#9da0a8]">
+            The base URL comes from <code className="rounded bg-[#313335] px-1">VITE_API_BASE_URL</code>{' '}
+            and must end in <code className="rounded bg-[#313335] px-1">/api/v1</code>. Restart the dev
             server after changing it.
           </p>
         </Card>
 
         <Card>
-          <div className="border-b border-[#f0f0f3] px-4 py-3">
-            <h2 className="text-[13px] font-semibold text-[#292933]">Components</h2>
+          <div className="border-b border-[#3c3f41] px-4 py-3">
+            <h2 className="text-[13px] font-semibold text-[#d7dae0]">Components</h2>
           </div>
           <QueryState
             isLoading={health.isLoading}
@@ -91,10 +91,10 @@ const System: React.FC = () => {
             emptyDescription="Actuator responded without a components block."
             rows={3}
           >
-            <ul className="divide-y divide-[#f0f0f3]">
+            <ul className="divide-y divide-[#3c3f41]">
               {components.map(([name, detail]) => (
                 <li key={name} className="flex items-center justify-between gap-3 px-4 py-2.5">
-                  <span className="text-[13px] text-[#3d3d47]">{name}</span>
+                  <span className="text-[13px] text-[#c4c7ce]">{name}</span>
                   <Badge status={detail?.status ?? 'UNKNOWN'} />
                 </li>
               ))}
@@ -112,16 +112,16 @@ const Row: React.FC<{ label: string; value: string; onCopy?: (value: string) => 
   onCopy,
 }) => (
   <div className="flex items-center justify-between gap-3 px-4 py-3">
-    <dt className="shrink-0 text-[12px] font-medium text-[#9b9ba6]">{label}</dt>
+    <dt className="shrink-0 text-[12px] font-medium text-[#9da0a8]">{label}</dt>
     <dd className="flex min-w-0 items-center gap-2">
-      <span className="truncate font-mono text-[11px] text-[#3d3d47]">{value}</span>
+      <span className="truncate font-mono text-[11px] text-[#c4c7ce]">{value}</span>
       {onCopy && (
         <button
           type="button"
           title={`Copy ${label}`}
           aria-label={`Copy ${label}`}
           onClick={() => onCopy(value)}
-          className="shrink-0 rounded-md p-1 text-[#8b8b96] hover:bg-[#f5f5f7]"
+          className="shrink-0 rounded-md p-1 text-[#9da0a8] hover:bg-[#313335]"
         >
           <Copy className="h-3.5 w-3.5" />
         </button>

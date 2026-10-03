@@ -80,7 +80,7 @@ const Orders: React.FC = () => {
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value)}
             aria-label="Filter by status"
-            className="rounded-lg border border-[#e7e7eb] bg-white px-3 py-2 text-[13px] text-[#3d3d47]"
+            className="rounded-lg border border-[#3c3f41] bg-white px-3 py-2 text-[13px] text-[#c4c7ce]"
           >
             <option value="">All statuses</option>
             {ORDER_STATUSES.map((status) => (
@@ -116,21 +116,21 @@ const Orders: React.FC = () => {
           </thead>
           <tbody>
             {paged.visible.map((order) => (
-              <tr key={order.id} className="border-t border-[#f0f0f3]">
+              <tr key={order.id} className="border-t border-[#3c3f41]">
                 <Td className="font-medium">#{order.id}</Td>
-                <Td className="text-[#777783]">
+                <Td className="text-[#9da0a8]">
                   {eventTitleById.get(order.eventId) ?? `Event #${order.eventId}`}
                 </Td>
-                <Td className="text-[#777783]">#{order.ticketId}</Td>
-                <Td className="text-[#777783]">{order.quantity}</Td>
+                <Td className="text-[#9da0a8]">#{order.ticketId}</Td>
+                <Td className="text-[#9da0a8]">{order.quantity}</Td>
                 <Td className="font-medium">{formatCurrency(order.amount)}</Td>
                 <Td>
                   <Badge status={order.orderStatus ?? 'UNKNOWN'} />
                 </Td>
-                <Td className="text-[#777783]">
+                <Td className="text-[#9da0a8]">
                   {order.paymentId ? `#${order.paymentId}` : '-'}
                 </Td>
-                <Td className="whitespace-nowrap text-[#777783]">
+                <Td className="whitespace-nowrap text-[#9da0a8]">
                   {formatDateTime(order.orderDate)}
                 </Td>
                 <Td>
@@ -141,7 +141,7 @@ const Orders: React.FC = () => {
                       aria-label={`Cancel order ${order.id}`}
                       disabled={order.orderStatus === 'CANCELLED' || order.orderStatus === 'COMPLETED'}
                       onClick={() => setCancelTarget(order)}
-                      className="rounded-md p-1.5 text-rose-600 hover:bg-rose-50 disabled:cursor-not-allowed disabled:text-[#c9c9d1]"
+                      className="rounded-md p-1.5 text-rose-600 hover:bg-rose-50 disabled:cursor-not-allowed disabled:text-[#9da0a8]"
                     >
                       <Ban className="h-3.5 w-3.5" />
                     </button>

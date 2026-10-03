@@ -239,6 +239,7 @@ export interface AuthTokens {
 export interface LoginCredentials {
   username: string;
   password: string;
+  totpCode?: string;
 }
 
 // ---------------------------------------------------------------------------

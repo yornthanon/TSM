@@ -8,6 +8,7 @@ import com.ticket.userservice.dto.response.AuthenticationResponse;
 import com.ticket.userservice.entity.CustomUserDetail;
 import com.ticket.userservice.service.AuthService;
 import com.ticket.userservice.service.JwtService;
+import com.ticket.userservice.service.TotpMfaService;
 import com.ticket.userservice.service.handle.CustomUserDetailService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -23,6 +24,7 @@ public class AuthServiceImpl implements AuthService {
     private final JwtService jwtService;
     private final PasswordEncoder passwordEncoder;
     private final CustomUserDetailService customUserDetailService;
+    private final TotpMfaService mfaService;
 
     @Override
     public ResponseErrorTemplate login(AuthenticationRequest authenticationRequest) {
@@ -52,6 +54,16 @@ public class AuthServiceImpl implements AuthService {
             );
         }
 
+        if (mfaService.isEnabledFor(username)) {
+            if (!StringUtils.hasText(authenticationRequest.totpCode())) {
+                customUserDetailService.saveUserAttemptAuthentication(username);
+                return failure("Enter your authenticator code to finish signing in.", "MFA_REQUIRED");
+            }
+            if (!mfaService.verifyLoginCode(username, authenticationRequest.totpCode())) {
+                customUserDetailService.saveUserAttemptAuthentication(username);
+                return failure("The authenticator code is invalid. Try the current 6-digit code.", "MFA_INVALID");
+            }
+        }
         customUserDetailService.updateAttempt(username);
 
         return new ResponseErrorTemplate(
@@ -61,5 +73,9 @@ public class AuthServiceImpl implements AuthService {
                         jwtService.generateToken(customUserDetail),
                         jwtService.refreshToken(customUserDetail)),
                 false);
+    }
+
+    private ResponseErrorTemplate failure(String message, String code) {
+        return new ResponseErrorTemplate(message, code, new EmptyObject(), true);
     }
 }

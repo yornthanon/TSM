@@ -68,6 +68,12 @@ public class User extends BasedEntity {
     @Column(name = "status")
     private String status;
 
+    @Column(name = "mfa_secret", length = 256)
+    private String mfaSecret;
+
+    @Column(name = "mfa_enabled", nullable = false)
+    private Boolean mfaEnabled = false;
+
     @ManyToMany(fetch = FetchType.EAGER)
     @JoinTable(
             name = "user_roles",

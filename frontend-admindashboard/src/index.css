@@ -129,3 +129,62 @@
     @apply bg-gradient-to-r from-primary to-primary-hover bg-clip-text text-transparent;
   }
 }
+
+/* TicketDesk's IDE-inspired shell: graphite surfaces, cool blue focus, and quiet cyan detail. */
+:root {
+  color-scheme: dark;
+  --ide-bg: #1e1f22;
+  --ide-surface: #2b2d30;
+  --ide-surface-raised: #313335;
+  --ide-border: #3c3f41;
+  --ide-text: #d7dae0;
+  --ide-muted: #9da0a8;
+  --ide-blue: #3574f0;
+  --ide-cyan: #53b6e3;
+  --primary: var(--ide-blue);
+  --primary-hover: #2f6fdd;
+}
+
+html { background: var(--ide-bg); }
+body {
+  min-height: 100vh;
+  background: var(--ide-bg) !important;
+  color: var(--ide-text) !important;
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+::selection { background: rgba(53, 116, 240, .38); color: #fff; }
+button, a, input, select, textarea { transition: color 140ms ease, background-color 140ms ease, border-color 140ms ease, box-shadow 140ms ease; }
+button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible {
+  outline: 2px solid var(--ide-cyan);
+  outline-offset: 2px;
+}
+.card {
+  background: var(--ide-surface) !important;
+  border-color: var(--ide-border) !important;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, .18);
+  transition: border-color 180ms ease, box-shadow 180ms ease, transform 180ms ease;
+}
+.card:hover {
+  border-color: #4c566a !important;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, .23);
+}
+.bg-white { background-color: var(--ide-surface) !important; }
+.bg-white\/90 { background-color: rgba(30, 31, 34, .92) !important; }
+.text-primary { color: var(--ide-blue) !important; }
+.input { background-color: #242629 !important; border-color: var(--ide-border) !important; color: var(--ide-text) !important; }
+.input::placeholder { color: #777b84 !important; }
+.btn-primary, .bg-primary { background-color: var(--ide-blue); }
+.btn-primary:hover, .hover\:bg-primary-hover:hover { background-color: #2f6fdd; }
+.ide-statusbar {
+  min-height: 28px;
+  background: #252629;
+  border-top: 1px solid var(--ide-border);
+  color: #aeb2bb;
+  font: 11px/1.2 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+}
+.ide-statusbar-pip { box-shadow: 0 0 10px rgba(83, 182, 227, .65); }
+main > .mx-auto { animation: soft-reveal 220ms ease-out both; }
+@keyframes soft-reveal { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; scroll-behavior: auto !important; transition-duration: .01ms !important; }
+}

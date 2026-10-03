@@ -90,36 +90,36 @@ const Dashboard: React.FC = () => {
 
         <div className="mt-6 grid gap-4 lg:grid-cols-2">
           <Card className="p-4 shadow-sm">
-            <h2 className="text-sm font-semibold text-[#292933]">Events by status</h2>
-            <p className="mt-0.5 text-[11px] text-[#9b9ba6]">
+            <h2 className="text-sm font-semibold text-[#d7dae0]">Events by status</h2>
+            <p className="mt-0.5 text-[11px] text-[#9da0a8]">
               {events.data?.total ?? 0} total
             </p>
             <dl className="mt-3 space-y-1.5">
               {Object.entries(events.data?.byStatus ?? {}).length === 0 && (
-                <li className="text-xs text-[#9b9ba6]">No status data yet.</li>
+                <li className="text-xs text-[#9da0a8]">No status data yet.</li>
               )}
               {Object.entries(events.data?.byStatus ?? {}).map(([status, count]) => (
                 <li key={status} className="flex items-center justify-between gap-2">
                   <Badge status={status} />
-                  <span className="text-xs font-medium text-[#3d3d47]">{count}</span>
+                  <span className="text-xs font-medium text-[#c4c7ce]">{count}</span>
                 </li>
               ))}
             </dl>
           </Card>
 
           <Card className="p-4 shadow-sm">
-            <h2 className="text-sm font-semibold text-[#292933]">Orders by status</h2>
-            <p className="mt-0.5 text-[11px] text-[#9b9ba6]">
+            <h2 className="text-sm font-semibold text-[#d7dae0]">Orders by status</h2>
+            <p className="mt-0.5 text-[11px] text-[#9da0a8]">
               {formatCurrency(orders.data?.totalAmount)} booked
             </p>
             <dl className="mt-3 space-y-1.5">
               {Object.entries(orders.data?.byStatus ?? {}).length === 0 && (
-                <li className="text-xs text-[#9b9ba6]">No orders yet.</li>
+                <li className="text-xs text-[#9da0a8]">No orders yet.</li>
               )}
               {Object.entries(orders.data?.byStatus ?? {}).map(([status, count]) => (
                 <li key={status} className="flex items-center justify-between gap-2">
                   <Badge status={status} />
-                  <span className="text-xs font-medium text-[#3d3d47]">{count}</span>
+                  <span className="text-xs font-medium text-[#c4c7ce]">{count}</span>
                 </li>
               ))}
             </dl>
@@ -128,8 +128,8 @@ const Dashboard: React.FC = () => {
 
         <div className="mt-6">
           <div className="mb-2 flex items-center justify-between">
-            <h2 className="text-sm font-semibold text-[#292933]">Recent payments</h2>
-            <Link to="/admin/payments" className="text-xs font-medium text-[#7c5cff] hover:underline">
+            <h2 className="text-sm font-semibold text-[#d7dae0]">Recent payments</h2>
+            <Link to="/admin/payments" className="text-xs font-medium text-[#3574f0] hover:underline">
               View all
             </Link>
           </div>
@@ -153,8 +153,8 @@ const Dashboard: React.FC = () => {
               </thead>
               <tbody>
                 {recentPayments.map((payment) => (
-                  <tr key={payment.paymentId} className="border-t border-[#f0f0f3]">
-                    <Td className="font-mono text-[11px] text-[#777783]">
+                  <tr key={payment.paymentId} className="border-t border-[#3c3f41]">
+                    <Td className="font-mono text-[11px] text-[#9da0a8]">
                       {payment.transactionId}
                     </Td>
                     <Td>#{payment.orderId}</Td>
@@ -164,7 +164,7 @@ const Dashboard: React.FC = () => {
                     <Td>
                       <Badge status={payment.paymentStatus ?? 'UNKNOWN'} />
                     </Td>
-                    <Td className="text-[#777783]">{formatDateTime(payment.paymentDate)}</Td>
+                    <Td className="text-[#9da0a8]">{formatDateTime(payment.paymentDate)}</Td>
                   </tr>
                 ))}
               </tbody>

@@ -8,6 +8,7 @@ import com.ticket.userservice.filter.InternalAuthFilter;
 import com.ticket.userservice.filter.JwtAuthenticationFilter;
 import com.ticket.userservice.filter.JwtAuthenticationInternalFilter;
 import com.ticket.userservice.service.JwtService;
+import com.ticket.userservice.service.TotpMfaService;
 import com.ticket.userservice.service.handle.CustomUserDetailService;
 import tools.jackson.databind.ObjectMapper;
 import jakarta.servlet.http.HttpServletResponse;
@@ -32,6 +33,7 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 public class CustomSecurityFilterChain extends JwtConfigProperties {
 
     private final JwtService jwtService;
+    private final TotpMfaService totpMfaService;
     private final ObjectMapper objectMapper;
     private final CustomUserDetailService customUserDetailService;
     private final CustomAuthenticationProvider customAuthenticationProvider;
@@ -86,7 +88,8 @@ public class CustomSecurityFilterChain extends JwtConfigProperties {
                                 .accessDeniedHandler(new CustomAccessDeniedHandler()))
                 .addFilterBefore(
                         new JwtAuthenticationFilter(
-                                jwtService, objectMapper, getUrl(), authenticationManager, customUserDetailService),
+                                jwtService, objectMapper, getUrl(), authenticationManager, customUserDetailService,
+                                totpMfaService),
                         UsernamePasswordAuthenticationFilter.class)
                 .addFilterAfter(new JwtAuthenticationInternalFilter(jwtService, objectMapper, this),
                         UsernamePasswordAuthenticationFilter.class)

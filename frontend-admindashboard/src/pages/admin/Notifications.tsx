@@ -72,7 +72,7 @@ const Notifications: React.FC = () => {
             value={typeFilter}
             onChange={(e) => setTypeFilter(e.target.value)}
             aria-label="Filter by channel"
-            className="rounded-lg border border-[#e7e7eb] bg-white px-3 py-2 text-[13px] text-[#3d3d47]"
+            className="rounded-lg border border-[#3c3f41] bg-white px-3 py-2 text-[13px] text-[#c4c7ce]"
           >
             <option value="">All channels</option>
             {NOTIFICATION_TYPES.map((type) => (
@@ -85,7 +85,7 @@ const Notifications: React.FC = () => {
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value)}
             aria-label="Filter by status"
-            className="rounded-lg border border-[#e7e7eb] bg-white px-3 py-2 text-[13px] text-[#3d3d47]"
+            className="rounded-lg border border-[#3c3f41] bg-white px-3 py-2 text-[13px] text-[#c4c7ce]"
           >
             <option value="">All statuses</option>
             {NOTIFICATION_STATUSES.map((status) => (
@@ -118,18 +118,18 @@ const Notifications: React.FC = () => {
           </thead>
           <tbody>
             {paged.visible.map((n) => (
-              <tr key={n.id} className="border-t border-[#f0f0f3]">
+              <tr key={n.id} className="border-t border-[#3c3f41]">
                 <Td>
                   <p className="font-medium">{n.subject ?? '-'}</p>
                   {n.message && (
-                    <p className="mt-0.5 max-w-md text-[12px] text-[#9b9ba6]">
+                    <p className="mt-0.5 max-w-md text-[12px] text-[#9da0a8]">
                       {truncate(n.message, 90)}
                     </p>
                   )}
                 </Td>
-                <Td className="text-[#777783]">{n.notificationType ?? '-'}</Td>
-                <Td className="text-[#777783]">{n.recipient ?? n.username ?? '-'}</Td>
-                <Td className="text-[#777783]">{n.orderId ? `#${n.orderId}` : '-'}</Td>
+                <Td className="text-[#9da0a8]">{n.notificationType ?? '-'}</Td>
+                <Td className="text-[#9da0a8]">{n.recipient ?? n.username ?? '-'}</Td>
+                <Td className="text-[#9da0a8]">{n.orderId ? `#${n.orderId}` : '-'}</Td>
                 <Td>
                   <Badge status={n.status ?? 'UNKNOWN'} />
                 </Td>
@@ -146,7 +146,7 @@ const Notifications: React.FC = () => {
                           onError: (e) => toast.error(e.message),
                         })
                       }
-                      className="rounded-md p-1.5 text-[#8b8b96] hover:bg-[#f5f5f7] disabled:opacity-40"
+                      className="rounded-md p-1.5 text-[#9da0a8] hover:bg-[#313335] disabled:opacity-40"
                     >
                       <RefreshCw className="h-3.5 w-3.5" />
                     </button>

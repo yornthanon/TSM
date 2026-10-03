@@ -72,7 +72,10 @@ class ApiClient {
         const data = response.data as Record<string, unknown> | undefined;
         if (data && typeof data === 'object' && 'is_error' in data && (data as { is_error: boolean }).is_error) {
           const message = (data as { message?: string }).message || 'An error occurred';
-          return Promise.reject(new Error(message));
+          const failure = new Error(message) as Error & { code?: string };
+          const code = (data as { code?: unknown }).code;
+          if (typeof code === 'string') failure.code = code;
+          return Promise.reject(failure);
         }
         return response;
       },
@@ -112,7 +115,10 @@ class ApiClient {
     if (error.response?.data) {
       const apiError = error.response.data;
       if (typeof apiError === 'object' && apiError !== null && 'message' in apiError) {
-        return new Error((apiError as { message?: string }).message || 'An error occurred');
+        const failure = new Error((apiError as { message?: string }).message || 'An error occurred') as Error & { code?: string };
+        const code = (apiError as { code?: unknown }).code;
+        if (typeof code === 'string') failure.code = code;
+        return failure;
       }
       return new Error(JSON.stringify(apiError));
     }
