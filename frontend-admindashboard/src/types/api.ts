@@ -236,6 +236,10 @@ export interface AuthTokens {
   refresh_token: string;
 }
 
+export interface OAuthCodeExchangeResponse extends AuthTokens {
+  username: string;
+}
+
 export interface LoginCredentials {
   username: string;
   password: string;

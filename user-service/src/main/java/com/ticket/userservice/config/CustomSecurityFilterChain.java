@@ -7,6 +7,7 @@ import com.ticket.userservice.filter.CustomAuthenticationProvider;
 import com.ticket.userservice.filter.InternalAuthFilter;
 import com.ticket.userservice.filter.JwtAuthenticationFilter;
 import com.ticket.userservice.filter.JwtAuthenticationInternalFilter;
+import com.ticket.userservice.security.GoogleOAuthLoginHandler;
 import com.ticket.userservice.service.JwtService;
 import com.ticket.userservice.service.TotpMfaService;
 import com.ticket.userservice.service.handle.CustomUserDetailService;
@@ -14,6 +15,7 @@ import tools.jackson.databind.ObjectMapper;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -23,6 +25,7 @@ import org.springframework.security.config.annotation.web.configuration.EnableWe
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.oauth2.client.registration.ClientRegistrationRepository;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
@@ -39,6 +42,8 @@ public class CustomSecurityFilterChain extends JwtConfigProperties {
     private final CustomAuthenticationProvider customAuthenticationProvider;
     private final PasswordEncoder passwordEncoder;
     private final InternalTokenProvider internalTokenProvider;
+    private final ObjectProvider<ClientRegistrationRepository> oauthClientRegistrations;
+    private final GoogleOAuthLoginHandler googleOAuthLoginHandler;
 
     @Autowired
     public void userAuthenticationGlobalConfig(AuthenticationManagerBuilder authenticationManagerBuilder) {
@@ -58,6 +63,8 @@ public class CustomSecurityFilterChain extends JwtConfigProperties {
                         .requestMatchers(
                                 "/api/v1/auth/**",
                                 "/api/public/**",
+                                "/oauth2/**",
+                                "/login/oauth2/**",
                                 "/health",
                                 "/actuator/**",
                                 "/swagger-ui/**",
@@ -79,7 +86,10 @@ public class CustomSecurityFilterChain extends JwtConfigProperties {
                         .authenticated()
                 )
                 .authenticationManager(authenticationManager)
-                .sessionManagement(sess -> sess.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                .sessionManagement(sess -> sess.sessionCreationPolicy(
+                        oauthClientRegistrations.getIfAvailable() == null
+                                ? SessionCreationPolicy.STATELESS
+                                : SessionCreationPolicy.IF_REQUIRED))
                 .exceptionHandling(
                         (exception) -> exception
                                 .authenticationEntryPoint(
@@ -95,6 +105,12 @@ public class CustomSecurityFilterChain extends JwtConfigProperties {
                         UsernamePasswordAuthenticationFilter.class)
                 .addFilterAfter(new InternalAuthFilter(internalTokenProvider),
                         JwtAuthenticationInternalFilter.class);
+
+        if (oauthClientRegistrations.getIfAvailable() != null) {
+            httpSecurity.oauth2Login(oauth -> oauth
+                    .successHandler(googleOAuthLoginHandler)
+                    .failureHandler(googleOAuthLoginHandler));
+        }
 
         return httpSecurity.build();
     }

@@ -8,6 +8,7 @@ import { RequireAuth } from './components/RequireAuth';
 import { Navigate } from 'react-router-dom';
 
 const Login = lazy(() => import('./pages/Login').then((module) => ({ default: module.Login })));
+const OAuthCallback = lazy(() => import('./pages/OAuthCallback').then((module) => ({ default: module.OAuthCallback })));
 const Dashboard = lazy(() => import('./pages/admin/Dashboard'));
 const Events = lazy(() => import('./pages/admin/Events'));
 const EventDetail = lazy(() => import('./pages/admin/EventDetail'));
@@ -36,6 +37,7 @@ const App: React.FC = () => {
           <Suspense fallback={<div className="flex min-h-[45vh] items-center justify-center text-sm text-gray-400">Opening TicketDesk workspace…</div>}>
             <Routes>
               <Route path="/login" element={<Login />} />
+              <Route path="/oauth/callback" element={<OAuthCallback />} />
               <Route
                 path="/admin"
                 element={

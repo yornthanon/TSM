@@ -1,5 +1,5 @@
 import { api } from './api';
-import type { User, LoginCredentials } from '../types/api';
+import type { User, LoginCredentials, OAuthCodeExchangeResponse } from '../types/api';
 
 const USER_KEY = 'user';
 const TOKEN_KEY = 'auth_token';
@@ -37,6 +37,38 @@ export const auth = {
         // Authority lives in `roles`, not `userType`: the seeded admin account
         // has userType USER and roles ["ADMIN"], and the backend only checks
         // ADMIN. Anything else is treated as a non-admin account.
+        role: backendUser.roles?.includes('ADMIN') ? 'ADMIN' : 'USER',
+      };
+      localStorage.setItem(USER_KEY, JSON.stringify(user));
+      return user;
+    } catch (error) {
+      auth.logout();
+      throw error;
+    }
+  },
+
+  startGoogleSignIn: (): void => {
+    auth.logout();
+    window.location.assign(`${api.getApiOrigin()}/oauth2/authorization/google`);
+  },
+
+  completeGoogleSignIn: async (code: string, totpCode?: string): Promise<User> => {
+    const response = await api.post<OAuthCodeExchangeResponse>('/auth/oauth/exchange', {
+      code,
+      ...(totpCode ? { totpCode } : {}),
+    });
+
+    if (!response?.access_token || !response.username) {
+      throw new Error('Google sign-in succeeded but the server did not return a valid session.');
+    }
+
+    localStorage.setItem(TOKEN_KEY, response.access_token);
+    api.setAuthToken(response.access_token);
+
+    try {
+      const backendUser = await api.get<User>(`/users/username/${encodeURIComponent(response.username)}`);
+      const user: User = {
+        ...backendUser,
         role: backendUser.roles?.includes('ADMIN') ? 'ADMIN' : 'USER',
       };
       localStorage.setItem(USER_KEY, JSON.stringify(user));

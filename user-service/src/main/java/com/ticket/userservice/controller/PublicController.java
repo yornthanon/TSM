@@ -5,10 +5,12 @@ import com.ticket.common.constant.ApiConstant;
 import com.ticket.common.dto.EmptyObject;
 import com.ticket.common.exception.ResponseErrorTemplate;
 import com.ticket.userservice.dto.request.AuthenticationRequest;
+import com.ticket.userservice.dto.request.OAuthCodeExchangeRequest;
 import com.ticket.userservice.dto.request.RefreshTokenRequest;
 import com.ticket.userservice.dto.request.UserRequest;
 import com.ticket.userservice.service.AuthService;
 import com.ticket.userservice.service.JwtService;
+import com.ticket.userservice.service.OAuthLoginCodeService;
 import com.ticket.userservice.service.UserService;
 import com.ticket.userservice.service.handle.CustomUserDetailService;
 import com.ticket.userservice.service.impl.RefreshTokenService;
@@ -30,6 +32,7 @@ public class PublicController {
     private final RefreshTokenService refreshTokenService;
     private final CustomUserDetailService customUserDetailService;
     private final JwtService jwtService;
+    private final OAuthLoginCodeService oauthLoginCodeService;
 
     @PostMapping({"/register", "/registration"})
     public ResponseEntity<ResponseErrorTemplate> register(@Valid @RequestBody UserRequest userRequest) {
@@ -40,6 +43,14 @@ public class PublicController {
     @PostMapping("/login")
     public ResponseEntity<com.ticket.common.exception.ResponseErrorTemplate> login(@Valid @RequestBody AuthenticationRequest authenticationRequest) {
         return ResponseEntity.ok(authService.login(authenticationRequest));
+    }
+
+    @PostMapping("/oauth/exchange")
+    public ResponseEntity<ResponseErrorTemplate> exchangeOAuthCode(
+            @Valid @RequestBody OAuthCodeExchangeRequest request) {
+        // Keep auth failures in the same 200 + is_error envelope as password login;
+        // this lets the SPA preserve a pending MFA challenge without clearing session state.
+        return ResponseEntity.ok(oauthLoginCodeService.exchange(request));
     }
 
     @PostMapping("/logout")
