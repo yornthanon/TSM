@@ -14,6 +14,7 @@ import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.util.Map;
+import java.util.Locale;
 import java.util.UUID;
 import java.util.regex.Pattern;
 
@@ -30,6 +31,10 @@ public class EventImageStorageService {
                     "([\\s\\\"']*[:=][\\s\\\"']*)([^\\s,;\\\"'<>}]+)");
     private static final Pattern BEARER_TOKEN =
             Pattern.compile("(?i)(bearer\\s+)[A-Za-z0-9._~+/-]+=*");
+    private static final Pattern CLOUDINARY_ENVIRONMENT_REFERENCE =
+            Pattern.compile("(?i)\\bprodenv:[a-z0-9_-]+");
+    private static final Pattern CLOUDINARY_CREATE_PERMISSION_DENIED = Pattern.compile(
+            "(?is)request forbidden due to missing permissions.*?actions=\\[[^]]*\\bcreate\\b[^]]*\\]");
 
     private final ImageUploadClient uploadClient;
 
@@ -96,11 +101,15 @@ public class EventImageStorageService {
                     redactedStackTrace(exception));
 
             ApiException cloudinaryError = findCause(exception, ApiException.class);
-            if (cloudinaryError != null) {
-                String providerMessage = safeMessage(cloudinaryError);
-                String detail = providerMessage.isBlank()
-                        ? "Check the Cloudinary credentials, cloud name, account status, and upload permissions."
-                        : providerMessage;
+            boolean missingCreatePermission = hasMissingCreatePermission(exception);
+            if (cloudinaryError != null || missingCreatePermission) {
+                String providerMessage = cloudinaryError == null ? "" : safeMessage(cloudinaryError);
+                String detail = missingCreatePermission
+                        ? "The configured Cloudinary API key is not allowed to create or upload assets. " +
+                                "Grant it upload/create access in the matching product environment, or use a key with upload access."
+                        : providerMessage.isBlank()
+                                ? "Check the Cloudinary credentials, cloud name, account status, and upload permissions."
+                                : providerMessage;
                 throw new ResponseStatusException(HttpStatus.BAD_GATEWAY,
                         "Cloudinary rejected the image upload: " + detail +
                                 " [CLOUDINARY_API_REJECTED; reference " + referenceId + "].");
@@ -135,11 +144,23 @@ public class EventImageStorageService {
     private static String redactSensitiveText(String value) {
         String redacted = CLOUDINARY_CREDENTIAL_URL.matcher(value)
                 .replaceAll("cloudinary://[REDACTED]");
+        redacted = CLOUDINARY_ENVIRONMENT_REFERENCE.matcher(redacted)
+                .replaceAll("prodenv:[REDACTED]");
         redacted = AUTHORIZATION_VALUE.matcher(redacted)
                 .replaceAll("$1[REDACTED]");
         redacted = SENSITIVE_ASSIGNMENT.matcher(redacted)
                 .replaceAll("$1$2[REDACTED]");
         return BEARER_TOKEN.matcher(redacted).replaceAll("$1[REDACTED]");
+    }
+
+    private static boolean hasMissingCreatePermission(Throwable exception) {
+        for (Throwable cause = exception; cause != null; cause = cause.getCause()) {
+            String message = cause.getMessage();
+            if (message != null && CLOUDINARY_CREATE_PERMISSION_DENIED.matcher(message).find()) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private static <T extends Throwable> T findCause(Throwable exception, Class<T> type) {

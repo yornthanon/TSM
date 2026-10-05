@@ -143,6 +143,24 @@ class EventImageStorageServiceTest {
     }
 
     @Test
+    void mapsCloudinaryMissingCreatePermissionToActionableProviderError() {
+        TenantContextHolder.set(42L, false);
+        EventImageStorageService failingService = new EventImageStorageService(
+                new FailingUploadClient(new RuntimeException(
+                        "[prodenv:internal-environment-id] Request forbidden due to missing permissions " +
+                                "(actions=[\"create\"])") ));
+
+        ResponseStatusException exception = assertThrows(ResponseStatusException.class,
+                () -> failingService.upload(validPngFile()));
+
+        assertEquals(HttpStatus.BAD_GATEWAY, exception.getStatusCode());
+        assertTrue(exception.getReason().contains("CLOUDINARY_API_REJECTED"));
+        assertTrue(exception.getReason().contains("not allowed to create or upload assets"));
+        assertFalse(exception.getReason().contains("internal-environment-id"));
+        assertFalse(exception.getReason().contains("prodenv:"));
+    }
+
+    @Test
     void reportsCloudinaryNetworkFailureSeparately() {
         TenantContextHolder.set(42L, false);
         EventImageStorageService failingService = new EventImageStorageService(
