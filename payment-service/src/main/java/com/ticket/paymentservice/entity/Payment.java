@@ -1,11 +1,12 @@
 package com.ticket.paymentservice.entity;
 
 
-import com.ticket.common.entity.BasedEntity;
+import com.ticket.common.entity.TenantScopedEntity;
 import com.ticket.common.enums.PaymentMethod;
 import com.ticket.common.enums.PaymentStatus;
 import jakarta.persistence.*;
 import lombok.*;
+import org.hibernate.annotations.Filter;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -17,7 +18,8 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 @Entity
 @Table(name = "tt_payment")
-public class Payment extends BasedEntity {
+@Filter(name = "tenantFilter", condition = "tenant_id = :tenantId")
+public class Payment extends TenantScopedEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

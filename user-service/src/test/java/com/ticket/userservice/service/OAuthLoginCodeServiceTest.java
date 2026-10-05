@@ -4,8 +4,12 @@ import com.ticket.common.exception.ResponseErrorTemplate;
 import com.ticket.userservice.dto.request.OAuthCodeExchangeRequest;
 import com.ticket.userservice.dto.response.OAuthCodeExchangeResponse;
 import com.ticket.userservice.entity.OAuthLoginCode;
+import com.ticket.userservice.entity.Role;
+import com.ticket.userservice.entity.TenantWorkspace;
 import com.ticket.userservice.entity.User;
 import com.ticket.userservice.repository.OAuthLoginCodeRepository;
+import com.ticket.userservice.repository.RoleRepository;
+import com.ticket.userservice.repository.TenantWorkspaceRepository;
 import com.ticket.userservice.repository.UserRepository;
 import com.ticket.userservice.service.handle.CustomUserDetailService;
 import org.junit.jupiter.api.Test;
@@ -14,6 +18,7 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.security.crypto.password.PasswordEncoder;
 
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
@@ -24,6 +29,7 @@ import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -34,13 +40,26 @@ class OAuthLoginCodeServiceTest {
     @Mock private JwtService jwtService;
     @Mock private TotpMfaService mfaService;
     @Mock private CustomUserDetailService userDetailService;
+    @Mock private RoleRepository roleRepository;
+    @Mock private TenantWorkspaceRepository workspaceRepository;
+    @Mock private PasswordEncoder passwordEncoder;
 
     @InjectMocks private OAuthLoginCodeService service;
 
     @Test
-    void issueStoresOnlyTheHashAndUsesAShortExpiry() {
+    void existingUnassignedAccountGetsItsOwnWorkspaceAndCodeUsesAShortExpiryHash() {
         User user = activeUser();
+        user.setTenantId(null);
         when(userRepository.findByEmailIgnoreCase("owner@example.com")).thenReturn(Optional.of(user));
+        when(roleRepository.findByName("USER")).thenReturn(Optional.of(role("USER")));
+        when(roleRepository.findByName("TENANT_ADMIN")).thenReturn(Optional.of(role("TENANT_ADMIN")));
+        when(workspaceRepository.findById(29L)).thenReturn(Optional.of(activeWorkspace(29L)));
+        when(workspaceRepository.saveAndFlush(any(TenantWorkspace.class))).thenAnswer(invocation -> {
+            TenantWorkspace workspace = invocation.getArgument(0);
+            workspace.setId(29L);
+            return workspace;
+        });
+        when(userRepository.saveAndFlush(any(User.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
         String rawCode = service.issueForVerifiedGoogleEmail("owner@example.com");
 
@@ -49,8 +68,47 @@ class OAuthLoginCodeServiceTest {
         assertNotEquals(rawCode, stored.getValue().getCodeHash());
         assertEquals(64, stored.getValue().getCodeHash().length());
         assertEquals(user.getId(), stored.getValue().getUserId());
+        assertEquals(29L, user.getTenantId());
+        verify(workspaceRepository).save(any(TenantWorkspace.class));
         assertTrue(Duration.between(stored.getValue().getCreatedAt(), stored.getValue().getExpiresAt()).toSeconds() <= 90);
         assertTrue(Duration.between(stored.getValue().getCreatedAt(), stored.getValue().getExpiresAt()).toSeconds() > 0);
+        assertTrue(user.getRoles().stream().anyMatch(role -> "TENANT_ADMIN".equals(role.getName())));
+    }
+
+    @Test
+    void newVerifiedGoogleAccountGetsItsOwnWorkspaceAndOwnerRole() {
+        when(userRepository.findByEmailIgnoreCase("new@example.com")).thenReturn(Optional.empty());
+        when(userRepository.existsByUsername(anyString())).thenReturn(false);
+        when(passwordEncoder.encode(anyString())).thenReturn("random-encoded-password");
+        when(workspaceRepository.findById(29L)).thenReturn(Optional.of(activeWorkspace(29L)));
+        when(roleRepository.findByName("USER")).thenReturn(Optional.of(role("USER")));
+        when(roleRepository.findByName("TENANT_ADMIN")).thenReturn(Optional.of(role("TENANT_ADMIN")));
+        when(workspaceRepository.saveAndFlush(any(TenantWorkspace.class))).thenAnswer(invocation -> {
+            TenantWorkspace workspace = invocation.getArgument(0);
+            workspace.setId(29L);
+            return workspace;
+        });
+        when(userRepository.saveAndFlush(any(User.class))).thenAnswer(invocation -> {
+            User user = invocation.getArgument(0);
+            if (user.getId() == null) user.setId(61L);
+            return user;
+        });
+
+        String rawCode = service.issueForVerifiedGoogleEmail("new@example.com");
+
+        ArgumentCaptor<User> savedUser = ArgumentCaptor.forClass(User.class);
+        verify(userRepository).saveAndFlush(savedUser.capture());
+        assertEquals("new@example.com", savedUser.getValue().getEmail());
+        assertEquals(29L, savedUser.getValue().getTenantId());
+        assertTrue(savedUser.getValue().getRoles().stream().anyMatch(role -> "USER".equals(role.getName())));
+        assertTrue(savedUser.getValue().getRoles().stream().anyMatch(role -> "TENANT_ADMIN".equals(role.getName())));
+        ArgumentCaptor<TenantWorkspace> savedWorkspace = ArgumentCaptor.forClass(TenantWorkspace.class);
+        verify(workspaceRepository).saveAndFlush(savedWorkspace.capture());
+        verify(workspaceRepository).save(savedWorkspace.capture());
+        assertEquals(61L, savedWorkspace.getAllValues().get(1).getOwnerUserId());
+        ArgumentCaptor<OAuthLoginCode> savedCode = ArgumentCaptor.forClass(OAuthLoginCode.class);
+        verify(codeRepository).save(savedCode.capture());
+        assertNotEquals(rawCode, savedCode.getValue().getCodeHash());
     }
 
     @Test
@@ -60,6 +118,7 @@ class OAuthLoginCodeServiceTest {
         OAuthLoginCode stored = new OAuthLoginCode(hash(rawCode), user.getId(), Instant.now().plusSeconds(60), Instant.now());
         when(codeRepository.findByCodeHashForUpdate(hash(rawCode))).thenReturn(Optional.of(stored));
         when(userRepository.findById(user.getId())).thenReturn(Optional.of(user));
+        when(workspaceRepository.findById(1L)).thenReturn(Optional.of(activeWorkspace(1L)));
         when(jwtService.generateToken(any())).thenReturn("access-token");
         when(jwtService.refreshToken(any())).thenReturn("refresh-token");
 
@@ -77,6 +136,25 @@ class OAuthLoginCodeServiceTest {
     }
 
     @Test
+    void suspendedWorkspaceCannotExchangeGoogleCode() throws Exception {
+        User user = activeUser();
+        String rawCode = "suspended-workspace-code";
+        OAuthLoginCode stored = new OAuthLoginCode(hash(rawCode), user.getId(), Instant.now().plusSeconds(60), Instant.now());
+        when(codeRepository.findByCodeHashForUpdate(hash(rawCode))).thenReturn(Optional.of(stored));
+        when(userRepository.findById(user.getId())).thenReturn(Optional.of(user));
+        TenantWorkspace suspended = activeWorkspace(1L);
+        suspended.setStatus("SUSPENDED");
+        when(workspaceRepository.findById(1L)).thenReturn(Optional.of(suspended));
+
+        ResponseErrorTemplate response = service.exchange(new OAuthCodeExchangeRequest(rawCode, null));
+
+        assertTrue(response.isError());
+        assertEquals("GOOGLE_ACCOUNT_NOT_ALLOWED", response.code());
+        assertNotNull(stored.getConsumedAt());
+        verify(jwtService, never()).generateToken(any());
+    }
+
+    @Test
     void enrolledMfaRequiresATotpBeforeIssuingTokens() throws Exception {
         User user = activeUser();
         user.setMfaEnabled(true);
@@ -84,6 +162,7 @@ class OAuthLoginCodeServiceTest {
         OAuthLoginCode stored = new OAuthLoginCode(hash(rawCode), user.getId(), Instant.now().plusSeconds(60), Instant.now());
         when(codeRepository.findByCodeHashForUpdate(hash(rawCode))).thenReturn(Optional.of(stored));
         when(userRepository.findById(user.getId())).thenReturn(Optional.of(user));
+        when(workspaceRepository.findById(1L)).thenReturn(Optional.of(activeWorkspace(1L)));
 
         ResponseErrorTemplate response = service.exchange(new OAuthCodeExchangeRequest(rawCode, null));
 
@@ -94,13 +173,6 @@ class OAuthLoginCodeServiceTest {
         verify(jwtService, never()).generateToken(any());
     }
 
-    @Test
-    void unlinkedGoogleEmailCannotProvisionAnAccount() {
-        when(userRepository.findByEmailIgnoreCase("new@example.com")).thenReturn(Optional.empty());
-        assertThrows(IllegalStateException.class, () -> service.issueForVerifiedGoogleEmail("new@example.com"));
-        verify(codeRepository, never()).save(any());
-    }
-
     private User activeUser() {
         User user = new User();
         user.setId(14L);
@@ -108,9 +180,23 @@ class OAuthLoginCodeServiceTest {
         user.setEmail("owner@example.com");
         user.setPassword("encoded-password");
         user.setStatus("ACTIVE");
+        user.setTenantId(1L);
         user.setLoginAttempts(0);
         user.setMaxAttempts(5);
         return user;
+    }
+
+    private Role role(String name) {
+        Role role = new Role();
+        role.setName(name);
+        return role;
+    }
+
+    private TenantWorkspace activeWorkspace(Long id) {
+        TenantWorkspace workspace = new TenantWorkspace();
+        workspace.setId(id);
+        workspace.setStatus("ACTIVE");
+        return workspace;
     }
 
     private String hash(String value) throws Exception {

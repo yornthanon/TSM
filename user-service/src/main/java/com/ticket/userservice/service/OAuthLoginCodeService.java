@@ -8,13 +8,18 @@ import com.ticket.userservice.dto.response.OAuthCodeExchangeResponse;
 import com.ticket.userservice.entity.CustomUserDetail;
 import com.ticket.userservice.entity.OAuthLoginCode;
 import com.ticket.userservice.entity.Role;
+import com.ticket.userservice.entity.TenantWorkspace;
 import com.ticket.userservice.entity.User;
 import com.ticket.userservice.repository.OAuthLoginCodeRepository;
+import com.ticket.userservice.repository.RoleRepository;
+import com.ticket.userservice.repository.TenantWorkspaceRepository;
 import com.ticket.userservice.repository.UserRepository;
 import com.ticket.userservice.service.handle.CustomUserDetailService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
@@ -27,29 +32,63 @@ import java.time.Instant;
 import java.util.Base64;
 import java.util.HexFormat;
 import java.util.List;
+import java.util.Locale;
+import java.util.Set;
+import java.util.UUID;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
 public class OAuthLoginCodeService {
     private static final SecureRandom RANDOM = new SecureRandom();
     private static final Duration CODE_TTL = Duration.ofSeconds(90);
+    private static final String ADMIN_ROLE = "ADMIN";
+    private static final String TENANT_ADMIN_ROLE = "TENANT_ADMIN";
+    private static final String USER_ROLE = "USER";
+    private static final Long LEGACY_WORKSPACE_ID = 1L;
 
     private final UserRepository userRepository;
     private final OAuthLoginCodeRepository codeRepository;
     private final JwtService jwtService;
     private final TotpMfaService mfaService;
     private final CustomUserDetailService userDetailService;
+    private final RoleRepository roleRepository;
+    private final TenantWorkspaceRepository workspaceRepository;
+    private final PasswordEncoder passwordEncoder;
+
+    @Value("${app.auth.platform-admin-emails:}")
+    private String platformAdminEmails;
 
     /** Called only after Google's verified-email claim has been checked by the success handler. */
     @Transactional
     public String issueForVerifiedGoogleEmail(String email) {
         if (!StringUtils.hasText(email)) {
-            throw new IllegalStateException("Google account is not eligible for TicketDesk sign-in.");
+            throw new IllegalStateException("A verified Google email is required.");
         }
 
-        User user = userRepository.findByEmailIgnoreCase(email.trim())
-                .filter(this::isEligible)
-                .orElseThrow(() -> new IllegalStateException("Google account is not eligible for TicketDesk sign-in."));
+        String normalizedEmail = email.trim().toLowerCase(Locale.ROOT);
+        boolean configuredPlatformAdmin = isPlatformAdminEmail(normalizedEmail);
+        User user = userRepository.findByEmailIgnoreCase(normalizedEmail).orElse(null);
+
+        if (user == null) {
+            user = createGoogleAccount(normalizedEmail, configuredPlatformAdmin);
+        } else {
+            boolean migratingLegacyAccount = !configuredPlatformAdmin
+                    && user.getTenantId() != null
+                    && LEGACY_WORKSPACE_ID.equals(user.getTenantId());
+            if (migratingLegacyAccount && !isWorkspaceActive(user)) {
+                throw new IllegalStateException("This Google account's legacy workspace is unavailable.");
+            }
+            reconcilePlatformRole(user, configuredPlatformAdmin);
+            if (!configuredPlatformAdmin && (user.getTenantId() == null || migratingLegacyAccount)) {
+                provisionWorkspace(user, normalizedEmail);
+            }
+            user = userRepository.saveAndFlush(user);
+        }
+
+        if (!isEligible(user) || !isWorkspaceActive(user)) {
+            throw new IllegalStateException("This Google account is not eligible for TicketDesk sign-in.");
+        }
 
         Instant now = Instant.now();
         codeRepository.deleteExpired(now);
@@ -75,9 +114,10 @@ public class OAuthLoginCodeService {
         }
 
         User user = userRepository.findById(storedCode.getUserId()).orElse(null);
-        if (user == null || !isEligible(user)) {
+        if (user == null || !isEligible(user) || !isWorkspaceActive(user)) {
             consume(storedCode, now);
-            return failure("Google sign-in is not enabled for this account. Contact your administrator.", "GOOGLE_ACCOUNT_NOT_ALLOWED");
+            return failure("Google sign-in is not enabled for this account. Contact your TicketDesk administrator.",
+                    "GOOGLE_ACCOUNT_NOT_ALLOWED");
         }
 
         if (Boolean.TRUE.equals(user.getMfaEnabled())) {
@@ -101,10 +141,114 @@ public class OAuthLoginCodeService {
         return new ResponseErrorTemplate(ApiConstant.LOGIN_SUCCESS.getDescription(), ApiConstant.LOGIN_SUCCESS.getKey(), tokens, false);
     }
 
+    private User createGoogleAccount(String email, boolean platformAdmin) {
+        User user = new User();
+        user.setUsername(uniqueUsername(email));
+        user.setEmail(email);
+        user.setFirstName(email.substring(0, email.indexOf('@')));
+        user.setPassword(passwordEncoder.encode(UUID.randomUUID().toString()));
+        user.setStatus(ApiConstant.ACTIVE.getKey());
+        user.setUserType("USER");
+        user.setLoginAttempts(0);
+        user.setMaxAttempts(5);
+        user.setCreatedBy("GOOGLE_OAUTH");
+        user.addRole(requiredRole(USER_ROLE));
+        user.addRole(requiredRole(platformAdmin ? ADMIN_ROLE : TENANT_ADMIN_ROLE));
+
+        TenantWorkspace workspace = null;
+        if (!platformAdmin) {
+            workspace = new TenantWorkspace();
+            workspace.setName(workspaceName(email));
+            workspace.setStatus("ACTIVE");
+            workspace.setCreatedBy("GOOGLE_OAUTH");
+            workspace = workspaceRepository.saveAndFlush(workspace);
+            user.setTenantId(workspace.getId());
+        }
+
+        user = userRepository.saveAndFlush(user);
+        if (workspace != null) {
+            workspace.setOwnerUserId(user.getId());
+            workspaceRepository.save(workspace);
+        }
+        return user;
+    }
+
+    private void provisionWorkspace(User user, String email) {
+        TenantWorkspace workspace = new TenantWorkspace();
+        workspace.setName(workspaceName(email));
+        workspace.setStatus("ACTIVE");
+        workspace.setCreatedBy("GOOGLE_OAUTH");
+        workspace = workspaceRepository.saveAndFlush(workspace);
+        user.setTenantId(workspace.getId());
+        user.addRole(requiredRole(TENANT_ADMIN_ROLE));
+        user.setCreatedBy(user.getCreatedBy() == null ? "GOOGLE_OAUTH" : user.getCreatedBy());
+        userRepository.saveAndFlush(user);
+        workspace.setOwnerUserId(user.getId());
+        workspaceRepository.save(workspace);
+    }
+
+    private void reconcilePlatformRole(User user, boolean configuredPlatformAdmin) {
+        if (configuredPlatformAdmin) {
+            user.addRole(requiredRole(USER_ROLE));
+            user.addRole(requiredRole(ADMIN_ROLE));
+            return;
+        }
+        // Once an allowlist is configured, it becomes the sole source for global ADMIN.
+        // Existing unlisted admins are demoted to their own workspace owner role.
+        Set<Role> roles = user.getRoles();
+        roles.removeIf(role -> ADMIN_ROLE.equals(role.getName()));
+        user.addRole(requiredRole(USER_ROLE));
+        if (user.getTenantId() != null) {
+            user.addRole(requiredRole(TENANT_ADMIN_ROLE));
+        }
+    }
+
+    private Role requiredRole(String name) {
+        return roleRepository.findByName(name)
+                .orElseThrow(() -> new IllegalStateException("Required platform role is not initialized: " + name));
+    }
+
+    private boolean isPlatformAdminEmail(String email) {
+        if (!StringUtils.hasText(platformAdminEmails)) return false;
+        return List.of(platformAdminEmails.split(",")).stream()
+                .map(String::trim)
+                .filter(StringUtils::hasText)
+                .map(value -> value.toLowerCase(Locale.ROOT))
+                .anyMatch(email::equals);
+    }
+
+    private String uniqueUsername(String email) {
+        String localPart = email.substring(0, email.indexOf('@'))
+                .replaceAll("[^A-Za-z0-9._-]", "_");
+        if (localPart.isBlank()) localPart = "google-user";
+        String base = localPart.substring(0, Math.min(localPart.length(), 38));
+        String candidate = base;
+        while (userRepository.existsByUsername(candidate)) {
+            String suffix = "-" + UUID.randomUUID().toString().substring(0, 8);
+            candidate = base.substring(0, Math.min(base.length(), 50 - suffix.length())) + suffix;
+        }
+        return candidate;
+    }
+
+    private String workspaceName(String email) {
+        String localPart = email.substring(0, email.indexOf('@'))
+                .replaceAll("[._+-]+", " ")
+                .trim();
+        if (localPart.isBlank()) localPart = "My";
+        return localPart.substring(0, Math.min(localPart.length(), 120)) + " TicketDesk";
+    }
+
     private boolean isEligible(User user) {
         int attempts = user.getLoginAttempts() == null ? 0 : user.getLoginAttempts();
         int maximum = user.getMaxAttempts() == null ? 5 : user.getMaxAttempts();
         return ApiConstant.ACTIVE.getKey().equals(user.getStatus()) && attempts <= maximum;
+    }
+
+    private boolean isWorkspaceActive(User user) {
+        if (user.getTenantId() == null) return isPlatformAdminEmail(user.getEmail());
+        return workspaceRepository.findById(user.getTenantId())
+                .map(workspace -> "ACTIVE".equalsIgnoreCase(workspace.getStatus()))
+                .orElse(false);
     }
 
     private CustomUserDetail toPrincipal(User user) {
@@ -112,8 +256,8 @@ public class OAuthLoginCodeService {
                 .map(Role::getName)
                 .map(SimpleGrantedAuthority::new)
                 .map(authority -> (GrantedAuthority) authority)
-                .toList();
-        return new CustomUserDetail(user.getUsername(), user.getPassword(), authorities);
+                .collect(Collectors.toList());
+        return new CustomUserDetail(user.getUsername(), user.getPassword(), authorities, user.getTenantId());
     }
 
     private void consume(OAuthLoginCode code, Instant at) {

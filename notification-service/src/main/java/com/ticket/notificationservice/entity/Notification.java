@@ -1,10 +1,11 @@
 package com.ticket.notificationservice.entity;
 
-import com.ticket.common.entity.BasedEntity;
+import com.ticket.common.entity.TenantScopedEntity;
 import com.ticket.notificationservice.Enum.NotificationStatus;
 import com.ticket.notificationservice.Enum.NotificationType;
 import jakarta.persistence.*;
 import lombok.*;
+import org.hibernate.annotations.Filter;
 
 @EqualsAndHashCode(callSuper = true)
 @Data
@@ -13,7 +14,8 @@ import lombok.*;
 @AllArgsConstructor
 @Entity
 @Table(name = "tt_notification")
-public class Notification extends BasedEntity {
+@Filter(name = "tenantFilter", condition = "tenant_id = :tenantId")
+public class Notification extends TenantScopedEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

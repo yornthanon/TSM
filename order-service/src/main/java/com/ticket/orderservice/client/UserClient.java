@@ -2,6 +2,7 @@ package com.ticket.orderservice.client;
 
 import com.ticket.common.dto.TokenVerificationResponse;
 import com.ticket.common.internal.InternalTokenProvider;
+import com.ticket.common.tenant.TenantContextHolder;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpHeaders;
@@ -32,6 +33,7 @@ public class UserClient {
                 .uri(userServiceUrl + "/api/public/users/verify-token")
                 .header(HttpHeaders.AUTHORIZATION, "Bearer " + token)
                 .header(internalTokenProvider.headerName(), internalTokenProvider.getToken())
+                .header(TenantContextHolder.TENANT_HEADER, tenantHeaderValue())
                 .contentType(MediaType.APPLICATION_JSON)
                 .retrieve()
                 .bodyToMono(TokenVerificationResponse.class)
@@ -50,9 +52,15 @@ public class UserClient {
                 .uri(userServiceUrl + "/api/v1/users/username/{username}", username)
                 .header(HttpHeaders.ACCEPT, MediaType.APPLICATION_JSON_VALUE)
                 .header(internalTokenProvider.headerName(), internalTokenProvider.getToken())
+                .header(TenantContextHolder.TENANT_HEADER, tenantHeaderValue())
                 .retrieve()
                 .bodyToMono(Map.class)
                 .doOnError(e -> log.error("Error calling user service for username {}: {}", username, e.getMessage()))
                 .onErrorResume(e -> Mono.empty());
+    }
+
+    private String tenantHeaderValue() {
+        Long tenantId = TenantContextHolder.getTenantId();
+        return tenantId == null ? "" : tenantId.toString();
     }
 }

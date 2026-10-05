@@ -2,6 +2,7 @@ package com.ticket.ticketservice.client;
 
 import com.ticket.common.exception.ResponseErrorTemplate;
 import com.ticket.common.internal.InternalTokenProvider;
+import com.ticket.common.tenant.TenantContextHolder;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.web.reactive.function.client.WebClient;
@@ -25,8 +26,14 @@ public class EventClient {
                 .uri(eventServiceUrl+"/{id}", eventId)
                 .header("Accept", "application/json")
                 .header(internalTokenProvider.headerName(), internalTokenProvider.getToken())
+                .header(TenantContextHolder.TENANT_HEADER, tenantHeaderValue())
                 .retrieve()
                 .bodyToMono(ResponseErrorTemplate.class)
                 .block();
+    }
+
+    private String tenantHeaderValue() {
+        Long tenantId = TenantContextHolder.getTenantId();
+        return tenantId == null ? "" : tenantId.toString();
     }
 }

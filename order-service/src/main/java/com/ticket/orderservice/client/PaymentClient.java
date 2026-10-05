@@ -5,6 +5,7 @@ import com.ticket.common.dto.EmptyObject;
 import com.ticket.common.exception.ResponseErrorTemplate;
 import com.ticket.common.dto.request.PaymentRequest;
 import com.ticket.common.internal.InternalTokenProvider;
+import com.ticket.common.tenant.TenantContextHolder;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.MediaType;
@@ -32,6 +33,7 @@ public class PaymentClient {
                 .uri(paymentServiceUrl + "/process")
                 .contentType(MediaType.APPLICATION_JSON)
                 .header(internalTokenProvider.headerName(), internalTokenProvider.getToken())
+                .header(TenantContextHolder.TENANT_HEADER, tenantHeaderValue())
                 .bodyValue(paymentRequest)
                 .retrieve()
                 .bodyToMono(ResponseErrorTemplate.class)
@@ -44,5 +46,10 @@ public class PaymentClient {
                             new EmptyObject(),
                             true));
                 });
+    }
+
+    private String tenantHeaderValue() {
+        Long tenantId = TenantContextHolder.getTenantId();
+        return tenantId == null ? "" : tenantId.toString();
     }
 }

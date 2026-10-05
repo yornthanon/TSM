@@ -1,12 +1,13 @@
 package com.ticket.orderservice.entity;
 
-import com.ticket.common.entity.BasedEntity;
+import com.ticket.common.entity.TenantScopedEntity;
 import com.ticket.orderservice.Enum.OrderStatus;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
+import org.hibernate.annotations.Filter;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -17,7 +18,8 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 @Entity
 @Table(name = "tt_order")
-public class Order extends BasedEntity {
+@Filter(name = "tenantFilter", condition = "tenant_id = :tenantId")
+public class Order extends TenantScopedEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

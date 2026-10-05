@@ -19,6 +19,7 @@ const Notifications = lazy(() => import('./pages/admin/Notifications'));
 const Users = lazy(() => import('./pages/admin/Users'));
 const Access = lazy(() => import('./pages/admin/Access'));
 const System = lazy(() => import('./pages/admin/System'));
+const Workspaces = lazy(() => import('./pages/admin/Workspaces'));
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -56,6 +57,7 @@ const App: React.FC = () => {
                 <Route path="users" element={<Users />} />
                 <Route path="access" element={<Access />} />
                 <Route path="system" element={<System />} />
+                <Route path="workspaces" element={<Workspaces />} />
               </Route>
               <Route path="*" element={<Navigate to="/admin" replace />} />
             </Routes>

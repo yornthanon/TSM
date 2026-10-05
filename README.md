@@ -478,22 +478,19 @@ Authorization: Bearer <access_token>
 ### Docker Compose (Recommended)
 
 ```bash
-cd deployment/infrastructure
-docker-compose up --build -d
+cp .env.example .env
+# Edit .env and set POSTGRES_PASSWORD, JWT_SECRET, Google OAuth credentials,
+# and PLATFORM_ADMIN_EMAILS before starting the services.
+cd Deployment/infrastructure
+docker compose --env-file ../../.env up --build -d
 ```
 
-### Environment Variables
-
-Create a `.env` file in `deployment/infrastructure/`:
-
-```env
-POSTGRES_USER=ticket
-POSTGRES_PASSWORD=ticket123
-JWT_SECRET=your-secret-key-here-minimum-256-bits
-SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/ticket_user_db
-SPRING_REDIS_HOST=redis
-SPRING_KAFKA_BOOTSTRAP_SERVERS=kafka:9092
-```
+`JWT_SECRET` must be Base64-encoded and decode to 32–64 bytes; generate it with
+`openssl rand -base64 32`. Use a unique database password. Add your verified
+Google administrator Gmail to `PLATFORM_ADMIN_EMAILS`; there is no default
+username/password sign-in. Keep `.env` private and never commit it. The
+Compose-based local deployment runs the single-database monolith; it does not
+apply the multi-tenant migration to production.
 
 ### Service Ports
 

@@ -43,24 +43,9 @@ public class UserServiceApplication {
                                                UserRepository userRepository,
                                                PasswordEncoder passwordEncoder) {
         return args -> {
-            Role admin = new Role();
-            admin.setId(null);
-            admin.setName("ADMIN");
-            admin.setDescription("Administrator");
-            admin.setCreatedBy(Constant.SYSTEM);
-            admin.setStatus(ApiConstant.ACTIVE.getKey());
-
-            Role user = new Role();
-            user.setId(null);
-            user.setName("USER");
-            user.setDescription("User");
-            user.setCreatedBy(Constant.SYSTEM);
-            user.setStatus(ApiConstant.ACTIVE.getKey());
-
-            List<Role> roles = List.of(admin, user);
-            roles.stream()
-                    .filter(role -> roleRepository.findByName(role.getName())
-                            .isEmpty()).forEach(roleRepository::saveAndFlush);
+            Role admin = ensureRole(roleRepository, "ADMIN", "Platform administrator");
+            ensureRole(roleRepository, "TENANT_ADMIN", "Workspace administrator");
+            ensureRole(roleRepository, "USER", "Workspace user");
 
             if (!userRepository.existsByUsername(defaultAdminUsername)) {
                 boolean generatedPassword = defaultAdminPassword == null || defaultAdminPassword.isBlank();
@@ -77,11 +62,20 @@ public class UserServiceApplication {
                 adminUser.setMaxAttempts(5);
                 adminUser.addRole(admin);
                 userRepository.saveAndFlush(adminUser);
-                log.warn("Created default admin '{}' with email '{}'.{}",
-                        defaultAdminUsername, defaultAdminEmail,
-                        generatedPassword ? " Initial password: " + adminPassword
-                                          : " Password configured via DEFAULT_ADMIN_PASSWORD.");
+                log.warn("Created default admin '{}' with email '{}'; password configured: {}",
+                        defaultAdminUsername, defaultAdminEmail, !generatedPassword);
             }
         };
+    }
+
+    private Role ensureRole(RoleRepository roleRepository, String name, String description) {
+        return roleRepository.findByName(name).orElseGet(() -> {
+            Role role = new Role();
+            role.setName(name);
+            role.setDescription(description);
+            role.setCreatedBy(Constant.SYSTEM);
+            role.setStatus(ApiConstant.ACTIVE.getKey());
+            return roleRepository.saveAndFlush(role);
+        });
     }
 }

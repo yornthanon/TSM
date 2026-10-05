@@ -21,6 +21,7 @@ import {
 import { Badge, Button, Card, ConfirmDialog, Input, Modal } from '../../components/ui';
 import { formatDateTime } from '../../utils';
 import type { User, UserPayload } from '../../types/api';
+import { auth } from '../../lib/auth';
 
 const Users: React.FC = () => {
   const users = useUsers();
@@ -28,6 +29,7 @@ const Users: React.FC = () => {
   const updateUser = useUpdateUser();
   const activateUser = useActivateUser();
   const deactivateUser = useDeactivateUser();
+  const isPlatformAdmin = auth.getUser()?.role === 'ADMIN';
 
   const [search, setSearch] = React.useState('');
   const [statusFilter, setStatusFilter] = React.useState('');
@@ -54,7 +56,7 @@ const Users: React.FC = () => {
     <>
       <PageHeader
         title="Users"
-        description="Accounts registered with the ticketing platform."
+        description="Accounts in the current isolated workspace."
       />
 
       <div className="mb-4 grid grid-cols-2 gap-3 lg:grid-cols-4">
@@ -94,7 +96,7 @@ const Users: React.FC = () => {
         isEmpty={filtered.length === 0}
         onRetry={() => void users.refetch()}
         emptyTitle={search || statusFilter ? 'No users match your filters' : 'No users yet'}
-        emptyDescription="Users register through the public API."
+        emptyDescription="Verified Google accounts are enrolled automatically in isolated workspaces."
       >
         <Table>
           <thead>
@@ -104,7 +106,7 @@ const Users: React.FC = () => {
               <Th>Roles</Th>
               <Th>Status</Th>
               <Th>Last login</Th>
-              <Th className="text-right">Actions</Th>
+              {isPlatformAdmin && <Th className="text-right">Actions</Th>}
             </tr>
           </thead>
           <tbody>
@@ -128,7 +130,7 @@ const Users: React.FC = () => {
                 <Td className="whitespace-nowrap text-[#9da0a8]">
                   {user.lastLogin ? formatDateTime(user.lastLogin) : 'Never'}
                 </Td>
-                <Td>
+                {isPlatformAdmin && <Td>
                   <div className="flex items-center justify-end gap-2">
                     <Button
                       variant="secondary"
@@ -164,7 +166,7 @@ const Users: React.FC = () => {
                       </button>
                     )}
                   </div>
-                </Td>
+                </Td>}
               </tr>
             ))}
           </tbody>

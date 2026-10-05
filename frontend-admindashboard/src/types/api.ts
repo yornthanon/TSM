@@ -66,8 +66,8 @@ export type NotificationStatus = (typeof NOTIFICATION_STATUSES)[number];
 export const NOTIFICATION_TYPES = ['EMAIL', 'SMS', 'PUSH_NOTIFICATION'] as const;
 export type NotificationType = (typeof NOTIFICATION_TYPES)[number];
 
-/** The only two authorities the backend actually checks. */
-export type AppRole = 'ADMIN' | 'USER';
+/** Application roles resolved from the verified backend principal. */
+export type AppRole = 'ADMIN' | 'TENANT_ADMIN' | 'USER';
 
 // ---------------------------------------------------------------------------
 // Entities
@@ -157,6 +157,8 @@ export interface User {
   status: string | null;
   roles: string[] | null;
   groups: string[] | null;
+  tenantId?: number | null;
+  mfaEnabled?: boolean;
   createdAt: string | null;
   updatedAt: string | null;
   /** Client-side only: resolved authority for route guards. */

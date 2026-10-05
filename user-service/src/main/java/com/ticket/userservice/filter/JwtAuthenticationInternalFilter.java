@@ -2,6 +2,7 @@ package com.ticket.userservice.filter;
 
 import com.ticket.userservice.config.properties.JwtConfigProperties;
 import com.ticket.userservice.service.JwtService;
+import com.ticket.userservice.service.handle.CustomUserDetailService;
 import com.ticket.userservice.utils.CustomMessageExceptionUtils;
 import tools.jackson.databind.ObjectMapper;
 import io.jsonwebtoken.Claims;
@@ -14,14 +15,11 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.MediaType;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.util.StringUtils;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
-import java.util.List;
-import java.util.stream.Collectors;
 
 @Slf4j
 @RequiredArgsConstructor
@@ -30,6 +28,7 @@ public class JwtAuthenticationInternalFilter extends OncePerRequestFilter {
     private final JwtService jwtService;
     private final ObjectMapper objectMapper;
     private final JwtConfigProperties jwtConfigProperties;
+    private final CustomUserDetailService userDetailService;
 
     @Override
     protected void doFilterInternal(HttpServletRequest request,
@@ -46,13 +45,11 @@ public class JwtAuthenticationInternalFilter extends OncePerRequestFilter {
                     Claims claims = jwtService.extractClaims(accessToken);
                     var username = claims.getSubject();
 
-                    List<String> authorities = claims.get("authorities", List.class);
                     if(username != null) {
+                        var userDetails = userDetailService.customUserDetail(username);
                         UsernamePasswordAuthenticationToken authenticationToken =
                                 new UsernamePasswordAuthenticationToken(
-                                        username, null,
-                                        authorities.stream().map(SimpleGrantedAuthority::new)
-                                        .collect(Collectors.toList())
+                                        userDetails, null, userDetails.getAuthorities()
                                 );
                         SecurityContextHolder.getContext().setAuthentication(authenticationToken);
                     }

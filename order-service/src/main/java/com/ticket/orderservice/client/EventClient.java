@@ -1,6 +1,7 @@
 package com.ticket.orderservice.client;
 
 import com.ticket.common.internal.InternalTokenProvider;
+import com.ticket.common.tenant.TenantContextHolder;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpHeaders;
@@ -31,9 +32,15 @@ public class EventClient {
                 .uri(eventServiceUrl + "/{id}", eventId)
                 .header(HttpHeaders.ACCEPT, MediaType.APPLICATION_JSON_VALUE)
                 .header(internalTokenProvider.headerName(), internalTokenProvider.getToken())
+                .header(TenantContextHolder.TENANT_HEADER, tenantHeaderValue())
                 .retrieve()
                 .bodyToMono(Map.class)
                 .doOnError(e -> log.error("Error calling event service for id {}: {}", eventId, e.getMessage()))
                 .onErrorResume(e -> Mono.empty());
+    }
+
+    private String tenantHeaderValue() {
+        Long tenantId = TenantContextHolder.getTenantId();
+        return tenantId == null ? "" : tenantId.toString();
     }
 }

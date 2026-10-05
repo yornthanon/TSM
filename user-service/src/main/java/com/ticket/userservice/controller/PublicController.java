@@ -36,7 +36,6 @@ public class PublicController {
 
     @PostMapping({"/register", "/registration"})
     public ResponseEntity<ResponseErrorTemplate> register(@Valid @RequestBody UserRequest userRequest) {
-        log.info("Intercept registration new user with req: {}", userRequest);
         return ResponseEntity.ok(userService.create(userRequest));
     }
 
@@ -55,7 +54,6 @@ public class PublicController {
 
     @PostMapping("/logout")
     public ResponseEntity<ResponseErrorTemplate> logout(@Valid @RequestBody RefreshTokenRequest refreshTokenRequest) {
-        log.info("Intercept logout refresh token with req: {}", refreshTokenRequest);
         refreshTokenService.deleteToken(refreshTokenRequest.refreshToken());
         var responseErrorTemplate = new ResponseErrorTemplate(
                 ApiConstant.LOGOUT_SUCCESS.getDescription(),

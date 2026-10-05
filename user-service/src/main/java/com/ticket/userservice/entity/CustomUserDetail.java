@@ -17,6 +17,16 @@ public class CustomUserDetail  implements UserDetails {
 
     private List<GrantedAuthority> authorities;
 
+    private Long tenantId;
+
+    public CustomUserDetail(String username, String password, List<GrantedAuthority> authorities) {
+        this(username, password, authorities, null);
+    }
+
+    public Long getTenantId() {
+        return tenantId;
+    }
+
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
         return authorities;

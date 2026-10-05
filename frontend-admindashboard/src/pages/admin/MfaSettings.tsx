@@ -21,7 +21,6 @@ export const MfaSettings: React.FC = () => {
   const [working, setWorking] = useState(false);
   const [setup, setSetup] = useState<MfaSetup | null>(null);
   const [code, setCode] = useState('');
-  const [password, setPassword] = useState('');
   const [showDisable, setShowDisable] = useState(false);
 
   useEffect(() => {
@@ -67,16 +66,15 @@ export const MfaSettings: React.FC = () => {
   };
 
   const disable = async () => {
-    if (!password || !/^\d{6}$/.test(code)) {
-      toast.error('Enter your password and current 6-digit authenticator code.');
+    if (!/^\d{6}$/.test(code)) {
+      toast.error('Enter the current 6-digit authenticator code.');
       return;
     }
     setWorking(true);
     try {
-      await api.post('/users/me/mfa/disable', { password, code });
+      await api.post('/users/me/mfa/disable', { code });
       setEnabled(false);
       setShowDisable(false);
-      setPassword('');
       setCode('');
       toast.success('Two-factor authentication has been disabled.');
     } catch (error) {
@@ -110,7 +108,7 @@ export const MfaSettings: React.FC = () => {
           <div className="flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-center">
             <div>
               <p className="text-[13px] font-medium text-[#d7dae0]">Your account is protected with an authenticator code.</p>
-              <p className="mt-1 text-[12px] text-[#9da0a8]">Password and a current 6-digit code are required to sign in.</p>
+              <p className="mt-1 text-[12px] text-[#9da0a8]">Your Google account and a current 6-digit code are required to sign in.</p>
             </div>
             {!showDisable ? (
               <Button variant="secondary" leftIcon={<ShieldOff className="h-3.5 w-3.5" />} onClick={() => setShowDisable(true)}>
@@ -118,10 +116,9 @@ export const MfaSettings: React.FC = () => {
               </Button>
             ) : (
               <div className="w-full max-w-sm space-y-3">
-                <Input label="Current password" type="password" autoComplete="current-password" value={password} onChange={(event) => setPassword(event.target.value)} />
                 <Input label="Authenticator code" inputMode="numeric" autoComplete="one-time-code" maxLength={6} value={code} onChange={(event) => setCode(event.target.value.replace(/\D/g, '').slice(0, 6))} />
                 <div className="flex gap-2">
-                  <Button variant="secondary" onClick={() => { setShowDisable(false); setPassword(''); setCode(''); }}>Cancel</Button>
+                  <Button variant="secondary" onClick={() => { setShowDisable(false); setCode(''); }}>Cancel</Button>
                   <Button variant="danger" loading={working} onClick={() => void disable()}>Confirm disable</Button>
                 </div>
               </div>

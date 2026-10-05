@@ -2,4 +2,5 @@ package com.ticket.userservice.dto.request;
 
 import jakarta.validation.constraints.NotBlank;
 
-public record MfaDisableRequest(@NotBlank String code) {}
+public record TenantWorkspaceStatusRequest(@NotBlank String status) {
+}

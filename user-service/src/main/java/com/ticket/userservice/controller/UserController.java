@@ -3,9 +3,13 @@ package com.ticket.userservice.controller;
 import com.ticket.common.exception.ResponseErrorTemplate;
 import com.ticket.userservice.dto.request.UserFilterRequest;
 import com.ticket.userservice.dto.request.UserRequest;
+import com.ticket.userservice.dto.response.UserProfileResponse;
+import com.ticket.userservice.entity.User;
+import com.ticket.userservice.repository.UserRepository;
 import com.ticket.userservice.service.UserService;
 import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -13,9 +17,26 @@ import org.springframework.web.bind.annotation.*;
 public class UserController {
 
     private final UserService userService;
+    private final UserRepository userRepository;
 
-    public UserController(UserService userService) {
+    public UserController(UserService userService, UserRepository userRepository) {
         this.userService = userService;
+        this.userRepository = userRepository;
+    }
+
+    @GetMapping("/me")
+    public ResponseEntity<ResponseErrorTemplate> getCurrentUser(Authentication authentication) {
+        User user = userRepository.findByUsername(authentication.getName());
+        if (user == null) throw new org.springframework.security.core.userdetails.UsernameNotFoundException(
+                "Authenticated account was not found.");
+        var roles = authentication.getAuthorities().stream().map(authority -> authority.getAuthority()).toList();
+        var groups = user.getGroups().stream().map(group -> group.getName()).toList();
+        UserProfileResponse profile = new UserProfileResponse(user.getId(), user.getUsername(), user.getFirstName(),
+                user.getLastName(), user.getUserImg(), user.getEmail(), user.getUserType(), user.getGender(),
+                user.getDateOfBirth(), user.getPhoneNumber(), user.getStatus(), roles, groups, user.getTenantId(),
+                Boolean.TRUE.equals(user.getMfaEnabled()), user.getCreatedAt(), user.getUpdatedAt());
+        return ResponseEntity.ok(new ResponseErrorTemplate("Profile retrieved successfully", "USER_PROFILE_FOUND",
+                profile, false));
     }
 
     @PostMapping({"", "/create"})

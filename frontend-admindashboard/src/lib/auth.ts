@@ -1,52 +1,16 @@
 import { api } from './api';
-import type { User, LoginCredentials, OAuthCodeExchangeResponse } from '../types/api';
+import type { User, OAuthCodeExchangeResponse } from '../types/api';
 
 const USER_KEY = 'user';
 const TOKEN_KEY = 'auth_token';
 
-interface ChangePasswordData {
-  oldPassword: string;
-  newPassword: string;
+function appRole(roles: string[] | null | undefined): User['role'] {
+  if (roles?.includes('ADMIN')) return 'ADMIN';
+  if (roles?.includes('TENANT_ADMIN')) return 'TENANT_ADMIN';
+  return 'USER';
 }
 
 export const auth = {
-  login: async (credentials: LoginCredentials): Promise<User> => {
-    const response = await api.post<{ access_token: string; refresh_token: string }>('/auth/login', {
-      username: credentials.username,
-      password: credentials.password,
-      ...(credentials.totpCode ? { totpCode: credentials.totpCode } : {}),
-    });
-
-    if (!response?.access_token) {
-      throw new Error('Login succeeded but the server did not return an access token');
-    }
-
-    localStorage.setItem(TOKEN_KEY, response.access_token);
-    api.setAuthToken(response.access_token);
-
-    try {
-      let backendUser: User;
-      try {
-        backendUser = await api.get<User>(`/users/email/${encodeURIComponent(credentials.username)}`);
-      } catch {
-        // Preserve compatibility with accounts that log in using their username.
-        backendUser = await api.get<User>(`/users/username/${encodeURIComponent(credentials.username)}`);
-      }
-      const user: User = {
-        ...backendUser,
-        // Authority lives in `roles`, not `userType`: the seeded admin account
-        // has userType USER and roles ["ADMIN"], and the backend only checks
-        // ADMIN. Anything else is treated as a non-admin account.
-        role: backendUser.roles?.includes('ADMIN') ? 'ADMIN' : 'USER',
-      };
-      localStorage.setItem(USER_KEY, JSON.stringify(user));
-      return user;
-    } catch (error) {
-      auth.logout();
-      throw error;
-    }
-  },
-
   startGoogleSignIn: (): void => {
     auth.logout();
     window.location.assign(`${api.getApiOrigin()}/oauth2/authorization/google`);
@@ -66,10 +30,10 @@ export const auth = {
     api.setAuthToken(response.access_token);
 
     try {
-      const backendUser = await api.get<User>(`/users/username/${encodeURIComponent(response.username)}`);
+      const backendUser = await api.get<User>('/users/me');
       const user: User = {
         ...backendUser,
-        role: backendUser.roles?.includes('ADMIN') ? 'ADMIN' : 'USER',
+        role: appRole(backendUser.roles),
       };
       localStorage.setItem(USER_KEY, JSON.stringify(user));
       return user;
@@ -111,13 +75,6 @@ export const auth = {
     }
   },
 
-  changePassword: async (data: ChangePasswordData): Promise<void> => {
-    const user = auth.getUser();
-    if (!user) throw new Error('Not authenticated');
-    await api.put(`/users/${user.id}/change-password`, undefined, {
-      params: { oldPassword: data.oldPassword, newPassword: data.newPassword },
-    });
-  },
 };
 
 export default auth;

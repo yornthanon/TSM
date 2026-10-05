@@ -63,7 +63,7 @@ public class JwtServiceImpl extends JwtConfigProperties implements JwtService {
         customUserDetail.getAuthorities().forEach(role -> roles.add(role.getAuthority()));
 
         Instant currentTime = Instant.now();
-        return Jwts.builder()
+        var tokenBuilder = Jwts.builder()
                 .subject(customUserDetail.getUsername())
                 .claim("authorities", customUserDetail.getAuthorities()
                         .stream().map(GrantedAuthority::getAuthority)
@@ -71,9 +71,11 @@ public class JwtServiceImpl extends JwtConfigProperties implements JwtService {
                 .claim("roles", roles)
                 .claim("isEnable", customUserDetail.isEnabled())
                 .issuedAt(Date.from(currentTime))
-                .expiration(Date.from(currentTime.plusSeconds(getExpiration())))
-                .signWith(getKey(), SignatureAlgorithm.HS256)
-                .compact();
+                .expiration(Date.from(currentTime.plusSeconds(getExpiration())));
+        if (customUserDetail.getTenantId() != null) {
+            tokenBuilder.claim("tenant_id", customUserDetail.getTenantId());
+        }
+        return tokenBuilder.signWith(getKey(), SignatureAlgorithm.HS256).compact();
     }
 
     @Override
@@ -105,21 +107,16 @@ public class JwtServiceImpl extends JwtConfigProperties implements JwtService {
                 token = authorizationHeader.substring(7);
             }
 
-            if (!isValidToken(token)) {
-                return new ResponseErrorTemplate(
-                        "Invalid token",
-                        "TOKEN_INVALID",
-                        new EmptyObject(),
-                        true);
-            }
-
             Claims claims = extractClaims(token);
             String username = claims.getSubject();
-            List authorities = claims.get("authorities", List.class);
+            CustomUserDetail currentUser = userDetailService.customUserDetail(username);
+            List<String> authorities = currentUser.getAuthorities().stream()
+                    .map(GrantedAuthority::getAuthority).toList();
 
             Map<String, Object> tokenData = new HashMap<>();
             tokenData.put("username", username);
             tokenData.put("authorities", authorities);
+            tokenData.put("tenant_id", currentUser.getTenantId());
             tokenData.put("valid", true);
 
             return new ResponseErrorTemplate(

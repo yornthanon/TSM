@@ -1,6 +1,6 @@
 # TSM / TicketDesk — Render deployment notes
 
-Updated: 2026-10-03
+Updated: 2026-10-05
 
 ## Live deployment
 
@@ -24,7 +24,7 @@ These are **API compute costs only**. The existing Neon database has not been up
 
 ## Production safeguards and still-needed integrations
 
-Keep the existing `SPRING_DATASOURCE_URL`, `SPRING_DATASOURCE_USERNAME`, and `SPRING_DATASOURCE_PASSWORD` pointed at Neon; do not rely on the local `localhost:5432` fallback. `JWT_SECRET` must remain stable and be Base64-encoded with at least 32 decoded bytes: MFA secrets are encrypted using key material derived from it, so rotating it would make already-enrolled secrets unreadable. Keep `DEFAULT_ADMIN_PASSWORD` unique and strong, and rotate any development/default credentials before inviting staff. Do not send these secret values in chat.
+Keep the existing `SPRING_DATASOURCE_URL`, `SPRING_DATASOURCE_USERNAME`, and `SPRING_DATASOURCE_PASSWORD` pointed at Neon; do not rely on the local `localhost:5432` fallback. `JWT_SECRET` must remain stable and be Base64-encoded with at least 32 decoded bytes: MFA secrets are encrypted using key material derived from it, so rotating it would make already-enrolled secrets unreadable. `DEFAULT_ADMIN_PASSWORD` is optional; if blank, the bootstrap generates a random value, while product sign-in is Google-only. Only the verified email(s) in `PLATFORM_ADMIN_EMAILS` receive global `ADMIN`. Keep secrets out of Git and do not send them in chat.
 
 The payment gateway remains a **mock/simulated gateway**, not a live card processor. Do not accept real payments until a provider is selected and configured. The API currently reports SMS delivery disabled without Twilio credentials; email needs SMTP configuration, and order-confirmation event publishing to Kafka remains a TODO. MFA backup/recovery codes are not implemented; recovery from a lost authenticator requires an administrator procedure.
 
@@ -32,4 +32,24 @@ The payment gateway remains a **mock/simulated gateway**, not a live card proces
 
 The dashboard shell now closely follows the selected ChatBot IDE workspace: compact top bar, flat collapsible Tool Windows menu with the ticketing routes, shortcut badges, ⌘K route palette, and a bottom status bar. Its four headline metrics use graphite panels, JetBrains Mono figures, and blue/cyan accents; loading/error states are compact and retryable. Route-level code splitting and the optional TOTP MFA settings remain in place. MFA remains opt-in; stored authenticator secrets are encrypted, login/setup failures participate in the account lockout policy, and migration V8 is live. Core ticket holds use transactional PostgreSQL row locks and reclaim expired holds on the next lock attempt, removing Redis as a core ticket-lock dependency.
 
-The frontend production build and lint passed after the shell/dashboard changes; the production dependency audit found zero vulnerabilities. The new reusable skill passed the official skill structure validator. The Java reactor package and RFC 6238 TOTP known-answer test passed previously. The full Maven suite could not run completely in the sandbox because its existing `EventServiceApplicationTests.contextLoads` requires a local JDBC database; the sandbox has no local PostgreSQL. Render's Neon connection, migration, and API health check were verified during the prior rollout.
+The frontend production build and lint passed after the shell/dashboard changes; the production dependency audit found zero vulnerabilities. The new reusable skill passed the official skill structure validator. On 2026-10-05, `npm run lint`, `npm run build`, `./mvnw -q -DskipTests package`, and all 7 user-service tests passed. The full Maven suite was attempted and stopped at the existing `EventServiceApplicationTests.contextLoads`: Hibernate could not determine its JDBC dialect because the sandbox has no local database/JDBC metadata. Render's Neon connection, earlier migration, and API health check were verified during the prior rollout. The latest Render metadata snapshot was read-only; see [TSM_RENDER_READONLY_CHECK_2026-10-04.md](TSM_RENDER_READONLY_CHECK_2026-10-04.md).
+
+## Multi-tenant branch status — 2026-10-05 (not deployed)
+
+The tenant refactor is committed locally as `19dcc61` on `feat/multi-tenant-workspaces`; it has not yet been pushed. Migration V10 is packaged only with the monolith and adds workspace IDs/constraints while backfilling existing business rows to workspace 1, `Legacy TicketDesk Workspace`. Existing users remain without a tenant until their first verified Google sign-in creates a private workspace; this makes old user sessions fail closed instead of retaining access to Legacy. The migration does not truncate, drop, or reset production data. PostgreSQL's serial sequence is advanced after inserting the Legacy row.
+
+At each non-platform user's first verified Google login after rollout, the account is assigned to a newly provisioned private workspace. Existing business rows are intentionally left in Legacy because the source data does not reliably identify a sole owning Google user. As a result, those users will initially see an empty private workspace; the allowlisted global platform administrator can still inspect all workspaces and legacy records. The user has accepted this data-access transition.
+
+The branch includes Google open enrollment, `USER` plus `TENANT_ADMIN` provisioning, an explicit `PLATFORM_ADMIN_EMAILS` allowlist for global `ADMIN`, tenant-aware Hibernate filters and internal-service header propagation, a platform workspace console, Google-only sign-in routes, and TOTP MFA support. The public repository README already declared MIT; a standard `LICENSE` file is now present locally. Known public development password/JWT fallbacks were removed from Compose and application configuration. Repository credential scans found no known password or Google credential literals; root `.env` remains ignored by Git.
+
+Render's API and frontend auto-deploy from `main`; the API remains on the $0 Free plan and can sleep after 15 minutes idle. On 2026-10-05 the user-provided `PLATFORM_ADMIN_EMAILS` value was merged into the API service configuration without replacing other variables. The resulting env-only deploy `dep-db1km8navr4c73cd8570`, on the old commit `c41d0b0`, was last observed `update_in_progress`. Production Flyway is at V9; V10 was successfully tested on a temporary Neon branch and that branch was discarded without applying changes to production. A manual Neon snapshot `before-tenant-v10-2026-10-05` was created with expiry 2026-11-04. The source commit `19dcc61` has not yet been pushed; pushing to `main` will trigger the code rollout and Flyway V10.
+
+
+## Public Git history caveat
+
+The current feature branch removes known development credential defaults from the working tree, but the public `main` branch and earlier Git history have not been rewritten. The scan covered the current working tree only, not all historical commits. Other Render secret values were not inspected. If any previously published development default was ever used as a real secret in an environment, rotate that affected value before continued use. At the time of this pre-push note, the source commit had not yet been pushed.
+
+
+## Platform-admin allowlist update
+
+The user selected the verified platform-admin Gmail; it is stored only in the Git-ignored repository-root `.env` with restrictive file permissions and is not written into tracked documentation or `.env.example`. Render's `PLATFORM_ADMIN_EMAILS` was updated by merge; the env-only deployment is being checked before pushing the source commit.

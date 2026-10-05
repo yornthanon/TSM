@@ -91,7 +91,7 @@ public class RefreshTokenService {
                     }).orElseThrow();
             return errorTemplate;
         }catch (Exception e) {
-            log.error("Error while refreshing token with request: {}", refreshTokenRequest, e);
+            log.error("Refresh-token request failed: {}", e.getClass().getSimpleName());
             throw new CustomMessageException(
                     ApiConstant.UN_AUTHORIZATION.getDescription(),
                     ApiConstant.UN_AUTHORIZATION.getKey(),
@@ -109,7 +109,7 @@ public class RefreshTokenService {
         if (token.getExpiryDate().compareTo(Date.from(Instant.now())) < 0) {
             refreshTokenRepository.delete(token);
             log.info("Refresh refreshToken is expired. Please make a new login..!");
-            throw new SystemException(token.getToken() + " Refresh refreshToken is expired. Please make a new login..!");
+            throw new SystemException("Refresh token is expired. Please make a new login.");
         }
         return token;
     }

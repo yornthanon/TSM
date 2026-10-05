@@ -87,9 +87,8 @@ public class TotpMfaService {
     }
 
     @Transactional
-    public boolean disable(User user, String password, String code) {
-        if (!passwordEncoder.matches(password == null ? "" : password, user.getPassword())
-                || !verifySecret(user.getMfaSecret(), code)) {
+    public boolean disable(User user, String code) {
+        if (!verifySecret(user.getMfaSecret(), code)) {
             userDetailService.saveUserAttemptAuthentication(user.getUsername());
             return false;
         }

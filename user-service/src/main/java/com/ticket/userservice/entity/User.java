@@ -6,6 +6,7 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.hibernate.annotations.Filter;
 
 import java.time.LocalDateTime;
 import java.util.HashSet;
@@ -13,6 +14,7 @@ import java.util.Set;
 
 @Entity
 @Table(name = "users")
+@Filter(name = "tenantFilter", condition = "tenant_id = :tenantId")
 @Getter
 @Setter
 @AllArgsConstructor
@@ -73,6 +75,9 @@ public class User extends BasedEntity {
 
     @Column(name = "mfa_enabled", nullable = false)
     private Boolean mfaEnabled = false;
+
+    @Column(name = "tenant_id")
+    private Long tenantId;
 
     @ManyToMany(fetch = FetchType.EAGER)
     @JoinTable(

@@ -9,13 +9,18 @@ import com.ticket.userservice.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
+import org.springframework.util.StringUtils;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Locale;
 import java.util.stream.Collectors;
 
 
@@ -25,6 +30,9 @@ import java.util.stream.Collectors;
 public class CustomUserDetailService implements UserDetailsService {
 
     private final UserRepository userRepository;
+
+    @Value("${app.auth.platform-admin-emails:}")
+    private String platformAdminEmails;
 
     @Override
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
@@ -66,12 +74,25 @@ public class CustomUserDetailService implements UserDetailsService {
                     HttpStatus.FORBIDDEN);
         }
 
-        return new CustomUserDetail(
-                user.getUsername(),
-                user.getPassword(),
-                user.getRoles()
-                        .stream().map(role -> new SimpleGrantedAuthority(role.getName()))
-                        .collect(Collectors.toList()));
+        List<String> roles = user.getRoles().stream().map(role -> role.getName()).collect(Collectors.toCollection(ArrayList::new));
+        if (isPlatformAdminEmail(user.getEmail())) {
+            if (!roles.contains("ADMIN")) roles.add("ADMIN");
+        } else {
+            roles.removeIf("ADMIN"::equals);
+            if (user.getTenantId() != null && !roles.contains("TENANT_ADMIN")) roles.add("TENANT_ADMIN");
+        }
+        return new CustomUserDetail(user.getUsername(), user.getPassword(),
+                roles.stream().map(SimpleGrantedAuthority::new).collect(Collectors.toList()), user.getTenantId());
+    }
+
+    private boolean isPlatformAdminEmail(String email) {
+        if (!StringUtils.hasText(email) || !StringUtils.hasText(platformAdminEmails)) return false;
+        String normalizedEmail = email.trim().toLowerCase(Locale.ROOT);
+        return java.util.Arrays.stream(platformAdminEmails.split(","))
+                .map(String::trim)
+                .filter(StringUtils::hasText)
+                .map(value -> value.toLowerCase(Locale.ROOT))
+                .anyMatch(normalizedEmail::equals);
     }
 
     public void saveUserAttemptAuthentication(String username) {

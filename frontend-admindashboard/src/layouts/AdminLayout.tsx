@@ -1,8 +1,10 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { NavLink, Outlet, useLocation, useNavigate, Link } from 'react-router-dom';
 import {
   Activity,
   Bell,
+  Building2,
   CalendarDays,
   ChevronDown,
   ChevronLeft,
@@ -22,6 +24,7 @@ import {
 } from 'lucide-react';
 import { cn } from '../utils';
 import { auth } from '../lib/auth';
+import { api } from '../lib/api';
 import type { User as AppUser } from '../types/api';
 
 const navItems = [
@@ -34,6 +37,7 @@ const navItems = [
   { to: '/admin/users', icon: Users, label: 'Users', shortcut: '⌘7', badge: 'Team' },
   { to: '/admin/access', icon: KeyRound, label: 'Access control', shortcut: '⌘8', badge: 'Policy', adminOnly: true },
   { to: '/admin/system', icon: Server, label: 'System', shortcut: '⌘9', badge: 'API', adminOnly: true },
+  { to: '/admin/workspaces', icon: Building2, label: 'Workspaces', shortcut: '⌘0', badge: 'Platform', adminOnly: true },
 ];
 
 function titleFor(pathname: string, items: typeof navItems): string {
@@ -54,11 +58,21 @@ export const AdminLayout: React.FC = () => {
   const location = useLocation();
   const user = auth.getUser() as AppUser | null;
   const isAdmin = user?.role === 'ADMIN';
+  const isTenantAdmin = user?.role === 'TENANT_ADMIN';
   const initials = (user?.email || user?.username || 'A').slice(0, 2).toUpperCase();
+  const currentWorkspace = useQuery({
+    queryKey: ['current-workspace', user?.tenantId],
+    queryFn: () => api.get<{ name: string }>('/workspaces/current'),
+    enabled: Boolean(user && !isAdmin),
+    staleTime: 5 * 60 * 1000,
+  });
+  const workspaceName = currentWorkspace.data?.name
+    ?? (currentWorkspace.isError ? 'Workspace unavailable' : 'Workspace');
 
   const visibleItems = useMemo(
-    () => navItems.filter((item) => !item.adminOnly || isAdmin),
-    [isAdmin],
+    () => navItems.filter((item) => (!item.adminOnly || isAdmin)
+      && (item.to !== '/admin/users' || isAdmin || isTenantAdmin)),
+    [isAdmin, isTenantAdmin],
   );
   const title = titleFor(location.pathname, visibleItems);
   const filteredItems = useMemo(
@@ -234,7 +248,7 @@ export const AdminLayout: React.FC = () => {
               </div>
               <div className="leading-tight">
                 <p className="font-semibold tracking-tight text-[#dfe1e5]">TicketDesk</p>
-                <p className="hidden text-[9px] uppercase tracking-[0.14em] text-[#6c707e] sm:block">Admin workspace</p>
+                <p className="hidden max-w-[180px] truncate text-[9px] uppercase tracking-[0.14em] text-[#6c707e] sm:block">{isAdmin ? 'Platform administration' : workspaceName || 'Workspace'}</p>
               </div>
             </div>
           </div>
@@ -250,13 +264,13 @@ export const AdminLayout: React.FC = () => {
           </button>
 
           <div className="flex items-center gap-2">
-            <Link
+            {!isAdmin && <Link
               to="/admin/events"
               className="inline-flex items-center gap-1.5 rounded-lg bg-[#3574f0] px-3 py-1.5 text-xs font-semibold text-white shadow-sm transition-colors hover:bg-[#3062d4]"
             >
               <Plus className="h-3.5 w-3.5" />
               <span className="hidden sm:inline">New event</span>
-            </Link>
+            </Link>}
             <div className="relative ml-1">
               <button
                 aria-label="Open profile menu"
@@ -277,7 +291,7 @@ export const AdminLayout: React.FC = () => {
                       <p className="truncate text-xs font-medium text-[#dfe1e5]">{user?.email || user?.username || 'Admin user'}</p>
                       <p className="mt-0.5 font-jetbrains text-[10px] text-[#868a91]">{user?.role ?? 'USER'}</p>
                     </div>
-                    <Link to="/admin/users" onClick={() => setUserMenuOpen(false)} className="block px-3.5 py-2.5 text-xs text-[#bcbec4] hover:bg-[#2b2d30]">Manage users</Link>
+                    {(isAdmin || isTenantAdmin) && <Link to="/admin/users" onClick={() => setUserMenuOpen(false)} className="block px-3.5 py-2.5 text-xs text-[#bcbec4] hover:bg-[#2b2d30]">Manage users</Link>}
                     <button onClick={handleLogout} className="flex w-full items-center gap-2 px-3.5 py-2.5 text-left text-xs text-[#f07178] hover:bg-[#2b2d30]">
                       <LogOut className="h-3.5 w-3.5" /> Log out
                     </button>
@@ -299,7 +313,7 @@ export const AdminLayout: React.FC = () => {
             <div className="hidden items-center gap-1.5 md:flex"><span>PostgreSQL</span></div>
           </div>
           <div className="flex shrink-0 items-center gap-3 sm:gap-4">
-            <span className="hidden sm:inline">{isAdmin ? 'ADMIN' : 'USER'} SESSION</span>
+            <span className="hidden sm:inline">{isAdmin ? 'ADMIN' : isTenantAdmin ? 'TENANT ADMIN' : 'USER'} SESSION</span>
             <span className="text-[#4ec9b0]">UTF-8</span>
             <span className="hidden text-[#868a91] sm:inline">{title}</span>
           </div>

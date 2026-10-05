@@ -52,9 +52,9 @@ public class MfaController {
     public ResponseEntity<ResponseErrorTemplate> disable(Authentication authentication,
                                                           @RequestBody MfaDisableRequest request) {
         User user = currentUser(authentication);
-        if (request == null || !mfaService.disable(user, request.password(), request.code())) {
+        if (request == null || !mfaService.disable(user, request.code())) {
             return error(HttpStatus.BAD_REQUEST, "MFA_REAUTH_FAILED",
-                    "Password or authenticator code is incorrect.");
+                    "The authenticator code is incorrect.");
         }
         return ok(new MfaStatusResponse(false));
     }
