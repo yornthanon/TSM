@@ -115,12 +115,7 @@ const Users: React.FC = () => {
     <div className="relative" onContextMenu={handlePageContextMenu}>
       <PageHeader
         title="Users"
-        description="Global account directory. Right-click or two-finger click the page for Create and a user row for Delete."
-        actions={isPlatformAdmin && (
-          <Button leftIcon={<Plus className="h-4 w-4" />} onClick={() => setCreateOpen(true)}>
-            Create user
-          </Button>
-        )}
+        description="Global account directory. Right-click or two-finger click blank space for Create; right-click a user row for Delete (confirmation required)."
       />
 
       <div className="mb-4 grid grid-cols-2 gap-3 lg:grid-cols-4">
@@ -161,11 +156,6 @@ const Users: React.FC = () => {
         onRetry={() => void users.refetch()}
         emptyTitle={search || statusFilter ? 'No users match your filters' : 'No users yet'}
         emptyDescription="Verified Google accounts enroll automatically in isolated workspaces. Create here to pre-register a verified Google email."
-        emptyAction={isPlatformAdmin && (
-          <Button leftIcon={<Plus className="h-4 w-4" />} onClick={() => setCreateOpen(true)}>
-            Create user
-          </Button>
-        )}
       >
         <Table>
           <thead>
@@ -236,17 +226,6 @@ const Users: React.FC = () => {
                           <UserCheck className="h-3.5 w-3.5" />
                         </button>
                       ))}
-                      {!protectedAdmin && (
-                        <button
-                          type="button"
-                          title="Delete user"
-                          aria-label={`Delete ${user.username}`}
-                          onClick={() => setDeleteTarget(user)}
-                          className="rounded-md p-1.5 text-rose-400 hover:bg-[#2b2d30]"
-                        >
-                          <Trash2 className="h-3.5 w-3.5" />
-                        </button>
-                      )}
                     </div>
                   </Td>}
                 </tr>
