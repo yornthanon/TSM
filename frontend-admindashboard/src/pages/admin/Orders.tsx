@@ -12,7 +12,7 @@ import {
   Td,
   Th,
 } from '../../components/QueryState';
-import { Badge, Card, ConfirmDialog, Input } from '../../components/ui';
+import { Badge, Card, ConfirmDialog, Input, SelectField } from '../../components/ui';
 import { formatCurrency, formatDateTime } from '../../utils';
 import { ORDER_STATUSES, type Order } from '../../types/api';
 import { auth } from '../../lib/auth';
@@ -60,7 +60,7 @@ const Orders: React.FC = () => {
           : 'Platform-wide read-only view. Open a workspace from Users to manage orders with an audited session.'}
       />
 
-      <div className="mb-4 grid grid-cols-2 gap-3 lg:grid-cols-4">
+      <div className="mb-4 grid grid-cols-1 gap-3 min-[380px]:grid-cols-2 lg:grid-cols-4">
         <StatCard label="Orders" value={orderStats.data?.total ?? orders.data?.length ?? 0} />
         <StatCard label="Completed" value={byStatus.COMPLETED ?? 0} tone="good" />
         <StatCard label="Processing" value={byStatus.PROCESSING ?? 0} tone="warn" />
@@ -81,19 +81,16 @@ const Orders: React.FC = () => {
               aria-label="Search orders"
             />
           </div>
-          <select
+          <SelectField
             value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value)}
-            aria-label="Filter by status"
-            className="rounded-lg border border-[#3c3f41] bg-white px-3 py-2 text-[13px] text-[#c4c7ce]"
-          >
-            <option value="">All statuses</option>
-            {ORDER_STATUSES.map((status) => (
-              <option key={status} value={status}>
-                {status}
-              </option>
-            ))}
-          </select>
+            onChange={setStatusFilter}
+            ariaLabel="Filter by status"
+            className="w-full px-3 py-2 text-[13px] sm:w-44"
+            options={[
+              { value: '', label: 'All statuses' },
+              ...ORDER_STATUSES.map((status) => ({ value: status, label: status })),
+            ]}
+          />
         </div>
       </Card>
 

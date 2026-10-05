@@ -12,7 +12,7 @@ import {
   Td,
   Th,
 } from '../../components/QueryState';
-import { Badge, Card, ConfirmDialog, Input } from '../../components/ui';
+import { Badge, Card, ConfirmDialog, Input, SelectField } from '../../components/ui';
 import { formatCurrency, formatDateTime } from '../../utils';
 import {
   PAYMENT_STATUSES,
@@ -74,7 +74,7 @@ const Payments: React.FC = () => {
               : 'Payment history in your workspace.'}
       />
 
-      <div className="mb-4 grid grid-cols-2 gap-3 lg:grid-cols-4">
+      <div className="mb-4 grid grid-cols-1 gap-3 min-[380px]:grid-cols-2 lg:grid-cols-4">
         <StatCard label="Revenue" value={formatCurrency(summary?.totalRevenue)} tone="good" />
         <StatCard label="Transactions" value={summary?.totalTransactions ?? payments.data?.length ?? 0} />
         <StatCard label="Completed" value={byStatus.COMPLETED ?? '-'} tone="good" />
@@ -96,19 +96,16 @@ const Payments: React.FC = () => {
               aria-label="Search payments"
             />
           </div>
-          <select
+          <SelectField
             value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value)}
-            aria-label="Filter by status"
-            className="rounded-lg border border-[#3c3f41] bg-white px-3 py-2 text-[13px] text-[#c4c7ce]"
-          >
-            <option value="">All statuses</option>
-            {PAYMENT_STATUSES.map((status) => (
-              <option key={status} value={status}>
-                {status}
-              </option>
-            ))}
-          </select>
+            onChange={setStatusFilter}
+            ariaLabel="Filter by status"
+            className="w-full px-3 py-2 text-[13px] sm:w-44"
+            options={[
+              { value: '', label: 'All statuses' },
+              ...PAYMENT_STATUSES.map((status) => ({ value: status, label: status })),
+            ]}
+          />
         </div>
       </Card>
 

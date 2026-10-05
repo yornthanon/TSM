@@ -1,5 +1,5 @@
 import React from 'react';
-import { useForm } from 'react-hook-form';
+import { Controller, useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Plus, Search, Trash2, Unlock } from 'lucide-react';
@@ -22,7 +22,7 @@ import {
   Td,
   Th,
 } from '../../components/QueryState';
-import { Badge, Button, Card, ConfirmDialog, Input, Modal } from '../../components/ui';
+import { Badge, Button, Card, ConfirmDialog, Input, Modal, SelectField } from '../../components/ui';
 import { formatCurrency, formatDateTime } from '../../utils';
 import { auth } from '../../lib/auth';
 import {
@@ -98,7 +98,7 @@ const Inventory: React.FC = () => {
         }
       />
 
-      <div className="mb-4 grid grid-cols-2 gap-3 lg:grid-cols-4">
+      <div className="mb-4 grid grid-cols-1 gap-3 min-[380px]:grid-cols-2 lg:grid-cols-4">
         <StatCard label="Seats" value={ticketStats.data?.total ?? tickets.data?.length ?? 0} />
         <StatCard label="Available" value={byStatus.AVAILABLE ?? 0} tone="good" />
         <StatCard label="Locked" value={byStatus.LOCKED ?? 0} tone="warn" />
@@ -116,32 +116,26 @@ const Inventory: React.FC = () => {
               aria-label="Search tickets"
             />
           </div>
-          <select
+          <SelectField
             value={eventFilter}
-            onChange={(e) => setEventFilter(e.target.value)}
-            aria-label="Filter by event"
-            className="rounded-lg border border-[#3c3f41] bg-white px-3 py-2 text-[13px] text-[#c4c7ce]"
-          >
-            <option value="">All events</option>
-            {(events.data ?? []).map((event) => (
-              <option key={event.id} value={event.id}>
-                {event.title}
-              </option>
-            ))}
-          </select>
-          <select
+            onChange={setEventFilter}
+            ariaLabel="Filter by event"
+            className="w-full px-3 py-2 text-[13px] lg:w-48"
+            options={[
+              { value: '', label: 'All events' },
+              ...(events.data ?? []).map((event) => ({ value: String(event.id), label: event.title })),
+            ]}
+          />
+          <SelectField
             value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value)}
-            aria-label="Filter by status"
-            className="rounded-lg border border-[#3c3f41] bg-white px-3 py-2 text-[13px] text-[#c4c7ce]"
-          >
-            <option value="">All statuses</option>
-            {TICKET_STATUSES.map((status) => (
-              <option key={status} value={status}>
-                {status}
-              </option>
-            ))}
-          </select>
+            onChange={setStatusFilter}
+            ariaLabel="Filter by status"
+            className="w-full px-3 py-2 text-[13px] lg:w-44"
+            options={[
+              { value: '', label: 'All statuses' },
+              ...TICKET_STATUSES.map((status) => ({ value: status, label: status })),
+            ]}
+          />
         </div>
       </Card>
 
@@ -278,6 +272,7 @@ const TicketFormModal: React.FC<{
   const {
     register,
     handleSubmit,
+    control,
     formState: { errors },
   } = useForm<TicketFormValues>({
     resolver: zodResolver(ticketSchema),
@@ -308,20 +303,24 @@ const TicketFormModal: React.FC<{
             <label htmlFor="ticket-event" className="mb-1.5 block text-xs font-medium text-[#c4c7ce]">
               Event
             </label>
-            <select
-              id="ticket-event"
-              className="w-full rounded-lg border border-[#3c3f41] bg-white px-3 py-2 text-[13px]"
-              {...register('eventId')}
-            >
-              <option value="">Select an event</option>
-              {events.map((event) => (
-                <option key={event.id} value={event.id}>
-                  {event.title}
-                </option>
-              ))}
-            </select>
+            <Controller
+              control={control}
+              name="eventId"
+              render={({ field }) => (
+                <SelectField
+                  id="ticket-event"
+                  value={field.value ? String(field.value) : ''}
+                  onChange={(value) => field.onChange(value ? Number(value) : '')}
+                  disabled={pending}
+                  options={[
+                    { value: '', label: 'Select an event' },
+                    ...events.map((event) => ({ value: String(event.id), label: event.title })),
+                  ]}
+                />
+              )}
+            />
             {errors.eventId && (
-              <p className="mt-1 text-[11px] text-rose-600">{errors.eventId.message}</p>
+              <p className="mt-1 text-[11px] text-rose-400">{errors.eventId.message}</p>
             )}
           </div>
           <Input
@@ -342,17 +341,19 @@ const TicketFormModal: React.FC<{
             <label htmlFor="ticket-type" className="mb-1.5 block text-xs font-medium text-[#c4c7ce]">
               Tier
             </label>
-            <select
-              id="ticket-type"
-              className="w-full rounded-lg border border-[#3c3f41] bg-white px-3 py-2 text-[13px]"
-              {...register('ticketType')}
-            >
-              {TICKET_TYPES.map((type) => (
-                <option key={type} value={type}>
-                  {type}
-                </option>
-              ))}
-            </select>
+            <Controller
+              control={control}
+              name="ticketType"
+              render={({ field }) => (
+                <SelectField
+                  id="ticket-type"
+                  value={field.value ?? 'STANDARD'}
+                  onChange={field.onChange}
+                  disabled={pending}
+                  options={TICKET_TYPES.map((type) => ({ value: type, label: type }))}
+                />
+              )}
+            />
           </div>
         </form>
       )}

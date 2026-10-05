@@ -39,7 +39,7 @@ const System: React.FC = () => {
         }
       />
 
-      <div className="mb-4 grid grid-cols-2 gap-3 lg:grid-cols-3">
+      <div className="mb-4 grid grid-cols-1 gap-3 min-[380px]:grid-cols-2 lg:grid-cols-3">
         <StatCard
           label="API status"
           value={health.isLoading ? '...' : isUp ? 'UP' : (health.data?.status ?? 'DOWN')}

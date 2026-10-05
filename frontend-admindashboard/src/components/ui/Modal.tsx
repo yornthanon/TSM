@@ -14,7 +14,7 @@ export interface ModalProps {
   compact?: boolean;
 }
 
-export const Modal: React.FC<ModalProps> = ({ open, onClose, title, footer, children, className, compact = false }) => {
+export const Modal: React.FC<ModalProps> = ({ open, onClose, title, footer, children, className, compact = true }) => {
   const overlayRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -35,7 +35,7 @@ export const Modal: React.FC<ModalProps> = ({ open, onClose, title, footer, chil
   return createPortal(
     <div
       ref={overlayRef}
-      className="fixed inset-0 z-50 flex items-center justify-center p-4"
+      className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4"
       role="dialog"
       aria-modal="true"
       aria-labelledby={title ? 'modal-title' : undefined}
@@ -44,17 +44,17 @@ export const Modal: React.FC<ModalProps> = ({ open, onClose, title, footer, chil
       <div
         className={cn(
           compact
-            ? 'relative flex w-full max-w-lg flex-col overflow-hidden rounded-12 bg-white shadow-card-hover dark:bg-dark-card max-h-[86dvh]'
-            : 'relative w-full max-w-lg max-h-[90vh] overflow-y-auto rounded-12 bg-white shadow-card-hover dark:bg-dark-card',
+            ? 'relative flex w-full max-w-xl flex-col overflow-hidden rounded-12 border border-[#2b2d30] bg-[#18191c] text-[#dfe1e5] shadow-card-hover max-h-[86dvh]'
+            : 'relative w-full max-w-xl max-h-[86dvh] overflow-y-auto rounded-12 border border-[#2b2d30] bg-[#18191c] text-[#dfe1e5] shadow-card-hover',
           className
         )}
       >
         <div className={cn(
-          'flex items-center justify-between border-b border-light-border dark:border-dark-border',
+          'flex items-center justify-between border-b border-[#2b2d30]',
           compact ? 'shrink-0 p-4 sm:p-5' : 'p-6'
         )}>
           {title && (
-            <h2 id="modal-title" className="text-xl font-semibold text-gray-900 dark:text-white">
+            <h2 id="modal-title" className="text-lg font-semibold text-[#dfe1e5] sm:text-xl">
               {title}
             </h2>
           )}
@@ -65,7 +65,7 @@ export const Modal: React.FC<ModalProps> = ({ open, onClose, title, footer, chil
         <div className={compact ? 'min-h-0 flex-1 overflow-y-auto p-4 sm:p-5' : 'p-6'}>{children}</div>
         {footer && (
           <div className={cn(
-            'flex items-center justify-end gap-3 border-t border-light-border dark:border-dark-border',
+            'flex items-center justify-end gap-3 border-t border-[#2b2d30]',
             compact ? 'shrink-0 p-4 sm:p-5' : 'p-6'
           )}>
             {footer}

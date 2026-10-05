@@ -23,7 +23,7 @@ import {
   Td,
   Th,
 } from '../../components/QueryState';
-import { Badge, Button, Card, ConfirmDialog, Input, Modal } from '../../components/ui';
+import { Badge, Button, Card, ConfirmDialog, Input, Modal, SelectField } from '../../components/ui';
 import { formatDateTime } from '../../utils';
 import type { User, UserPayload } from '../../types/api';
 import { auth } from '../../lib/auth';
@@ -140,10 +140,15 @@ const Users: React.FC = () => {
     <div className="relative" onContextMenu={handlePageContextMenu}>
       <PageHeader
         title="Users"
-        description="Global account directory. Right-click or two-finger click blank space for Create; right-click an active user to open their workspace or delete (confirmation required)."
+        description="Global account directory. Pre-register verified Google emails or manage existing workspaces."
+        actions={isPlatformAdmin ? (
+          <Button leftIcon={<Plus className="h-3.5 w-3.5" />} onClick={() => setCreateOpen(true)}>
+            Create user
+          </Button>
+        ) : undefined}
       />
 
-      <div className="mb-4 grid grid-cols-2 gap-3 lg:grid-cols-4">
+      <div className="mb-4 grid grid-cols-1 gap-3 min-[380px]:grid-cols-2 lg:grid-cols-4">
         <StatCard label="Users" value={userStats.data?.total ?? totalElements} />
         <StatCard label="Active" value={byStatus.ACTIVE ?? '-'} tone="good" />
         <StatCard label="Inactive" value={byStatus.INACTIVE ?? '-'} />
@@ -161,16 +166,17 @@ const Users: React.FC = () => {
               aria-label="Search users"
             />
           </div>
-          <select
+          <SelectField
             value={statusFilter}
-            onChange={(e) => { setStatusFilter(e.target.value); setPage(0); }}
-            aria-label="Filter by status"
-            className="rounded-lg border border-[#3c3f41] bg-white px-3 py-2 text-[13px] text-[#c4c7ce]"
-          >
-            <option value="">All statuses</option>
-            <option value="ACTIVE">Active</option>
-            <option value="INACTIVE">Inactive</option>
-          </select>
+            onChange={(value) => { setStatusFilter(value); setPage(0); }}
+            ariaLabel="Filter by status"
+            className="w-full px-3 py-2 text-[13px] sm:w-44"
+            options={[
+              { value: '', label: 'All statuses' },
+              { value: 'ACTIVE', label: 'Active' },
+              { value: 'INACTIVE', label: 'Inactive' },
+            ]}
+          />
         </div>
       </Card>
 

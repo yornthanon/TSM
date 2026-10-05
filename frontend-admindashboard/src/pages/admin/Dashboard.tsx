@@ -69,7 +69,7 @@ const Dashboard: React.FC = () => {
         emptyTitle="No data yet"
         rows={4}
       >
-        <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+        <div className="grid grid-cols-1 gap-3 min-[380px]:grid-cols-2 lg:grid-cols-4">
           <StatCard
             label="Events"
             value={events.data?.total ?? 0}
@@ -90,7 +90,7 @@ const Dashboard: React.FC = () => {
           />
         </div>
 
-        <div className="mt-3 grid max-w-xl grid-cols-2 gap-3">
+        <div className="mt-3 grid max-w-xl grid-cols-1 gap-3 sm:grid-cols-2">
           {isPlatformAdmin && <div className="flex items-center justify-between rounded-lg border border-[#27292d] bg-[#18191c] px-3 py-2.5">
             <span className="flex items-center gap-2 text-xs text-[#868a91]"><Mail className="h-3.5 w-3.5 text-[#3574f0]" />Notifications</span>
             <span className="font-jetbrains text-sm font-semibold text-[#dfe1e5]">{notifications.data?.total ?? 0}</span>

@@ -119,7 +119,7 @@ const EventDetail: React.FC = () => {
         ) : undefined}
       />
 
-      <div className="mb-4 grid grid-cols-2 gap-3 lg:grid-cols-5">
+      <div className="mb-4 grid grid-cols-1 gap-3 min-[380px]:grid-cols-2 lg:grid-cols-5">
         <StatCard label="Status" value={data.status ?? 'UNSET'} />
         <StatCard label="Seats created" value={eventTickets.length} />
         <StatCard label="Sold" value={soldCount} tone="good" />
