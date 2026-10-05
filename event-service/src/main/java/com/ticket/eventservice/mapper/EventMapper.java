@@ -16,6 +16,7 @@ public interface EventMapper {
     @Mapping(target = "createdBy", ignore = true)
     @Mapping(target = "updatedAt", ignore = true)
     @Mapping(target = "updatedBy", ignore = true)
+    @Mapping(target = "tenantId", ignore = true)
     Event toEntity(EventRequest request);
 
     EventResponse toResponse(Event event);

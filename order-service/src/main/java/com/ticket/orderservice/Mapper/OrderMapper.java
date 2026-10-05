@@ -18,6 +18,7 @@ public interface OrderMapper {
     @Mapping(target = "paymentId", ignore = true)
     @Mapping(target = "orderStatus", ignore = true)
     @Mapping(target = "orderDate", ignore = true)
+    @Mapping(target = "tenantId", ignore = true)
     Order toEntity(OrderRequest request);
 
     OrderResponse toResponse(Order order);
