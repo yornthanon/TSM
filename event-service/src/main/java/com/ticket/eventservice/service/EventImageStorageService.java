@@ -1,19 +1,36 @@
 package com.ticket.eventservice.service;
 
+import com.cloudinary.api.exceptions.ApiException;
 import com.ticket.common.tenant.TenantContextHolder;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
-import org.springframework.util.StringUtils;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.io.IOException;
+import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.util.Map;
+import java.util.UUID;
+import java.util.regex.Pattern;
 
 @Service
 public class EventImageStorageService {
+    private static final Logger log = LoggerFactory.getLogger(EventImageStorageService.class);
     private static final long MAX_BYTES = 5L * 1024L * 1024L;
+    private static final Pattern CLOUDINARY_CREDENTIAL_URL =
+            Pattern.compile("(?i)cloudinary://[^\\s\\\"'<>]+");
+    private static final Pattern AUTHORIZATION_VALUE = Pattern.compile(
+            "(?i)(authorization[\\\"']?\\s*[:=][\\\"']?\\s*)(?:bearer\\s+)?[^\\s,;\\\"']+");
+    private static final Pattern SENSITIVE_ASSIGNMENT = Pattern.compile(
+            "(?i)(api[_-]?key|api[_-]?secret|cloudinary[_-]?url|access[_-]?token|token)" +
+                    "([\\s\\\"']*[:=][\\s\\\"']*)([^\\s,;\\\"'<>}]+)");
+    private static final Pattern BEARER_TOKEN =
+            Pattern.compile("(?i)(bearer\\s+)[A-Za-z0-9._~+/-]+=*");
+
     private final ImageUploadClient uploadClient;
 
     @Autowired
@@ -49,25 +66,89 @@ public class EventImageStorageService {
             throw new ResponseStatusException(HttpStatus.UNSUPPORTED_MEDIA_TYPE,
                     "Upload a valid JPEG, PNG, or WebP image.");
         }
-        if (!uploadClient.isConfigured()) {
-            throw new ResponseStatusException(HttpStatus.SERVICE_UNAVAILABLE,
-                    "Photo storage is not configured. Set CLOUDINARY_URL on the backend service.");
-        }
 
         try {
+            if (!uploadClient.isConfigured()) {
+                throw new ResponseStatusException(HttpStatus.SERVICE_UNAVAILABLE,
+                        "Photo storage is not configured. Set CLOUDINARY_URL on the backend service.");
+            }
+
             Map<?, ?> result = uploadClient.upload(content, "ticketdesk/workspace-" + tenantId + "/events");
-            Object secureUrl = result.get("secure_url");
+            Object secureUrl = result == null ? null : result.get("secure_url");
             if (!(secureUrl instanceof String url) || !url.startsWith("https://")) {
                 throw new ResponseStatusException(HttpStatus.BAD_GATEWAY,
-                        "Photo storage returned an invalid image URL.");
+                        "Cloudinary did not return a secure image URL [CLOUDINARY_INVALID_RESPONSE].");
             }
             return url;
         } catch (ResponseStatusException exception) {
             throw exception;
         } catch (Exception exception) {
-            throw new ResponseStatusException(HttpStatus.BAD_GATEWAY,
-                    "The image upload could not be completed.");
+            String referenceId = UUID.randomUUID().toString();
+            log.error(
+                    "Event photo upload failed: referenceId={} tenantId={} mimeType={} sizeBytes={} " +
+                            "exceptionType={} message={}\n{}",
+                    referenceId,
+                    tenantId,
+                    declared,
+                    content.length,
+                    exception.getClass().getName(),
+                    safeMessage(exception),
+                    redactedStackTrace(exception));
+
+            ApiException cloudinaryError = findCause(exception, ApiException.class);
+            if (cloudinaryError != null) {
+                String providerMessage = safeMessage(cloudinaryError);
+                String detail = providerMessage.isBlank()
+                        ? "Check the Cloudinary credentials, cloud name, account status, and upload permissions."
+                        : providerMessage;
+                throw new ResponseStatusException(HttpStatus.BAD_GATEWAY,
+                        "Cloudinary rejected the image upload: " + detail +
+                                " [CLOUDINARY_API_REJECTED; reference " + referenceId + "].");
+            }
+
+            if (findCause(exception, IOException.class) != null) {
+                throw new ResponseStatusException(HttpStatus.BAD_GATEWAY,
+                        "The backend could not communicate with Cloudinary. Check network access and retry " +
+                                "[CLOUDINARY_NETWORK_ERROR; reference " + referenceId + "].");
+            }
+
+            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR,
+                    "The image upload failed unexpectedly [IMAGE_UPLOAD_INTERNAL_ERROR; reference " +
+                            referenceId + "]. Check the backend logs for this reference.");
         }
+    }
+
+    private static String safeMessage(Throwable exception) {
+        String message = exception.getMessage();
+        if (message == null || message.isBlank()) {
+            return "";
+        }
+        return redactSensitiveText(message).replaceAll("[\\r\\n\\t]+", " ").trim();
+    }
+
+    private static String redactedStackTrace(Throwable exception) {
+        StringWriter buffer = new StringWriter();
+        exception.printStackTrace(new PrintWriter(buffer));
+        return redactSensitiveText(buffer.toString());
+    }
+
+    private static String redactSensitiveText(String value) {
+        String redacted = CLOUDINARY_CREDENTIAL_URL.matcher(value)
+                .replaceAll("cloudinary://[REDACTED]");
+        redacted = AUTHORIZATION_VALUE.matcher(redacted)
+                .replaceAll("$1[REDACTED]");
+        redacted = SENSITIVE_ASSIGNMENT.matcher(redacted)
+                .replaceAll("$1$2[REDACTED]");
+        return BEARER_TOKEN.matcher(redacted).replaceAll("$1[REDACTED]");
+    }
+
+    private static <T extends Throwable> T findCause(Throwable exception, Class<T> type) {
+        for (Throwable cause = exception; cause != null; cause = cause.getCause()) {
+            if (type.isInstance(cause)) {
+                return type.cast(cause);
+            }
+        }
+        return null;
     }
 
     private String normalizeMime(String contentType) {

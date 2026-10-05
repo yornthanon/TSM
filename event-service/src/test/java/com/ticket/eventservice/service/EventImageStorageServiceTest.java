@@ -1,5 +1,6 @@
 package com.ticket.eventservice.service;
 
+import com.cloudinary.api.exceptions.ApiException;
 import com.ticket.common.tenant.TenantContextHolder;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
@@ -7,10 +8,13 @@ import org.springframework.http.HttpStatus;
 import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.io.IOException;
 import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class EventImageStorageServiceTest {
     private final EventImageStorageService service = new EventImageStorageService("");
@@ -120,6 +124,57 @@ class EventImageStorageServiceTest {
         assertEquals("ticketdesk/workspace-42/events", client.folder);
     }
 
+    @Test
+    void returnsSpecificSafeErrorWhenCloudinaryRejectsTheUpload() {
+        TenantContextHolder.set(42L, false);
+        EventImageStorageService failingService = new EventImageStorageService(
+                new FailingUploadClient(new ApiException(
+                        "api_secret: private-secret-fragment; Authorization: Bearer private-bearer-token")));
+
+        ResponseStatusException exception = assertThrows(ResponseStatusException.class,
+                () -> failingService.upload(validPngFile()));
+
+        assertEquals(HttpStatus.BAD_GATEWAY, exception.getStatusCode());
+        assertTrue(exception.getReason().contains("CLOUDINARY_API_REJECTED"));
+        assertTrue(exception.getReason().contains("reference"));
+        assertTrue(exception.getReason().contains("[REDACTED]"));
+        assertFalse(exception.getReason().contains("private-secret-fragment"));
+        assertFalse(exception.getReason().contains("private-bearer-token"));
+    }
+
+    @Test
+    void reportsCloudinaryNetworkFailureSeparately() {
+        TenantContextHolder.set(42L, false);
+        EventImageStorageService failingService = new EventImageStorageService(
+                new FailingUploadClient(new IOException("timeout reaching Cloudinary")));
+
+        ResponseStatusException exception = assertThrows(ResponseStatusException.class,
+                () -> failingService.upload(validPngFile()));
+
+        assertEquals(HttpStatus.BAD_GATEWAY, exception.getStatusCode());
+        assertTrue(exception.getReason().contains("CLOUDINARY_NETWORK_ERROR"));
+        assertTrue(exception.getReason().contains("could not communicate with Cloudinary"));
+    }
+
+    @Test
+    void returnsReferenceForUnexpectedUploadFailureInsteadOfGenericMessage() {
+        TenantContextHolder.set(42L, false);
+        EventImageStorageService failingService = new EventImageStorageService(
+                new FailingUploadClient(new IllegalStateException("internal diagnostic detail")));
+
+        ResponseStatusException exception = assertThrows(ResponseStatusException.class,
+                () -> failingService.upload(validPngFile()));
+
+        assertEquals(HttpStatus.INTERNAL_SERVER_ERROR, exception.getStatusCode());
+        assertTrue(exception.getReason().contains("IMAGE_UPLOAD_INTERNAL_ERROR"));
+        assertTrue(exception.getReason().contains("reference"));
+        assertFalse(exception.getReason().contains("internal diagnostic detail"));
+    }
+
+    private static MockMultipartFile validPngFile() {
+        return new MockMultipartFile("file", "cover.png", "image/png", validPngBytes());
+    }
+
     private static final class StubUploadClient implements ImageUploadClient {
         private final Map<?, ?> response;
         private String folder;
@@ -137,6 +192,24 @@ class EventImageStorageServiceTest {
         public Map<?, ?> upload(byte[] content, String folder) {
             this.folder = folder;
             return response;
+        }
+    }
+
+    private static final class FailingUploadClient implements ImageUploadClient {
+        private final Exception failure;
+
+        private FailingUploadClient(Exception failure) {
+            this.failure = failure;
+        }
+
+        @Override
+        public boolean isConfigured() {
+            return true;
+        }
+
+        @Override
+        public Map<?, ?> upload(byte[] content, String folder) throws Exception {
+            throw failure;
         }
     }
 
