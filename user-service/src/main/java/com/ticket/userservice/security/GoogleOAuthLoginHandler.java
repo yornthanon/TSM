@@ -39,16 +39,19 @@ public class GoogleOAuthLoginHandler implements AuthenticationSuccessHandler, Au
 
         Object emailClaim = oauthUser.getAttributes().get("email");
         Object verifiedClaim = oauthUser.getAttributes().get("email_verified");
+        Object subjectClaim = oauthUser.getAttributes().get("sub");
         String email = emailClaim instanceof String value ? value : null;
+        String googleSubject = subjectClaim instanceof String value ? value : null;
         boolean emailVerified = Boolean.TRUE.equals(verifiedClaim)
                 || "true".equalsIgnoreCase(String.valueOf(verifiedClaim));
-        if (!emailVerified || !StringUtils.hasText(email)) {
+        if (!emailVerified || !StringUtils.hasText(email)
+                || !StringUtils.hasText(googleSubject) || googleSubject.length() > 255) {
             redirectError(request, response, "account_not_linked");
             return;
         }
 
         try {
-            String code = loginCodeService.issueForVerifiedGoogleEmail(email);
+            String code = loginCodeService.issueForVerifiedGoogleIdentity(email, googleSubject);
             invalidateSession(request);
             response.setHeader("Cache-Control", "no-store, no-cache, max-age=0");
             response.setHeader("Pragma", "no-cache");

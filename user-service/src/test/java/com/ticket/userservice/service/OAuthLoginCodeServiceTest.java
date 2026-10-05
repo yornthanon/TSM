@@ -19,6 +19,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.test.util.ReflectionTestUtils;
 
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
@@ -61,7 +62,7 @@ class OAuthLoginCodeServiceTest {
         });
         when(userRepository.saveAndFlush(any(User.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
-        String rawCode = service.issueForVerifiedGoogleEmail("owner@example.com");
+        String rawCode = service.issueForVerifiedGoogleIdentity("owner@example.com", "google-sub-owner");
 
         ArgumentCaptor<OAuthLoginCode> stored = ArgumentCaptor.forClass(OAuthLoginCode.class);
         verify(codeRepository).save(stored.capture());
@@ -94,11 +95,12 @@ class OAuthLoginCodeServiceTest {
             return user;
         });
 
-        String rawCode = service.issueForVerifiedGoogleEmail("new@example.com");
+        String rawCode = service.issueForVerifiedGoogleIdentity("new@example.com", "google-sub-new");
 
         ArgumentCaptor<User> savedUser = ArgumentCaptor.forClass(User.class);
         verify(userRepository).saveAndFlush(savedUser.capture());
         assertEquals("new@example.com", savedUser.getValue().getEmail());
+        assertEquals("google-sub-new", savedUser.getValue().getGoogleSubject());
         assertEquals(29L, savedUser.getValue().getTenantId());
         assertTrue(savedUser.getValue().getRoles().stream().anyMatch(role -> "USER".equals(role.getName())));
         assertTrue(savedUser.getValue().getRoles().stream().anyMatch(role -> "TENANT_ADMIN".equals(role.getName())));
@@ -109,6 +111,73 @@ class OAuthLoginCodeServiceTest {
         ArgumentCaptor<OAuthLoginCode> savedCode = ArgumentCaptor.forClass(OAuthLoginCode.class);
         verify(codeRepository).save(savedCode.capture());
         assertNotEquals(rawCode, savedCode.getValue().getCodeHash());
+    }
+
+    @Test
+    void similarButNotIdenticalGoogleEmailIsDemotedAndProvisionedIntoItsOwnWorkspace() {
+        ReflectionTestUtils.setField(service, "platformAdminEmails", "yornthanon.dev@gmail.com");
+        User user = activeUser();
+        user.setEmail("yornthano@gmail.com");
+        user.setTenantId(null);
+        user.addRole(role("ADMIN"));
+        when(userRepository.findByEmailIgnoreCase("yornthano@gmail.com")).thenReturn(Optional.of(user));
+        when(roleRepository.findByName("USER")).thenReturn(Optional.of(role("USER")));
+        when(roleRepository.findByName("TENANT_ADMIN")).thenReturn(Optional.of(role("TENANT_ADMIN")));
+        when(workspaceRepository.saveAndFlush(any(TenantWorkspace.class))).thenAnswer(invocation -> {
+            TenantWorkspace workspace = invocation.getArgument(0);
+            workspace.setId(29L);
+            return workspace;
+        });
+        when(workspaceRepository.findById(29L)).thenReturn(Optional.of(activeWorkspace(29L)));
+        when(userRepository.saveAndFlush(any(User.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        service.issueForVerifiedGoogleIdentity("  yornthano@gmail.com  ", "google-sub-alias");
+
+        assertEquals("yornthano@gmail.com", user.getEmail());
+        assertEquals(29L, user.getTenantId());
+        assertEquals("google-sub-alias", user.getGoogleSubject());
+        assertTrue(user.getRoles().stream().anyMatch(role -> "USER".equals(role.getName())));
+        assertTrue(user.getRoles().stream().anyMatch(role -> "TENANT_ADMIN".equals(role.getName())));
+        assertFalse(user.getRoles().stream().anyMatch(role -> "ADMIN".equals(role.getName())));
+        verify(workspaceRepository).saveAndFlush(any(TenantWorkspace.class));
+    }
+
+    @Test
+    void stableGoogleSubjectKeepsCanonicalCeoWhenGoogleReturnsItsOldEmail() {
+        ReflectionTestUtils.setField(service, "platformAdminEmails", "yornthanon.dev@gmail.com");
+        String googleSubject = "stable-google-subject";
+        User user = activeUser();
+        user.setEmail("yornthanon.dev@gmail.com");
+        user.setTenantId(null);
+        user.setGoogleSubject(googleSubject);
+        user.addRole(role("USER"));
+        user.addRole(role("TENANT_ADMIN"));
+        when(userRepository.findByGoogleSubject(googleSubject)).thenReturn(Optional.of(user));
+        when(userRepository.findByEmailIgnoreCase("yornthano@gmail.com")).thenReturn(Optional.empty());
+        when(roleRepository.findByName("USER")).thenReturn(Optional.of(role("USER")));
+        when(roleRepository.findByName("ADMIN")).thenReturn(Optional.of(role("ADMIN")));
+        when(userRepository.saveAndFlush(any(User.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        service.issueForVerifiedGoogleIdentity("yornthano@gmail.com", googleSubject);
+
+        assertEquals("yornthanon.dev@gmail.com", user.getEmail());
+        assertEquals(googleSubject, user.getGoogleSubject());
+        assertTrue(user.getRoles().stream().anyMatch(role -> "ADMIN".equals(role.getName())));
+        assertTrue(user.getRoles().stream().anyMatch(role -> "TENANT_ADMIN".equals(role.getName())));
+        verify(workspaceRepository, never()).saveAndFlush(any(TenantWorkspace.class));
+    }
+
+    @Test
+    void differentGoogleSubjectCannotTakeOverAnEmailAlreadyLinkedToAnotherSubject() {
+        User user = activeUser();
+        user.setEmail("yornthano@gmail.com");
+        user.setGoogleSubject("already-linked-subject");
+        when(userRepository.findByGoogleSubject("attacker-subject")).thenReturn(Optional.empty());
+        when(userRepository.findByEmailIgnoreCase("yornthano@gmail.com")).thenReturn(Optional.of(user));
+
+        assertThrows(IllegalStateException.class,
+                () -> service.issueForVerifiedGoogleIdentity("yornthano@gmail.com", "attacker-subject"));
+        verify(codeRepository, never()).save(any(OAuthLoginCode.class));
     }
 
     @Test

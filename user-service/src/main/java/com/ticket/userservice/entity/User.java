@@ -32,6 +32,10 @@ public class User extends BasedEntity {
     @Column(name = "email")
     private String email;
 
+    @JsonIgnore
+    @Column(name = "google_subject", length = 255)
+    private String googleSubject;
+
     @Column(name = "first_name")
     private String firstName;
 

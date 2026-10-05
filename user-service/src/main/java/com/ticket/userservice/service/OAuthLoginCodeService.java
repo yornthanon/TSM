@@ -59,20 +59,47 @@ public class OAuthLoginCodeService {
     @Value("${app.auth.platform-admin-emails:}")
     private String platformAdminEmails;
 
-    /** Called only after Google's verified-email claim has been checked by the success handler. */
+    /** Called only after Google's verified email and stable subject claims are checked by the success handler. */
     @Transactional
-    public String issueForVerifiedGoogleEmail(String email) {
-        if (!StringUtils.hasText(email)) {
-            throw new IllegalStateException("A verified Google email is required.");
+    public String issueForVerifiedGoogleIdentity(String email, String googleSubject) {
+        if (!StringUtils.hasText(email) || !StringUtils.hasText(googleSubject)
+                || googleSubject.trim().length() > 255) {
+            throw new IllegalStateException("A verified Google identity is required.");
         }
 
         String normalizedEmail = email.trim().toLowerCase(Locale.ROOT);
-        boolean configuredPlatformAdmin = isPlatformAdminEmail(normalizedEmail);
-        User user = userRepository.findByEmailIgnoreCase(normalizedEmail).orElse(null);
+        String stableGoogleSubject = googleSubject.trim();
+        User user = userRepository.findByGoogleSubject(stableGoogleSubject).orElse(null);
+        if (user != null) {
+            User emailOwner = userRepository.findByEmailIgnoreCase(normalizedEmail).orElse(null);
+            if (emailOwner != null && !java.util.Objects.equals(emailOwner.getId(), user.getId())) {
+                throw new IllegalStateException("This verified Google identity conflicts with an existing account.");
+            }
+        } else {
+            user = userRepository.findByEmailIgnoreCase(normalizedEmail).orElse(null);
+            if (user != null && StringUtils.hasText(user.getGoogleSubject())
+                    && !stableGoogleSubject.equals(user.getGoogleSubject())) {
+                throw new IllegalStateException("This email is already linked to another Google identity.");
+            }
+        }
+
+        // The allowlisted email on an already-linked account is canonical. Google can
+        // continue to return an old Gmail address after an email change; the stable
+        // `sub` keeps that same account linked without allowlisting the old address.
+        boolean configuredPlatformAdmin = isPlatformAdminEmail(normalizedEmail)
+                || (user != null && isPlatformAdminEmail(user.getEmail()));
 
         if (user == null) {
-            user = createGoogleAccount(normalizedEmail, configuredPlatformAdmin);
+            user = createGoogleAccount(normalizedEmail, stableGoogleSubject, configuredPlatformAdmin);
         } else {
+            if (!StringUtils.hasText(user.getGoogleSubject())) {
+                user.setGoogleSubject(stableGoogleSubject);
+            }
+            if (isPlatformAdminEmail(normalizedEmail)) {
+                user.setEmail(normalizedEmail);
+            } else if (!configuredPlatformAdmin && !normalizedEmail.equalsIgnoreCase(user.getEmail())) {
+                user.setEmail(normalizedEmail);
+            }
             boolean migratingLegacyAccount = !configuredPlatformAdmin
                     && user.getTenantId() != null
                     && LEGACY_WORKSPACE_ID.equals(user.getTenantId());
@@ -141,10 +168,11 @@ public class OAuthLoginCodeService {
         return new ResponseErrorTemplate(ApiConstant.LOGIN_SUCCESS.getDescription(), ApiConstant.LOGIN_SUCCESS.getKey(), tokens, false);
     }
 
-    private User createGoogleAccount(String email, boolean platformAdmin) {
+    private User createGoogleAccount(String email, String googleSubject, boolean platformAdmin) {
         User user = new User();
         user.setUsername(uniqueUsername(email));
         user.setEmail(email);
+        user.setGoogleSubject(googleSubject);
         user.setFirstName(email.substring(0, email.indexOf('@')));
         user.setPassword(passwordEncoder.encode(UUID.randomUUID().toString()));
         user.setStatus(ApiConstant.ACTIVE.getKey());
