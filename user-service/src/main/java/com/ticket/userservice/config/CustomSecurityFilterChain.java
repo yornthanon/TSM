@@ -44,6 +44,7 @@ public class CustomSecurityFilterChain extends JwtConfigProperties {
     private final JwtService jwtService;
     private final TotpMfaService totpMfaService;
     private final ObjectMapper objectMapper;
+    private final CustomAccessDeniedHandler customAccessDeniedHandler;
     private final CustomUserDetailService customUserDetailService;
     private final CustomAuthenticationProvider customAuthenticationProvider;
     private final PasswordEncoder passwordEncoder;
@@ -142,7 +143,7 @@ public class CustomSecurityFilterChain extends JwtConfigProperties {
                                 .authenticationEntryPoint(
                                         (((request, response, authException)
                                                 -> response.sendError(HttpServletResponse.SC_UNAUTHORIZED))))
-                                .accessDeniedHandler(new CustomAccessDeniedHandler()))
+                                .accessDeniedHandler(customAccessDeniedHandler))
                 .addFilterAfter(new JwtAuthenticationInternalFilter(jwtService, objectMapper, this, customUserDetailService, adminActAsService),
                         UsernamePasswordAuthenticationFilter.class)
                 .addFilterAfter(new InternalAuthFilter(internalTokenProvider),
