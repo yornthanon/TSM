@@ -2,9 +2,11 @@ package com.ticket.userservice.service.impl;
 
 import com.ticket.common.dto.response.PageableResponseVO;
 import com.ticket.userservice.dto.request.UserFilterRequest;
+import com.ticket.userservice.dto.response.UserResponse;
 import com.ticket.userservice.entity.Role;
 import com.ticket.userservice.entity.User;
 import com.ticket.userservice.repository.UserRepository;
+import com.ticket.userservice.service.handle.UserHandlerService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
@@ -22,31 +24,38 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Specification-based user search (Method 2).
- * Use: inject this service and call searchUsers(filterRequest).
+ * Specification-based user search. Results are mapped to a credential-free DTO
+ * inside the transaction and never expose the persistence entity to API callers.
  */
 @Service
 @RequiredArgsConstructor
 @Slf4j
 public class UserSearchServiceImpl {
     private final UserRepository userRepository;
+    private final UserHandlerService userHandlerService;
 
-    @Transactional
-    public PageableResponseVO<User> searchUsers(UserFilterRequest filterRequest) {
+    @Transactional(readOnly = true)
+    public PageableResponseVO<UserResponse> searchUsers(UserFilterRequest filterRequest) {
         try {
             Specification<User> spec = buildSpecification(filterRequest);
 
             Sort sort = filterRequest.hasSorting()
-                    ? (filterRequest.isDesc() ? Sort.by(Sort.Direction.DESC, filterRequest.getSortBy()) : Sort.by(Sort.Direction.ASC, filterRequest.getSortBy()))
+                    ? (filterRequest.isDesc()
+                        ? Sort.by(Sort.Direction.DESC, filterRequest.getSortBy())
+                        : Sort.by(Sort.Direction.ASC, filterRequest.getSortBy()))
                     : Sort.unsorted();
 
-            PageRequest pageRequest = PageRequest.of(filterRequest.getPageNumber(), filterRequest.getPageSize(), sort);
+            PageRequest pageRequest = PageRequest.of(
+                    filterRequest.getPageNumber(), filterRequest.getPageSize(), sort);
             Page<User> page = userRepository.findAll(spec, pageRequest);
 
-            List<User> results = page.getContent();
-            return PageableResponseVO.of(results, (int) page.getTotalElements(), page.getNumber(), page.getSize());
+            List<UserResponse> results = page.getContent().stream()
+                    .map(userHandlerService::mapUserToUserResponse)
+                    .toList();
+            return PageableResponseVO.of(results, Math.toIntExact(page.getTotalElements()),
+                    page.getNumber(), page.getSize());
         } catch (Exception e) {
-            log.error("Error searching users (specification): {}", e.getMessage(), e);
+            log.error("Error searching users: {}", e.getMessage(), e);
             throw e;
         }
     }

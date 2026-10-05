@@ -6,7 +6,7 @@ import com.ticket.common.dto.response.PageableResponseVO;
 import com.ticket.common.exception.ResponseErrorTemplate;
 import com.ticket.userservice.dto.request.UserFilterRequest;
 import com.ticket.userservice.dto.request.UserRequest;
-import com.ticket.userservice.entity.User;
+import com.ticket.userservice.dto.response.UserResponse;
 import org.springframework.transaction.annotation.Transactional;
 
 public interface UserService {
@@ -36,10 +36,13 @@ public interface UserService {
     ResponseErrorTemplate resetPassword(Long id, String newPassword);
 
     ResponseErrorTemplate delete(Long id);
-    PageableResponseVO<User> searchUsers(UserFilterRequest userFilterRequest);
 
-    PageableResponseVO<User> searchUseWithCriteria(BaseSearchCriteria searchCriteria , PageableRequestVO pageableRequestVO);
+    PageableResponseVO<UserResponse> searchUsers(UserFilterRequest userFilterRequest);
 
-    @jakarta.transaction.Transactional
-    PageableResponseVO<User> searchUsersWithCriteria(BaseSearchCriteria searchCriteria, PageableRequestVO pageable);
+    PageableResponseVO<UserResponse> searchUseWithCriteria(
+            BaseSearchCriteria searchCriteria, PageableRequestVO pageableRequestVO);
+
+    @Transactional(readOnly = true)
+    PageableResponseVO<UserResponse> searchUsersWithCriteria(
+            BaseSearchCriteria searchCriteria, PageableRequestVO pageable);
 }

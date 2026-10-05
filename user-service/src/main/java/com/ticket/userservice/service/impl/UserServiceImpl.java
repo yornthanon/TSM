@@ -289,23 +289,29 @@ public class UserServiceImpl implements UserService {
 
     @Override
     @Transactional(readOnly = true)
-    public PageableResponseVO<User> searchUsers(UserFilterRequest userFilterRequest) {
+    public PageableResponseVO<UserResponse> searchUsers(UserFilterRequest userFilterRequest) {
         return userSearchService.searchUsers(userFilterRequest);
     }
 
     @Override
     @Transactional(readOnly = true)
-    public PageableResponseVO<User> searchUseWithCriteria(BaseSearchCriteria searchCriteria, PageableRequestVO pageableRequestVO) {
+    public PageableResponseVO<UserResponse> searchUseWithCriteria(BaseSearchCriteria searchCriteria, PageableRequestVO pageableRequestVO) {
         return searchUsersWithCriteria(searchCriteria, pageableRequestVO);
     }
 
     @Override
     @Transactional(readOnly = true)
-    public PageableResponseVO<User> searchUsersWithCriteria(BaseSearchCriteria searchCriteria, PageableRequestVO pageable) {
+    public PageableResponseVO<UserResponse> searchUsersWithCriteria(BaseSearchCriteria searchCriteria, PageableRequestVO pageable) {
+        PageableResponseVO<User> users;
         if (searchCriteria == null) {
-            return baseRepository.listPage(User.class, pageable);
+            users = baseRepository.listPage(User.class, pageable);
+        } else {
+            users = baseRepository.listPage(User.class, searchCriteria, pageable);
         }
-        return baseRepository.listPage(User.class, searchCriteria, pageable);
+        List<UserResponse> content = users.getContent().stream()
+                .map(userHandlerService::mapUserToUserResponse)
+                .toList();
+        return PageableResponseVO.of(content, users.getTotalElements(), users.getPageNumber(), users.getPageSize());
     }
 
     private void assignRoles(User user, Set<String> roleNames) {

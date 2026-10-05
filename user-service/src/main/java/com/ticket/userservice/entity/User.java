@@ -1,6 +1,7 @@
 package com.ticket.userservice.entity;
 
 import com.ticket.common.entity.BasedEntity;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -37,6 +38,7 @@ public class User extends BasedEntity {
     @Column(name = "last_name")
     private String lastName;
 
+    @JsonIgnore
     @Column(name = "password", nullable = false)
     private String password;
 
@@ -70,6 +72,7 @@ public class User extends BasedEntity {
     @Column(name = "status")
     private String status;
 
+    @JsonIgnore
     @Column(name = "mfa_secret", length = 256)
     private String mfaSecret;
 
