@@ -7,6 +7,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.util.Map;
+
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
@@ -101,6 +103,41 @@ class EventImageStorageServiceTest {
         assertEquals(HttpStatus.SERVICE_UNAVAILABLE, exception.getStatusCode());
         assertEquals("Photo storage is not configured. Set CLOUDINARY_URL on the backend service.",
                 exception.getReason());
+    }
+
+    @Test
+    void uploadsImageToTenantFolderAndReturnsSecureUrl() {
+        StubUploadClient client = new StubUploadClient(Map.of(
+                "secure_url", "https://res.cloudinary.com/demo/image/upload/event.png"));
+        EventImageStorageService configuredService = new EventImageStorageService(client);
+        TenantContextHolder.set(42L, false);
+        MockMultipartFile file = new MockMultipartFile(
+                "file", "cover.png", "image/png", validPngBytes());
+
+        String url = configuredService.upload(file);
+
+        assertEquals("https://res.cloudinary.com/demo/image/upload/event.png", url);
+        assertEquals("ticketdesk/workspace-42/events", client.folder);
+    }
+
+    private static final class StubUploadClient implements ImageUploadClient {
+        private final Map<?, ?> response;
+        private String folder;
+
+        private StubUploadClient(Map<?, ?> response) {
+            this.response = response;
+        }
+
+        @Override
+        public boolean isConfigured() {
+            return true;
+        }
+
+        @Override
+        public Map<?, ?> upload(byte[] content, String folder) {
+            this.folder = folder;
+            return response;
+        }
     }
 
     private static byte[] validPngBytes() {

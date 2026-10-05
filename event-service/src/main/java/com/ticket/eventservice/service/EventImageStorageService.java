@@ -1,9 +1,6 @@
 package com.ticket.eventservice.service;
 
-import com.cloudinary.Cloudinary;
-import com.cloudinary.utils.ObjectUtils;
 import com.ticket.common.tenant.TenantContextHolder;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
@@ -11,16 +8,20 @@ import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.io.IOException;
-import java.util.List;
 import java.util.Map;
 
 @Service
 public class EventImageStorageService {
     private static final long MAX_BYTES = 5L * 1024L * 1024L;
-    private final String cloudinaryUrl;
+    private final ImageUploadClient uploadClient;
 
-    public EventImageStorageService(@Value("${CLOUDINARY_URL:}") String cloudinaryUrl) {
-        this.cloudinaryUrl = cloudinaryUrl;
+    public EventImageStorageService(ImageUploadClient uploadClient) {
+        this.uploadClient = uploadClient;
+    }
+
+    /** Compatibility constructor used by focused tests and local callers. */
+    public EventImageStorageService(String cloudinaryUrl) {
+        this(new CloudinaryImageUploadClient(cloudinaryUrl));
     }
 
     public String upload(MultipartFile file) {
@@ -46,28 +47,24 @@ public class EventImageStorageService {
             throw new ResponseStatusException(HttpStatus.UNSUPPORTED_MEDIA_TYPE,
                     "Upload a valid JPEG, PNG, or WebP image.");
         }
-        if (!StringUtils.hasText(cloudinaryUrl)) {
+        if (!uploadClient.isConfigured()) {
             throw new ResponseStatusException(HttpStatus.SERVICE_UNAVAILABLE,
                     "Photo storage is not configured. Set CLOUDINARY_URL on the backend service.");
         }
 
         try {
-            Cloudinary cloudinary = new Cloudinary(cloudinaryUrl);
-            Map<?, ?> result = cloudinary.uploader().upload(content, ObjectUtils.asMap(
-                    "resource_type", "image",
-                    "folder", "ticketdesk/workspace-" + tenantId + "/events",
-                    "allowed_formats", List.of("jpg", "jpeg", "png", "webp"),
-                    "overwrite", false,
-                    "unique_filename", true));
+            Map<?, ?> result = uploadClient.upload(content, "ticketdesk/workspace-" + tenantId + "/events");
             Object secureUrl = result.get("secure_url");
             if (!(secureUrl instanceof String url) || !url.startsWith("https://")) {
-                throw new ResponseStatusException(HttpStatus.BAD_GATEWAY, "Photo storage returned an invalid image URL.");
+                throw new ResponseStatusException(HttpStatus.BAD_GATEWAY,
+                        "Photo storage returned an invalid image URL.");
             }
             return url;
         } catch (ResponseStatusException exception) {
             throw exception;
         } catch (Exception exception) {
-            throw new ResponseStatusException(HttpStatus.BAD_GATEWAY, "The image upload could not be completed.");
+            throw new ResponseStatusException(HttpStatus.BAD_GATEWAY,
+                    "The image upload could not be completed.");
         }
     }
 
