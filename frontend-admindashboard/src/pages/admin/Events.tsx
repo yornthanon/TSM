@@ -1,5 +1,5 @@
 import React from 'react';
-import { useForm } from 'react-hook-form';
+import { useForm, useWatch } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Link } from 'react-router-dom';
@@ -373,10 +373,13 @@ const EventFormModal: React.FC<{
   const [photoFile, setPhotoFile] = React.useState<File | null>(null);
   const [photoPreviewUrl, setPhotoPreviewUrl] = React.useState<string | null>(null);
   const [isUploading, setIsUploading] = React.useState(false);
+  const [uploadError, setUploadError] = React.useState<string | null>(null);
+  const photoInputRef = React.useRef<HTMLInputElement>(null);
   const {
     register,
     handleSubmit,
-    watch,
+    control,
+    setValue,
     formState: { errors },
   } = useForm<EventFormValues>({
     resolver: zodResolver(eventSchema),
@@ -401,13 +404,22 @@ const EventFormModal: React.FC<{
     };
   }, [photoPreviewUrl]);
 
-  const imageUrl = watch('imageUrl');
+  const imageUrl = useWatch({ control, name: 'imageUrl' });
   const isSubmitting = pending || isUploading;
   const previewUrl = photoPreviewUrl ?? imageUrl?.trim();
+
+  const clearPhoto = () => {
+    setPhotoFile(null);
+    setPhotoPreviewUrl(null);
+    setUploadError(null);
+    setValue('imageUrl', '', { shouldDirty: true });
+    if (photoInputRef.current) photoInputRef.current.value = '';
+  };
 
   const handlePhotoChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
+    setUploadError(null);
 
     if (!ALLOWED_PHOTO_TYPES.has(file.type)) {
       setPhotoFile(null);
@@ -447,7 +459,9 @@ const EventFormModal: React.FC<{
       const imageUrl = await api.postMultipart<string>('/events/upload-photo', formData);
       onSubmit({ ...payload, imageUrl });
     } catch (error) {
-      toast.error(error instanceof Error && error.message ? error.message : 'Photo upload failed.');
+      const message = error instanceof Error && error.message ? error.message : 'Photo upload failed.';
+      setUploadError(message);
+      toast.error(message);
     } finally {
       setIsUploading(false);
     }
@@ -456,7 +470,9 @@ const EventFormModal: React.FC<{
   return (
     <Modal
       open
-      onClose={onClose}
+      onClose={() => {
+        if (!isSubmitting) onClose();
+      }}
       title={event ? 'Edit event' : 'New event'}
       className="max-w-2xl"
       footer={
@@ -528,59 +544,71 @@ const EventFormModal: React.FC<{
 
         {!event && <p className="text-xs text-[#9da0a8]">New events start as Draft.</p>}
 
-        <details
-          className="rounded-lg border border-[#3c3f41] bg-[#1e1f22] px-3 py-2"
-          open={Boolean(event?.description || event?.imageUrl || (event && event.status !== 'DRAFT'))}
-        >
-          <summary className="cursor-pointer select-none text-sm font-medium text-[#dfe1e5]">
-            Optional details <span className="ml-1 text-xs font-normal text-[#9da0a8]">Description, cover image{event ? ', status' : ''}</span>
-          </summary>
-          <div className="mt-3 space-y-3">
-            <div>
-              <label htmlFor="event-description" className="label">Description</label>
-              <textarea
-                id="event-description"
-                rows={2}
-                maxLength={2000}
-                className="input resize-y"
-                placeholder="A short note about the event (optional)"
-                {...register('description')}
-              />
-            </div>
-            <div>
-              <label htmlFor="event-photo" className="label">Upload photo</label>
-              <input
-                id="event-photo"
-                type="file"
-                accept="image/jpeg,image/png,image/webp"
-                onChange={handlePhotoChange}
-                disabled={isSubmitting}
-                className="block w-full cursor-pointer rounded-lg border border-[#3c3f41] bg-[#2b2d30] px-3 py-2 text-sm text-[#c4c7ce] file:mr-3 file:rounded-md file:border-0 file:bg-[#3574f0] file:px-3 file:py-1 file:text-sm file:font-medium file:text-white hover:file:bg-[#2f65d2] disabled:cursor-not-allowed disabled:opacity-50"
-              />
-              <p className="mt-1 text-xs text-[#9da0a8]">JPEG, PNG, or WebP up to 5 MiB.</p>
-            </div>
-            {previewUrl && (
-              <div>
-                <p className="label">Cover photo preview</p>
-                <img
-                  src={previewUrl}
-                  alt="Event cover preview"
-                  className="h-36 w-full rounded-lg border border-[#3c3f41] bg-[#2b2d30] object-cover"
-                />
-              </div>
-            )}
-            {event && (
-              <div>
-                <label htmlFor="event-status" className="label">Status</label>
-                <select id="event-status" className="input [color-scheme:dark]" {...register('status')}>
-                  {EVENT_STATUSES.map((status) => (
-                    <option key={status} value={status}>{EVENT_STATUS_LABELS[status]}</option>
-                  ))}
-                </select>
-              </div>
-            )}
+        <section className="space-y-3 rounded-lg border border-[#3c3f41] bg-[#1e1f22] p-3">
+          <div>
+            <h3 className="text-sm font-semibold text-[#dfe1e5]">Description and cover image</h3>
+            <p className="mt-1 text-xs text-[#9da0a8]">Optional event details. Your selected photo uploads when you save the event.</p>
           </div>
-        </details>
+          <div>
+            <label htmlFor="event-description" className="label">Description</label>
+            <textarea
+              id="event-description"
+              rows={2}
+              maxLength={2000}
+              disabled={isSubmitting}
+              className="input resize-y"
+              placeholder="A short note about the event (optional)"
+              {...register('description')}
+            />
+          </div>
+          <div>
+            <div className="mb-1 flex items-center justify-between gap-3">
+              <label htmlFor="event-photo" className="label mb-0">Cover photo</label>
+              {previewUrl && (
+                <button
+                  type="button"
+                  onClick={clearPhoto}
+                  disabled={isSubmitting}
+                  className="text-xs font-medium text-rose-400 hover:text-rose-300 disabled:opacity-50"
+                >
+                  Remove photo
+                </button>
+              )}
+            </div>
+            <input
+              ref={photoInputRef}
+              id="event-photo"
+              type="file"
+              accept="image/jpeg,image/png,image/webp"
+              onChange={handlePhotoChange}
+              disabled={isSubmitting}
+              className="block w-full cursor-pointer rounded-lg border border-[#3c3f41] bg-[#2b2d30] px-3 py-2 text-sm text-[#c4c7ce] file:mr-3 file:rounded-md file:border-0 file:bg-[#3574f0] file:px-3 file:py-1 file:text-sm file:font-medium file:text-white hover:file:bg-[#2f65d2] disabled:cursor-not-allowed disabled:opacity-50"
+            />
+            <p className="mt-1 text-xs text-[#9da0a8]">JPEG, PNG, or WebP up to 5 MiB. Select a file, then save to upload it.</p>
+            {photoFile && <p className="mt-1 truncate text-xs text-[#c4c7ce]">Selected: {photoFile.name}</p>}
+            {uploadError && <p role="alert" className="mt-2 text-sm text-rose-400">{uploadError}</p>}
+          </div>
+          {previewUrl && (
+            <div>
+              <p className="label">Cover photo preview</p>
+              <img
+                src={previewUrl}
+                alt="Event cover preview"
+                className="h-36 w-full rounded-lg border border-[#3c3f41] bg-[#2b2d30] object-cover"
+              />
+            </div>
+          )}
+          {event && (
+            <div>
+              <label htmlFor="event-status" className="label">Status</label>
+              <select id="event-status" disabled={isSubmitting} className="input [color-scheme:dark]" {...register('status')}>
+                {EVENT_STATUSES.map((status) => (
+                  <option key={status} value={status}>{EVENT_STATUS_LABELS[status]}</option>
+                ))}
+              </select>
+            </div>
+          )}
+        </section>
       </form>
     </Modal>
   );
