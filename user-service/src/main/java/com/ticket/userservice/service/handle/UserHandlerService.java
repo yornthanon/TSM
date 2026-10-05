@@ -111,6 +111,7 @@ public class UserHandlerService {
                 user.getStatus(),
                 roleNames,
                 groupNames,
+                user.getTenantId(),
                 user.getCreatedAt(),
                 user.getUpdatedAt()
         );

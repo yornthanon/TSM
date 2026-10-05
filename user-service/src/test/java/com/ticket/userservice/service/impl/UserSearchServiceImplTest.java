@@ -41,7 +41,7 @@ class UserSearchServiceImplTest {
 
         UserResponse safeResponse = new UserResponse(
                 41L, "tenant-member", "Member", null, null, "member@example.com", "USER",
-                null, null, null, 0, 5, null, null, "ACTIVE", Set.of("USER"), Set.of(), null, null);
+                null, null, null, 0, 5, null, null, "ACTIVE", Set.of("USER"), Set.of(), null, null, null);
 
         when(userRepository.findAll(any(Specification.class), any(Pageable.class)))
                 .thenReturn(new PageImpl<>(List.of(entity), PageRequest.of(0, 10), 1));

@@ -23,6 +23,7 @@ public record UserResponse(
     @JsonProperty("status") String status,
     @JsonProperty("roles") Set<String> roles,
     @JsonProperty("groups") Set<String> groups,
+    @JsonProperty("tenantId") Long tenantId,
     @JsonProperty("createdAt") LocalDateTime createdAt,
     @JsonProperty("updatedAt") LocalDateTime updatedAt
 ) {
