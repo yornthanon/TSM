@@ -7,6 +7,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.util.HashMap;
 import java.util.LinkedHashMap;
@@ -94,6 +95,20 @@ public class GlobalExceptionHandler {
                 true
         );
         return ResponseEntity.status(HttpStatus.CONFLICT).body(response);
+    }
+
+    @ExceptionHandler(ResponseStatusException.class)
+    public ResponseEntity<ResponseErrorTemplate> handleResponseStatusException(ResponseStatusException exception) {
+        String message = exception.getReason() == null
+                ? "Request could not be completed."
+                : exception.getReason();
+        ResponseErrorTemplate response = new ResponseErrorTemplate(
+                message,
+                String.valueOf(exception.getStatusCode().value()),
+                null,
+                true
+        );
+        return ResponseEntity.status(exception.getStatusCode()).body(response);
     }
 
     @ExceptionHandler(Exception.class)
