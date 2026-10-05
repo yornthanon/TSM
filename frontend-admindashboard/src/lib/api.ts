@@ -65,7 +65,12 @@ class ApiClient {
         // `multipart/form-data` manually omits that boundary in some browsers,
         // so Spring cannot parse the `file` part and returns a generic error.
         if (typeof FormData !== 'undefined' && config.data instanceof FormData && config.headers) {
-          config.headers.delete?.('Content-Type');
+          if (typeof config.headers.delete === 'function') {
+            config.headers.delete('Content-Type');
+          } else {
+            delete (config.headers as Record<string, unknown>)['Content-Type'];
+            delete (config.headers as Record<string, unknown>)['content-type'];
+          }
         }
         const token = usePrimaryToken
           ? localStorage.getItem('auth_token')
@@ -187,6 +192,15 @@ class ApiClient {
 
   public async post<T>(url: string, data?: unknown, config?: AxiosRequestConfig): Promise<T> {
     const response = await this.client.post(url, data, config);
+    const responseData = response.data as Record<string, unknown>;
+    return responseData.data as T;
+  }
+
+  /** Posts multipart data without inheriting the JSON default content type. */
+  public async postMultipart<T>(url: string, data: FormData): Promise<T> {
+    const response = await this.client.post(url, data, {
+      headers: { 'Content-Type': undefined },
+    });
     const responseData = response.data as Record<string, unknown>;
     return responseData.data as T;
   }
