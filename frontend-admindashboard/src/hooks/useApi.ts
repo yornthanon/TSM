@@ -27,6 +27,7 @@ import type {
   User,
   UserPayload,
   UserStats,
+  ListResponse,
 } from '../types/api';
 
 export const queryKeys = {
@@ -265,7 +266,7 @@ export function useNotifications(options?: UseQueryOptions<Notification[]>) {
   return useQuery({
     queryKey: queryKeys.notifications,
     queryFn: async () =>
-      toArray<Notification>(await api.get<Notification[]>('/notifications')),
+      toArray<Notification>(await api.get<Notification[]>('/admin/notifications')),
     ...options,
   });
 }
@@ -273,7 +274,7 @@ export function useNotifications(options?: UseQueryOptions<Notification[]>) {
 export function useNotificationStats(options?: UseQueryOptions<NotificationStats>) {
   return useQuery({
     queryKey: queryKeys.notificationStats,
-    queryFn: () => api.get<NotificationStats>('/notifications/stats'),
+    queryFn: () => api.get<NotificationStats>('/admin/notifications/stats'),
     ...options,
   });
 }
@@ -281,7 +282,18 @@ export function useNotificationStats(options?: UseQueryOptions<NotificationStats
 export function useResendNotification() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (id: number) => api.post<Notification>(`/notifications/${id}/resend`),
+    mutationFn: (id: number) => api.post<Notification>(`/admin/notifications/${id}/resend`),
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: queryKeys.notifications });
+      void qc.invalidateQueries({ queryKey: queryKeys.notificationStats });
+    },
+  });
+}
+
+export function useDeleteNotification() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: number) => api.delete<null>(`/admin/notifications/${id}`),
     onSuccess: () => {
       void qc.invalidateQueries({ queryKey: queryKeys.notifications });
       void qc.invalidateQueries({ queryKey: queryKeys.notificationStats });
@@ -293,10 +305,16 @@ export function useResendNotification() {
 // Users
 // ---------------------------------------------------------------------------
 
-export function useUsers(options?: UseQueryOptions<User[]>) {
+export function useUsers(params: { pageNumber: number; pageSize: number; username?: string; status?: string }, options?: UseQueryOptions<ListResponse<User>>) {
+  const query = new URLSearchParams({
+    pageNumber: String(params.pageNumber),
+    pageSize: String(params.pageSize),
+  });
+  if (params.username?.trim()) query.set('username', params.username.trim());
+  if (params.status) query.set('status', params.status);
   return useQuery({
-    queryKey: queryKeys.users,
-    queryFn: async () => toArray<User>(await api.get<User[]>('/admin/users')),
+    queryKey: [...queryKeys.users, params],
+    queryFn: () => api.get<ListResponse<User>>(`/admin/users?${query.toString()}`),
     ...options,
   });
 }

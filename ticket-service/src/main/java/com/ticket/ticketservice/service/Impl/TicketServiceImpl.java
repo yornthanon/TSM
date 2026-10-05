@@ -15,6 +15,7 @@ import com.ticket.ticketservice.service.TicketService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.scheduling.annotation.Scheduled;
 
 import java.time.Duration;
 import java.time.LocalDateTime;
@@ -313,5 +314,97 @@ public class TicketServiceImpl implements TicketService {
                 ApiConstant.SUCCESS.getKey(),
                 ticketMapper.toResponse(ticket),
                 false);
+    }
+
+    @Override
+    @Transactional
+    public ResponseErrorTemplate reserveTicket(Long ticketId, Integer quantity, String username, Integer durationMinutes) {
+        if (ticketId == null || quantity == null || quantity != 1 || username == null || username.isBlank()) {
+            return new ResponseErrorTemplate("A single ticket and reservation owner are required.",
+                    ApiConstant.INVALID_REQUEST.getKey(), new EmptyObject(), true);
+        }
+        Ticket ticket = ticketRepository.findByIdForUpdate(ticketId).orElse(null);
+        if (ticket == null) {
+            return new ResponseErrorTemplate(ApiConstant.TICKET_NOT_FOUND.getFormattedDescription(ticketId),
+                    ApiConstant.TICKET_NOT_FOUND.getKey(), new EmptyObject(), true);
+        }
+        LocalDateTime now = LocalDateTime.now();
+        if (ticket.getTicketStatus() == TicketStatus.LOCKED
+                && ticket.getLockedUntil() != null && ticket.getLockedUntil().isBefore(now)) {
+            ticket.setTicketStatus(TicketStatus.AVAILABLE);
+            ticket.setLockedBy(null);
+            ticket.setLockedUntil(null);
+        }
+        if (ticket.getTicketStatus() == TicketStatus.LOCKED && username.equals(ticket.getLockedBy())
+                && ticket.getLockedUntil() != null && ticket.getLockedUntil().isAfter(now)) {
+            return new ResponseErrorTemplate(ApiConstant.SUCCESS.getDescription(), ApiConstant.SUCCESS.getKey(),
+                    ticketMapper.toResponse(ticket), false);
+        }
+        if (ticket.getTicketStatus() != TicketStatus.AVAILABLE) {
+            return new ResponseErrorTemplate(ApiConstant.TICKET_LOCKED.getFormattedDescription(ticketId),
+                    ApiConstant.TICKET_LOCKED.getKey(), ticketMapper.toResponse(ticket), true);
+        }
+        int minutes = durationMinutes == null ? 15 : Math.max(1, Math.min(durationMinutes, 30));
+        ticket.setTicketStatus(TicketStatus.LOCKED);
+        ticket.setLockedBy(username);
+        ticket.setLockedUntil(now.plusMinutes(minutes));
+        ticketRepository.save(ticket);
+        return new ResponseErrorTemplate(ApiConstant.SUCCESS.getDescription(), ApiConstant.SUCCESS.getKey(),
+                ticketMapper.toResponse(ticket), false);
+    }
+
+    @Override
+    @Transactional
+    public ResponseErrorTemplate confirmSale(Long ticketId, String username) {
+        Ticket ticket = ticketRepository.findByIdForUpdate(ticketId).orElse(null);
+        if (ticket == null) {
+            return new ResponseErrorTemplate(ApiConstant.TICKET_NOT_FOUND.getFormattedDescription(ticketId),
+                    ApiConstant.TICKET_NOT_FOUND.getKey(), new EmptyObject(), true);
+        }
+        if (ticket.getTicketStatus() == TicketStatus.SOLD) {
+            return new ResponseErrorTemplate(ApiConstant.SUCCESS.getDescription(), ApiConstant.SUCCESS.getKey(),
+                    ticketMapper.toResponse(ticket), false);
+        }
+        if (ticket.getTicketStatus() != TicketStatus.LOCKED || !username.equals(ticket.getLockedBy())
+                || ticket.getLockedUntil() == null || ticket.getLockedUntil().isBefore(LocalDateTime.now())) {
+            return new ResponseErrorTemplate("Ticket reservation is missing or expired.",
+                    ApiConstant.TICKET_LOCKED.getKey(), new EmptyObject(), true);
+        }
+        ticket.setTicketStatus(TicketStatus.SOLD);
+        ticket.setLockedBy(null);
+        ticket.setLockedUntil(null);
+        ticketRepository.save(ticket);
+        return new ResponseErrorTemplate(ApiConstant.SUCCESS.getDescription(), ApiConstant.SUCCESS.getKey(),
+                ticketMapper.toResponse(ticket), false);
+    }
+
+    @Override
+    @Transactional
+    public ResponseErrorTemplate releaseReservation(Long ticketId, String username) {
+        Ticket ticket = ticketRepository.findByIdForUpdate(ticketId).orElse(null);
+        if (ticket == null) {
+            return new ResponseErrorTemplate(ApiConstant.TICKET_NOT_FOUND.getFormattedDescription(ticketId),
+                    ApiConstant.TICKET_NOT_FOUND.getKey(), new EmptyObject(), true);
+        }
+        if (ticket.getTicketStatus() == TicketStatus.LOCKED && username.equals(ticket.getLockedBy())) {
+            ticket.setTicketStatus(TicketStatus.AVAILABLE);
+            ticket.setLockedBy(null);
+            ticket.setLockedUntil(null);
+            ticketRepository.save(ticket);
+        }
+        return new ResponseErrorTemplate(ApiConstant.SUCCESS.getDescription(), ApiConstant.SUCCESS.getKey(),
+                ticketMapper.toResponse(ticket), false);
+    }
+
+    @Scheduled(fixedDelayString = "${ticket.lock.cleanup-ms:60000}")
+    @Transactional
+    public void releaseExpiredReservations() {
+        List<Ticket> expired = ticketRepository.findAllExpiredTicketsForUpdate(TicketStatus.LOCKED, LocalDateTime.now());
+        expired.forEach(ticket -> {
+            ticket.setTicketStatus(TicketStatus.AVAILABLE);
+            ticket.setLockedBy(null);
+            ticket.setLockedUntil(null);
+        });
+        if (!expired.isEmpty()) ticketRepository.saveAll(expired);
     }
 }

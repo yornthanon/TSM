@@ -1,6 +1,7 @@
 package com.ticket.userservice.controller;
 
 import com.ticket.common.exception.ResponseErrorTemplate;
+import com.ticket.common.exception.ApiResponse;
 import com.ticket.userservice.dto.request.MfaCodeRequest;
 import com.ticket.userservice.dto.request.MfaDisableRequest;
 import com.ticket.userservice.dto.response.MfaSetupResponse;
@@ -73,7 +74,7 @@ public class MfaController {
     }
 
     private ResponseEntity<ResponseErrorTemplate> ok(Object data) {
-        return ResponseEntity.ok(new ResponseErrorTemplate("Success", "SUCCESS", data, false));
+        return ApiResponse.from(new ResponseErrorTemplate("Success", "SUCCESS", data, false));
     }
 
     private ResponseEntity<ResponseErrorTemplate> error(HttpStatus status, String code, String message) {

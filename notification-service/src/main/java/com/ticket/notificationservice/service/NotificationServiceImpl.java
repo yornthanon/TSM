@@ -206,6 +206,11 @@ public class NotificationServiceImpl implements NotificationService{
         }
         updateNotificationStatus(notification, sent);
 
+        if (!sent) {
+            return new ResponseErrorTemplate("Notification resend failed.",
+                    ApiConstant.FAILED.getKey(), toResponse(notification), true);
+        }
+
         return new ResponseErrorTemplate(
                 ApiConstant.SUCCESS.getDescription(),
                 ApiConstant.SUCCESS.getKey(),

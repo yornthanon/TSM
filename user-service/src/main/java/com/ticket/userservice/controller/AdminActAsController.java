@@ -1,6 +1,7 @@
 package com.ticket.userservice.controller;
 
 import com.ticket.common.exception.ResponseErrorTemplate;
+import com.ticket.common.exception.ApiResponse;
 import com.ticket.userservice.dto.response.ActAsAuditResponse;
 import com.ticket.userservice.dto.response.ActAsResponse;
 import com.ticket.userservice.service.AdminActAsService;
@@ -24,18 +25,18 @@ public class AdminActAsController {
     @PostMapping("/users/{userId}")
     public ResponseEntity<ResponseErrorTemplate> start(@PathVariable Long userId, Authentication authentication) {
         ActAsResponse response = adminActAsService.start(userId, authentication);
-        return ResponseEntity.ok(new ResponseErrorTemplate("Act-as session started", "200", response, false));
+        return ApiResponse.from(new ResponseErrorTemplate("Act-as session started", "200", response, false));
     }
 
     @PostMapping("/{sessionId}/stop")
     public ResponseEntity<ResponseErrorTemplate> stop(@PathVariable Long sessionId, Authentication authentication) {
         adminActAsService.stop(sessionId, authentication);
-        return ResponseEntity.ok(new ResponseErrorTemplate("Act-as session stopped", "200", null, false));
+        return ApiResponse.from(new ResponseErrorTemplate("Act-as session stopped", "200", null, false));
     }
 
     @GetMapping("/audit")
     public ResponseEntity<ResponseErrorTemplate> audit(Authentication authentication) {
         List<ActAsAuditResponse> rows = adminActAsService.recentAudit(authentication);
-        return ResponseEntity.ok(new ResponseErrorTemplate("Act-as audit", "200", rows, false));
+        return ApiResponse.from(new ResponseErrorTemplate("Act-as audit", "200", rows, false));
     }
 }

@@ -10,6 +10,7 @@ import com.ticket.common.enums.PaymentMethod;
 import com.ticket.orderservice.Mapper.OrderMapper;
 import com.ticket.orderservice.client.EventClient;
 import com.ticket.orderservice.client.PaymentClient;
+import com.ticket.orderservice.client.TicketClient;
 import com.ticket.orderservice.client.UserClient;
 import com.ticket.orderservice.dto.OrderRequest;
 import com.ticket.common.dto.request.PaymentRequest;
@@ -37,21 +38,23 @@ public class OrderServiceImpl implements OrderService{
     private final UserClient userClient;
     private final EventClient eventClient;
     private final PaymentClient paymentClient;
+    private final TicketClient ticketClient;
     private final OrderRepository orderRepository;
 
     public OrderServiceImpl(OrderMapper orderMapper,
                             UserClient userClient, EventClient eventClient, PaymentClient paymentClient,
+                            TicketClient ticketClient,
                             OrderRepository orderRepository) {
         this.orderMapper = orderMapper;
         this.userClient = userClient;
         this.eventClient = eventClient;
         this.paymentClient = paymentClient;
+        this.ticketClient = ticketClient;
         this.orderRepository = orderRepository;
     }
 
     @Override
     public ResponseErrorTemplate createOrder(OrderRequest orderRequest, HttpServletRequest httpServletRequest) {
-        // Check user authentication and authorization
         String username = handleUnauthorized(httpServletRequest);
         if(!StringUtils.hasText(username)) {
             return new ResponseErrorTemplate(
@@ -61,11 +64,46 @@ public class OrderServiceImpl implements OrderService{
                     true);
         }
 
-        // Create order in the database
+        if (orderRequest.getQuantity() == null || orderRequest.getQuantity() != 1) {
+            return new ResponseErrorTemplate("Only one seat per checkout is supported.",
+                    ApiConstant.INVALID_REQUEST.getKey(), new EmptyObject(), true);
+        }
+        if (StringUtils.hasText(orderRequest.getIdempotencyKey())) {
+            Optional<Order> existing = orderRepository.findByUsernameAndIdempotencyKey(username,
+                    orderRequest.getIdempotencyKey().trim());
+            if (existing.isPresent()) {
+                return new ResponseErrorTemplate(ApiConstant.SUCCESS.getDescription(), ApiConstant.SUCCESS.getKey(),
+                        orderMapper.toResponse(existing.get()), false);
+            }
+        }
+
+        ResponseErrorTemplate reservation = ticketClient.reserve(orderRequest.getTicketId(),
+                orderRequest.getQuantity(), username).block();
+        if (reservation == null || reservation.isError() || !(reservation.data() instanceof Map<?, ?> ticketData)) {
+            return reservation == null ? new ResponseErrorTemplate("Ticket reservation failed.", "409", new EmptyObject(), true) : reservation;
+        }
+        Object reservedEvent = ticketData.get("eventId");
+        Object rawPrice = ticketData.get("price");
+        BigDecimal unitPrice = rawPrice == null ? null : new BigDecimal(rawPrice.toString());
+        if (unitPrice == null || (reservedEvent != null && !String.valueOf(orderRequest.getEventId()).equals(String.valueOf(reservedEvent)))) {
+            ticketClient.release(orderRequest.getTicketId(), username).block();
+            return new ResponseErrorTemplate("Ticket does not belong to the requested event.",
+                    ApiConstant.INVALID_REQUEST.getKey(), new EmptyObject(), true);
+        }
+        BigDecimal serverAmount = unitPrice.multiply(BigDecimal.valueOf(orderRequest.getQuantity()));
+        if (orderRequest.getAmount() != null && orderRequest.getAmount().compareTo(serverAmount) != 0) {
+            ticketClient.release(orderRequest.getTicketId(), username).block();
+            return new ResponseErrorTemplate("Order amount does not match the ticket price.",
+                    ApiConstant.INVALID_REQUEST.getKey(), new EmptyObject(), true);
+        }
+
         Order order = orderMapper.toEntity(orderRequest);
         order.setEventId(orderRequest.getEventId());
         order.setTicketId(orderRequest.getTicketId());
         order.setUsername(username);
+        order.setAmount(serverAmount);
+        order.setIdempotencyKey(StringUtils.hasText(orderRequest.getIdempotencyKey())
+                ? orderRequest.getIdempotencyKey().trim() : null);
         order.setOrderStatus(OrderStatus.PROCESSING);
         order.setOrderDate(LocalDateTime.now());
 
@@ -75,7 +113,7 @@ public class OrderServiceImpl implements OrderService{
         PaymentRequest paymentRequest = new PaymentRequest();
         paymentRequest.setOrderId(order.getId());
         paymentRequest.setUsername(username);
-        paymentRequest.setAmount(orderRequest.getAmount());
+        paymentRequest.setAmount(serverAmount);
         paymentRequest.setCurrency("USD");
         paymentRequest.setPaymentMethod(orderRequest.getPaymentMethod() != null ? orderRequest.getPaymentMethod() : PaymentMethod.CREDIT_CARD);
         paymentRequest.setDescription("Payment for order ID: " + order.getId());
@@ -85,6 +123,9 @@ public class OrderServiceImpl implements OrderService{
 
         if(paymentResponse == null || paymentResponse.isError()) {
             log.error("Payment processing failed for order ID: {}", order.getId());
+            order.setOrderStatus(OrderStatus.CANCELLED);
+            orderRepository.save(order);
+            ticketClient.release(orderRequest.getTicketId(), username).block();
             return new ResponseErrorTemplate(
                     ApiConstant.PAYMENT_FAILED.getDescription(),
                     ApiConstant.PAYMENT_FAILED.getKey(),
@@ -92,10 +133,19 @@ public class OrderServiceImpl implements OrderService{
                     true);
         }
 
-        order.setOrderStatus(OrderStatus.COMPLETED);
-        Object rawPaymentId = ((LinkedHashMap<?, ?>) paymentResponse.data()).get("paymentId");
+        Object rawPaymentId = paymentResponse.data() instanceof Map<?, ?> data ? data.get("paymentId") : null;
         Long paymentId = rawPaymentId != null ? ((Number) rawPaymentId).longValue() : null;
         order.setPaymentId(paymentId);
+        ResponseErrorTemplate sale = ticketClient.confirm(orderRequest.getTicketId(), username).block();
+        if (sale == null || sale.isError()) {
+            if (paymentId != null) paymentClient.refund(paymentId).block();
+            order.setOrderStatus(OrderStatus.CANCELLED);
+            orderRepository.save(order);
+            ticketClient.release(orderRequest.getTicketId(), username).block();
+            return new ResponseErrorTemplate("Ticket sale could not be confirmed; payment was reversed.",
+                    "409", new EmptyObject(), true);
+        }
+        order.setOrderStatus(OrderStatus.COMPLETED);
         orderRepository.save(order);
 
         // Publish Kafka event for notification service

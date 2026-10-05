@@ -1,6 +1,7 @@
 package com.ticket.userservice.controller;
 
 import com.ticket.common.exception.ResponseErrorTemplate;
+import com.ticket.common.exception.ApiResponse;
 import com.ticket.userservice.dto.request.TenantWorkspaceStatusRequest;
 import com.ticket.userservice.service.TenantWorkspaceService;
 import jakarta.validation.Valid;
@@ -21,7 +22,7 @@ public class AdminTenantWorkspaceController {
 
     @GetMapping
     public ResponseEntity<ResponseErrorTemplate> listWorkspaces() {
-        return ResponseEntity.ok(new ResponseErrorTemplate(
+        return ApiResponse.from(new ResponseErrorTemplate(
                 "Workspaces retrieved successfully", "WORKSPACES_FOUND", workspaceService.listAll(), false));
     }
 
@@ -29,7 +30,7 @@ public class AdminTenantWorkspaceController {
     public ResponseEntity<ResponseErrorTemplate> updateWorkspaceStatus(
             @PathVariable Long id,
             @Valid @RequestBody TenantWorkspaceStatusRequest request) {
-        return ResponseEntity.ok(new ResponseErrorTemplate(
+        return ApiResponse.from(new ResponseErrorTemplate(
                 "Workspace updated successfully", "WORKSPACE_UPDATED",
                 workspaceService.updateStatus(id, request.status()), false));
     }

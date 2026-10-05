@@ -2,6 +2,7 @@ package com.ticket.notificationservice.controller;
 
 import com.ticket.common.constant.ApiConstant;
 import com.ticket.common.exception.ResponseErrorTemplate;
+import com.ticket.common.exception.ApiResponse;
 import com.ticket.notificationservice.entity.Notification;
 import com.ticket.notificationservice.repository.NotificationRepository;
 import com.ticket.notificationservice.service.NotificationService;
@@ -19,7 +20,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
-@RequestMapping("/api/v1/notifications")
+@RequestMapping("/api/v1/admin/notifications")
 @RequiredArgsConstructor
 public class AdminNotificationController {
 
@@ -29,7 +30,7 @@ public class AdminNotificationController {
     @GetMapping
     public ResponseEntity<ResponseErrorTemplate> findAll() {
         List<Notification> notifications = notificationRepository.findAll();
-        return ResponseEntity.ok(new ResponseErrorTemplate(
+        return ApiResponse.from(new ResponseErrorTemplate(
                 ApiConstant.SUCCESS.getDescription(),
                 ApiConstant.SUCCESS.getKey(),
                 notifications,
@@ -47,7 +48,7 @@ public class AdminNotificationController {
         stats.put("total", notifications.size());
         stats.put("byStatus", byStatus);
 
-        return ResponseEntity.ok(new ResponseErrorTemplate(
+        return ApiResponse.from(new ResponseErrorTemplate(
                 ApiConstant.SUCCESS.getDescription(),
                 ApiConstant.SUCCESS.getKey(),
                 stats,
@@ -56,11 +57,11 @@ public class AdminNotificationController {
 
     @PostMapping({"/{id}/resend", "/{id}/retry"})
     public ResponseEntity<ResponseErrorTemplate> resend(@PathVariable Long id) {
-        return ResponseEntity.ok(notificationService.resend(id));
+        return ApiResponse.from(notificationService.resend(id));
     }
 
     @DeleteMapping("/{id}")
     public ResponseEntity<ResponseErrorTemplate> delete(@PathVariable Long id) {
-        return ResponseEntity.ok(notificationService.delete(id));
+        return ApiResponse.from(notificationService.delete(id));
     }
 }

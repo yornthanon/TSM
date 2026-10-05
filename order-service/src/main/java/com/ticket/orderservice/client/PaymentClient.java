@@ -48,6 +48,18 @@ public class PaymentClient {
                 });
     }
 
+    public Mono<ResponseErrorTemplate> refund(Long paymentId) {
+        return webClient.post()
+                .uri(paymentServiceUrl + "/" + paymentId + "/refund")
+                .header(internalTokenProvider.headerName(), internalTokenProvider.getToken())
+                .header(TenantContextHolder.TENANT_HEADER, tenantHeaderValue())
+                .retrieve()
+                .bodyToMono(ResponseErrorTemplate.class)
+                .onErrorResume(throwable -> Mono.just(new ResponseErrorTemplate(
+                        ApiConstant.SERVICE_UNAVAILABLE.getDescription(),
+                        ApiConstant.SERVICE_UNAVAILABLE.getKey(), new EmptyObject(), true)));
+    }
+
     private String tenantHeaderValue() {
         Long tenantId = TenantContextHolder.getTenantId();
         return tenantId == null ? "" : tenantId.toString();

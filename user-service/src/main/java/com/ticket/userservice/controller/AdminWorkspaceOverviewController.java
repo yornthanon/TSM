@@ -1,6 +1,7 @@
 package com.ticket.userservice.controller;
 
 import com.ticket.common.exception.ResponseErrorTemplate;
+import com.ticket.common.exception.ApiResponse;
 import com.ticket.userservice.dto.response.AdminWorkspaceOverviewResponse;
 import com.ticket.userservice.service.AdminWorkspaceOverviewService;
 import lombok.RequiredArgsConstructor;
@@ -20,6 +21,6 @@ public class AdminWorkspaceOverviewController {
     @GetMapping("/workspaces")
     public ResponseEntity<ResponseErrorTemplate> workspaces() {
         List<AdminWorkspaceOverviewResponse> summary = overviewService.listWorkspaceTotals();
-        return ResponseEntity.ok(new ResponseErrorTemplate("Workspace totals", "200", summary, false));
+        return ApiResponse.from(new ResponseErrorTemplate("Workspace totals", "200", summary, false));
     }
 }

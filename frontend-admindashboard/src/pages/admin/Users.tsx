@@ -14,7 +14,6 @@ import {
   useUserStats,
   useUsers,
 } from '../../hooks/useApi';
-import { usePagedRows } from '../../hooks/usePagedRows';
 import {
   PageHeader,
   Pager,
@@ -34,7 +33,7 @@ type ContextMenuState =
   | { kind: 'user'; x: number; y: number; user: User };
 
 const Users: React.FC = () => {
-  const users = useUsers();
+  const [page, setPage] = React.useState(0);
   const userStats = useUserStats();
   const actAsAudit = useActAsAudit();
   const startActAs = useStartActAs();
@@ -56,24 +55,19 @@ const Users: React.FC = () => {
   const [deleteTarget, setDeleteTarget] = React.useState<User | null>(null);
   const [createOpen, setCreateOpen] = React.useState(false);
   const [contextMenu, setContextMenu] = React.useState<ContextMenuState | null>(null);
+  const users = useUsers({
+    pageNumber: page,
+    pageSize: 10,
+    username: search,
+    status: statusFilter,
+  });
 
   const isProtectedAdmin = (user: User) =>
     (user.roles ?? []).includes('ADMIN') || user.email?.trim().toLowerCase() === currentEmail;
 
-  const filtered = React.useMemo(() => {
-    const term = search.trim().toLowerCase();
-    return (users.data ?? []).filter((user) => {
-      const matchesTerm =
-        !term ||
-        user.username?.toLowerCase().includes(term) ||
-        user.email?.toLowerCase().includes(term) ||
-        `${user.firstName ?? ''} ${user.lastName ?? ''}`.toLowerCase().includes(term);
-      const matchesStatus = !statusFilter || (user.status ?? '').toUpperCase() === statusFilter;
-      return matchesTerm && matchesStatus;
-    });
-  }, [users.data, search, statusFilter]);
-
-  const paged = usePagedRows(filtered, 10);
+  const rows = users.data?.content ?? [];
+  const totalElements = users.data?.totalElements ?? rows.length;
+  const totalPages = Math.max(1, users.data?.totalPages ?? Math.ceil(totalElements / 10));
   const byStatus = userStats.data?.byStatus ?? {};
 
   const handlePageContextMenu = (event: React.MouseEvent<HTMLDivElement>) => {
@@ -144,7 +138,7 @@ const Users: React.FC = () => {
       />
 
       <div className="mb-4 grid grid-cols-2 gap-3 lg:grid-cols-4">
-        <StatCard label="Users" value={userStats.data?.total ?? users.data?.length ?? 0} />
+        <StatCard label="Users" value={userStats.data?.total ?? totalElements} />
         <StatCard label="Active" value={byStatus.ACTIVE ?? '-'} tone="good" />
         <StatCard label="Inactive" value={byStatus.INACTIVE ?? '-'} />
         <StatCard label="Registered today" value={userStats.data?.registeredToday ?? '-'} />
@@ -156,14 +150,14 @@ const Users: React.FC = () => {
             <Input
               placeholder="Search username, name or email"
               value={search}
-              onChange={(e) => setSearch(e.target.value)}
+              onChange={(e) => { setSearch(e.target.value); setPage(0); }}
               leftIcon={Search}
               aria-label="Search users"
             />
           </div>
           <select
             value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value)}
+            onChange={(e) => { setStatusFilter(e.target.value); setPage(0); }}
             aria-label="Filter by status"
             className="rounded-lg border border-[#3c3f41] bg-white px-3 py-2 text-[13px] text-[#c4c7ce]"
           >
@@ -177,7 +171,7 @@ const Users: React.FC = () => {
       <QueryState
         isLoading={users.isLoading}
         error={users.error}
-        isEmpty={filtered.length === 0}
+        isEmpty={rows.length === 0}
         onRetry={() => void users.refetch()}
         emptyTitle={search || statusFilter ? 'No users match your filters' : 'No users yet'}
         emptyDescription="Verified Google accounts enroll automatically in isolated workspaces. Create here to pre-register a verified Google email."
@@ -194,7 +188,7 @@ const Users: React.FC = () => {
             </tr>
           </thead>
           <tbody>
-            {paged.visible.map((user) => {
+            {rows.map((user) => {
               const protectedAdmin = isProtectedAdmin(user);
               return (
                 <tr
@@ -259,10 +253,10 @@ const Users: React.FC = () => {
           </tbody>
         </Table>
         <Pager
-          page={paged.page}
-          totalPages={paged.totalPages}
-          total={paged.total}
-          onChange={paged.setPage}
+          page={page + 1}
+          totalPages={totalPages}
+          total={totalElements}
+          onChange={(nextPage) => setPage(nextPage - 1)}
         />
       </QueryState>
 

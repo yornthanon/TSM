@@ -28,5 +28,14 @@ public interface TicketRepository extends JpaRepository<Ticket, Long> {
                                              @Param("status") TicketStatus status,
                                              @Param("now") LocalDateTime now);
 
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("select t from Ticket t where t.id = :ticketId")
+    Optional<Ticket> findByIdForUpdate(@Param("ticketId") Long ticketId);
+
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("select t from Ticket t where t.ticketStatus = :status and t.lockedUntil is not null and t.lockedUntil < :now")
+    List<Ticket> findAllExpiredTicketsForUpdate(@Param("status") TicketStatus status,
+                                                @Param("now") LocalDateTime now);
+
     Optional<Ticket> findFirstBySeatNumberAndEventId(String seatNumber, Long eventId);
 }

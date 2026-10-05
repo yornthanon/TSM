@@ -1,6 +1,7 @@
 package com.ticket.orderservice.controller;
 
 import com.ticket.common.exception.ResponseErrorTemplate;
+import com.ticket.common.exception.ApiResponse;
 import com.ticket.orderservice.dto.OrderRequest;
 import com.ticket.orderservice.service.OrderService;
 import jakarta.servlet.http.HttpServletRequest;
@@ -25,32 +26,32 @@ public class OrderController {
     @PostMapping({"", "/create"})
     public ResponseEntity<ResponseErrorTemplate> createOrder(@Valid @RequestBody OrderRequest request,
                                                              HttpServletRequest httpServletRequest) {
-        return ResponseEntity.ok(orderService.createOrder(request, httpServletRequest));
+        return ApiResponse.from(orderService.createOrder(request, httpServletRequest));
     }
 
     @GetMapping("/{id}")
     public ResponseEntity<ResponseErrorTemplate> getOrderById(@PathVariable Long id) {
-        return ResponseEntity.ok(orderService.getOrderById(id));
+        return ApiResponse.from(orderService.getOrderById(id));
     }
 
     @GetMapping
     public ResponseEntity<ResponseErrorTemplate> findAll() {
-        return ResponseEntity.ok(orderService.findAll());
+        return ApiResponse.from(orderService.findAll());
     }
 
     @GetMapping("/stats")
     public ResponseEntity<ResponseErrorTemplate> getStats() {
-        return ResponseEntity.ok(orderService.getStats());
+        return ApiResponse.from(orderService.getStats());
     }
 
     @PutMapping("/{id}/cancel")
     public ResponseEntity<ResponseErrorTemplate> cancelOrder(@PathVariable Long id,
                                                              HttpServletRequest httpServletRequest) {
-        return ResponseEntity.ok(orderService.cancelOrder(id, httpServletRequest));
+        return ApiResponse.from(orderService.cancelOrder(id, httpServletRequest));
     }
 
     @PutMapping("/{id}/force-cancel")
     public ResponseEntity<ResponseErrorTemplate> forceCancelOrder(@PathVariable Long id) {
-        return ResponseEntity.ok(orderService.forceCancelOrder(id));
+        return ApiResponse.from(orderService.forceCancelOrder(id));
     }
 }

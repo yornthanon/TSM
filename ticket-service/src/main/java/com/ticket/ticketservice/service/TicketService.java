@@ -27,4 +27,10 @@ public interface TicketService {
 
     ResponseErrorTemplate lockTicketById(Long ticketId);
 
+    ResponseErrorTemplate reserveTicket(Long ticketId, Integer quantity, String username, Integer durationMinutes);
+
+    ResponseErrorTemplate confirmSale(Long ticketId, String username);
+
+    ResponseErrorTemplate releaseReservation(Long ticketId, String username);
+
 }

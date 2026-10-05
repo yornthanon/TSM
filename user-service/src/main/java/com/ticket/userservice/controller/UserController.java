@@ -1,6 +1,7 @@
 package com.ticket.userservice.controller;
 
 import com.ticket.common.exception.ResponseErrorTemplate;
+import com.ticket.common.exception.ApiResponse;
 import com.ticket.userservice.dto.request.UserFilterRequest;
 import com.ticket.userservice.dto.request.UserRequest;
 import com.ticket.userservice.dto.response.UserProfileResponse;
@@ -35,50 +36,50 @@ public class UserController {
                 user.getLastName(), user.getUserImg(), user.getEmail(), user.getUserType(), user.getGender(),
                 user.getDateOfBirth(), user.getPhoneNumber(), user.getStatus(), roles, groups, user.getTenantId(),
                 Boolean.TRUE.equals(user.getMfaEnabled()), user.getCreatedAt(), user.getUpdatedAt());
-        return ResponseEntity.ok(new ResponseErrorTemplate("Profile retrieved successfully", "USER_PROFILE_FOUND",
+        return ApiResponse.from(new ResponseErrorTemplate("Profile retrieved successfully", "USER_PROFILE_FOUND",
                 profile, false));
     }
 
     @PostMapping({"", "/create"})
     public ResponseEntity<ResponseErrorTemplate> createUser(@Valid @RequestBody UserRequest userRequest) {
-        return ResponseEntity.ok(userService.create(userRequest));
+        return ApiResponse.from(userService.create(userRequest));
     }
 
     @PutMapping("/{id}")
     public ResponseEntity<ResponseErrorTemplate> updateUser(
             @PathVariable Long id,
             @Valid @RequestBody UserRequest userRequest) {
-        return ResponseEntity.ok(userService.update(id, userRequest));
+        return ApiResponse.from(userService.update(id, userRequest));
     }
 
     @GetMapping("/{id}")
     public ResponseEntity<ResponseErrorTemplate> getUserById(@PathVariable Long id) {
-        return ResponseEntity.ok(userService.findById(id));
+        return ApiResponse.from(userService.findById(id));
     }
 
     @GetMapping("/username/{username}")
     public ResponseEntity<ResponseErrorTemplate> getUserByUsername(@PathVariable String username) {
-        return ResponseEntity.ok(userService.findByUsername(username));
+        return ApiResponse.from(userService.findByUsername(username));
     }
 
     @GetMapping("/email/{email}")
     public ResponseEntity<ResponseErrorTemplate> getUserByEmail(@PathVariable String email) {
-        return ResponseEntity.ok(userService.findByEmail(email));
+        return ApiResponse.from(userService.findByEmail(email));
     }
 
     @GetMapping
     public ResponseEntity<ResponseErrorTemplate> getAllUsers(@Valid @ModelAttribute UserFilterRequest userFilterRequest) {
-        return ResponseEntity.ok(userService.findAll(userFilterRequest));
+        return ApiResponse.from(userService.findAll(userFilterRequest));
     }
 
     @GetMapping("/stats")
     public ResponseEntity<ResponseErrorTemplate> getStats() {
-        return ResponseEntity.ok(userService.getStats());
+        return ApiResponse.from(userService.getStats());
     }
 
     @GetMapping("/search")
     public ResponseEntity<ResponseErrorTemplate> searchUsers(@Valid @ModelAttribute UserFilterRequest userFilterRequest) {
-        return ResponseEntity.ok(new ResponseErrorTemplate(
+        return ApiResponse.from(new ResponseErrorTemplate(
                 "Users search successful",
                 "USERS_FOUND",
                 userService.searchUsers(userFilterRequest),
@@ -91,28 +92,28 @@ public class UserController {
             @PathVariable Long id,
             @RequestParam String oldPassword,
             @RequestParam String newPassword) {
-        return ResponseEntity.ok(userService.changePassword(id, oldPassword, newPassword));
+        return ApiResponse.from(userService.changePassword(id, oldPassword, newPassword));
     }
 
     @PutMapping("/{id}/deactivate")
     public ResponseEntity<ResponseErrorTemplate> disActivateUser(@PathVariable Long id) {
-        return ResponseEntity.ok(userService.disActivateUser(id));
+        return ApiResponse.from(userService.disActivateUser(id));
     }
 
     @PutMapping("/{id}/activate")
     public ResponseEntity<ResponseErrorTemplate> activateUser(@PathVariable Long id) {
-        return ResponseEntity.ok(userService.activateUser(id));
+        return ApiResponse.from(userService.activateUser(id));
     }
 
     @PutMapping("/{id}/reset-password")
     public ResponseEntity<ResponseErrorTemplate> resetPassword(
             @PathVariable Long id,
             @RequestParam String newPassword) {
-        return ResponseEntity.ok(userService.resetPassword(id, newPassword));
+        return ApiResponse.from(userService.resetPassword(id, newPassword));
     }
 
     @DeleteMapping("/{id}")
     public ResponseEntity<ResponseErrorTemplate> deleteUser(@PathVariable Long id) {
-        return ResponseEntity.ok(userService.delete(id));
+        return ApiResponse.from(userService.delete(id));
     }
 }

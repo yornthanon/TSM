@@ -1,7 +1,7 @@
 import React from 'react';
-import { RefreshCw, Search } from 'lucide-react';
+import { RefreshCw, Search, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
-import { useNotificationStats, useNotifications, useResendNotification } from '../../hooks/useApi';
+import { useDeleteNotification, useNotificationStats, useNotifications, useResendNotification } from '../../hooks/useApi';
 import { usePagedRows } from '../../hooks/usePagedRows';
 import {
   PageHeader,
@@ -20,6 +20,7 @@ const Notifications: React.FC = () => {
   const notifications = useNotifications();
   const stats = useNotificationStats();
   const resend = useResendNotification();
+  const remove = useDeleteNotification();
 
   const [search, setSearch] = React.useState('');
   const [statusFilter, setStatusFilter] = React.useState('');
@@ -149,6 +150,21 @@ const Notifications: React.FC = () => {
                       className="rounded-md p-1.5 text-[#9da0a8] hover:bg-[#313335] disabled:opacity-40"
                     >
                       <RefreshCw className="h-3.5 w-3.5" />
+                    </button>
+                    <button
+                      type="button"
+                      title="Delete"
+                      aria-label={`Delete notification ${n.id}`}
+                      disabled={remove.isPending}
+                      onClick={() =>
+                        remove.mutate(n.id, {
+                          onSuccess: () => toast.success('Notification deleted'),
+                          onError: (e) => toast.error(e.message),
+                        })
+                      }
+                      className="rounded-md p-1.5 text-[#9da0a8] hover:bg-[#313335] disabled:opacity-40"
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
                     </button>
                   </div>
                 </Td>

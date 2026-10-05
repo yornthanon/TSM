@@ -1,6 +1,7 @@
 package com.ticket.orderservice.controller;
 
 import com.ticket.common.exception.ResponseErrorTemplate;
+import com.ticket.common.exception.ApiResponse;
 import com.ticket.orderservice.service.OrderService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -15,21 +16,21 @@ public class AdminOrderController {
 
     @GetMapping
     public ResponseEntity<ResponseErrorTemplate> findAll() {
-        return ResponseEntity.ok(orderService.findAll());
+        return ApiResponse.from(orderService.findAll());
     }
 
     @GetMapping("/{id}")
     public ResponseEntity<ResponseErrorTemplate> getOrderById(@PathVariable Long id) {
-        return ResponseEntity.ok(orderService.getOrderById(id));
+        return ApiResponse.from(orderService.getOrderById(id));
     }
 
     @GetMapping("/stats")
     public ResponseEntity<ResponseErrorTemplate> getStats() {
-        return ResponseEntity.ok(orderService.getStats());
+        return ApiResponse.from(orderService.getStats());
     }
 
     @PutMapping("/{id}/cancel")
     public ResponseEntity<ResponseErrorTemplate> cancelOrder(@PathVariable Long id) {
-        return ResponseEntity.ok(orderService.forceCancelOrder(id));
+        return ApiResponse.from(orderService.forceCancelOrder(id));
     }
 }

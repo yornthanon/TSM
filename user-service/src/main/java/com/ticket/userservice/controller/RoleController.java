@@ -1,6 +1,7 @@
 package com.ticket.userservice.controller;
 
 import com.ticket.common.exception.ResponseErrorTemplate;
+import com.ticket.common.exception.ApiResponse;
 import com.ticket.userservice.dto.request.RoleFilterRequest;
 import com.ticket.userservice.dto.request.RoleRequest;
 import com.ticket.userservice.service.RoleService;
@@ -28,22 +29,22 @@ public class RoleController {
 
     @PostMapping("/create")
     public ResponseEntity<ResponseErrorTemplate> createRole(@Valid @RequestBody RoleRequest roleRequest) {
-        return ResponseEntity.ok(roleService.create(roleRequest));
+        return ApiResponse.from(roleService.create(roleRequest));
     }
 
     @PutMapping("/{id}")
     public ResponseEntity<ResponseErrorTemplate> updateRole(@PathVariable Long id, @Valid @RequestBody RoleRequest roleRequest) {
-        return ResponseEntity.ok(roleService.update(id, roleRequest));
+        return ApiResponse.from(roleService.update(id, roleRequest));
     }
 
     @GetMapping("/{id}")
     public ResponseEntity<ResponseErrorTemplate> getRoleById(@PathVariable Long id) {
-        return ResponseEntity.ok(roleService.findById(id));
+        return ApiResponse.from(roleService.findById(id));
     }
 
     @GetMapping("/name/{name}")
     public ResponseEntity<ResponseErrorTemplate> getRoleByName(@PathVariable String name) {
-        return ResponseEntity.ok(roleService.findByName(name));
+        return ApiResponse.from(roleService.findByName(name));
     }
 
     @GetMapping
@@ -63,7 +64,7 @@ public class RoleController {
         filter.setPageSize(size);
         filter.setSortBy(sortBy);
         filter.setDesc(desc);
-        return ResponseEntity.ok(roleService.findAll(filter));
+        return ApiResponse.from(roleService.findAll(filter));
     }
 
     @GetMapping("/active")
@@ -78,13 +79,13 @@ public class RoleController {
         filter.setPageSize(size);
         filter.setSortBy(sortBy);
         filter.setDesc(desc);
-        return ResponseEntity.ok(roleService.findAll(filter));
+        return ApiResponse.from(roleService.findAll(filter));
     }
 
     @DeleteMapping("/{id}")
     public ResponseEntity<ResponseErrorTemplate> deleteRole(@PathVariable Long id) {
         roleService.delete(id);
-        return ResponseEntity.ok(new ResponseErrorTemplate(
+        return ApiResponse.from(new ResponseErrorTemplate(
                 "Role deleted successfully",
                 "ROLE_DELETED",
                 null,

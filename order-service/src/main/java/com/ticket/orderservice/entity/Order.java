@@ -17,7 +17,7 @@ import java.time.LocalDateTime;
 @NoArgsConstructor
 @AllArgsConstructor
 @Entity
-@Table(name = "tt_order")
+@Table(name = "tt_order", uniqueConstraints = @UniqueConstraint(name = "uk_order_idempotency", columnNames = {"username", "idempotency_key"}))
 @Filter(name = "tenantFilter", condition = "tenant_id = :tenantId")
 public class Order extends TenantScopedEntity {
 
@@ -31,6 +31,8 @@ public class Order extends TenantScopedEntity {
     private BigDecimal amount;
     private Integer quantity;
     private Long paymentId;
+    @Column(name = "idempotency_key", length = 100)
+    private String idempotencyKey;
     @Enumerated(EnumType.STRING)
     @Column(name = "order_status", nullable = false)
     private OrderStatus orderStatus;

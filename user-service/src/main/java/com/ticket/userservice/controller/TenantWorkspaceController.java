@@ -1,6 +1,7 @@
 package com.ticket.userservice.controller;
 
 import com.ticket.common.exception.ResponseErrorTemplate;
+import com.ticket.common.exception.ApiResponse;
 import com.ticket.userservice.service.TenantWorkspaceService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -16,7 +17,7 @@ public class TenantWorkspaceController {
 
     @GetMapping("/current")
     public ResponseEntity<ResponseErrorTemplate> currentWorkspace() {
-        return ResponseEntity.ok(new ResponseErrorTemplate(
+        return ApiResponse.from(new ResponseErrorTemplate(
                 "Workspace retrieved successfully", "WORKSPACE_FOUND", workspaceService.currentWorkspace(), false));
     }
 }

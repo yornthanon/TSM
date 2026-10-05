@@ -1,6 +1,7 @@
 package com.ticket.userservice.controller;
 
 import com.ticket.common.exception.ResponseErrorTemplate;
+import com.ticket.common.exception.ApiResponse;
 import com.ticket.userservice.dto.request.GroupFilterRequest;
 import com.ticket.userservice.dto.request.GroupRequest;
 import com.ticket.userservice.service.GroupService;
@@ -20,17 +21,17 @@ public class GroupController {
 
     @PostMapping("/create")
     public ResponseEntity<ResponseErrorTemplate> createGroup(@Valid @RequestBody GroupRequest request) {
-        return ResponseEntity.ok(groupService.create(request));
+        return ApiResponse.from(groupService.create(request));
     }
 
     @PutMapping("/{id}")
     public ResponseEntity<ResponseErrorTemplate> updateGroup(@PathVariable Long id, @Valid @RequestBody GroupRequest request) {
-        return ResponseEntity.ok(groupService.update(id, request));
+        return ApiResponse.from(groupService.update(id, request));
     }
 
     @GetMapping("/{id}")
     public ResponseEntity<ResponseErrorTemplate> getGroupById(@PathVariable Long id) {
-        return ResponseEntity.ok(groupService.findById(id));
+        return ApiResponse.from(groupService.findById(id));
     }
 
     @GetMapping
@@ -50,38 +51,38 @@ public class GroupController {
         filter.setPageSize(size);
         filter.setSortBy(sortBy);
         filter.setDesc(desc);
-        return ResponseEntity.ok(groupService.findAll(filter));
+        return ApiResponse.from(groupService.findAll(filter));
     }
 
     @GetMapping("/{groupId}/members")
     public ResponseEntity<ResponseErrorTemplate> getMembers(@PathVariable Long groupId) {
-        return ResponseEntity.ok(groupService.getMembers(groupId));
+        return ApiResponse.from(groupService.getMembers(groupId));
     }
 
     @PostMapping("/{groupId}/members/{userId}")
     public ResponseEntity<ResponseErrorTemplate> addMember(@PathVariable Long groupId, @PathVariable Long userId) {
-        return ResponseEntity.ok(groupService.addMember(groupId, userId));
+        return ApiResponse.from(groupService.addMember(groupId, userId));
     }
 
     @DeleteMapping("/{groupId}/members/{userId}")
     public ResponseEntity<ResponseErrorTemplate> deleteMember(@PathVariable Long groupId, @PathVariable Long userId) {
-        return ResponseEntity.ok(groupService.deleteMember(groupId, userId));
+        return ApiResponse.from(groupService.deleteMember(groupId, userId));
     }
 
     @PostMapping("/{groupId}/permissions/{permissionId}")
     public ResponseEntity<ResponseErrorTemplate> addPermission(@PathVariable Long groupId, @PathVariable Long permissionId) {
-        return ResponseEntity.ok(groupService.addPermission(groupId, permissionId));
+        return ApiResponse.from(groupService.addPermission(groupId, permissionId));
     }
 
     @DeleteMapping("/{groupId}/permissions/{permissionId}")
     public ResponseEntity<ResponseErrorTemplate> removePermission(@PathVariable Long groupId, @PathVariable Long permissionId) {
-        return ResponseEntity.ok(groupService.removePermission(groupId, permissionId));
+        return ApiResponse.from(groupService.removePermission(groupId, permissionId));
     }
 
     @DeleteMapping("/{id}")
     public ResponseEntity<ResponseErrorTemplate> deleteGroup(@PathVariable Long id) {
         groupService.delete(id);
-        return ResponseEntity.ok(new ResponseErrorTemplate(
+        return ApiResponse.from(new ResponseErrorTemplate(
                 "Group deleted successfully",
                 "GROUP_DELETED",
                 null,

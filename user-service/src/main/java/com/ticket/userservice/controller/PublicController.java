@@ -4,6 +4,7 @@ package com.ticket.userservice.controller;
 import com.ticket.common.constant.ApiConstant;
 import com.ticket.common.dto.EmptyObject;
 import com.ticket.common.exception.ResponseErrorTemplate;
+import com.ticket.common.exception.ApiResponse;
 import com.ticket.userservice.dto.request.AuthenticationRequest;
 import com.ticket.userservice.dto.request.OAuthCodeExchangeRequest;
 import com.ticket.userservice.dto.request.RefreshTokenRequest;
@@ -36,12 +37,12 @@ public class PublicController {
 
     @PostMapping({"/register", "/registration"})
     public ResponseEntity<ResponseErrorTemplate> register(@Valid @RequestBody UserRequest userRequest) {
-        return ResponseEntity.ok(userService.create(userRequest));
+        return ApiResponse.from(userService.create(userRequest));
     }
 
     @PostMapping("/login")
     public ResponseEntity<com.ticket.common.exception.ResponseErrorTemplate> login(@Valid @RequestBody AuthenticationRequest authenticationRequest) {
-        return ResponseEntity.ok(authService.login(authenticationRequest));
+        return ApiResponse.from(authService.login(authenticationRequest));
     }
 
     @PostMapping("/oauth/exchange")
@@ -49,7 +50,7 @@ public class PublicController {
             @Valid @RequestBody OAuthCodeExchangeRequest request) {
         // Keep auth failures in the same 200 + is_error envelope as password login;
         // this lets the SPA preserve a pending MFA challenge without clearing session state.
-        return ResponseEntity.ok(oauthLoginCodeService.exchange(request));
+        return ApiResponse.from(oauthLoginCodeService.exchange(request));
     }
 
     @PostMapping("/logout")
@@ -60,12 +61,12 @@ public class PublicController {
                 ApiConstant.LOGOUT_SUCCESS.getKey(),
                 new EmptyObject(),
                 false);
-        return ResponseEntity.ok(responseErrorTemplate);
+        return ApiResponse.from(responseErrorTemplate);
     }
 
     @PostMapping({"/refresh-token", "/refreshToken"})
     public ResponseEntity<ResponseErrorTemplate> refreshToken(@Valid @RequestBody RefreshTokenRequest refreshTokenRequest) {
-        return ResponseEntity.ok(refreshTokenService.refreshToken(refreshTokenRequest));
+        return ApiResponse.from(refreshTokenService.refreshToken(refreshTokenRequest));
     }
 
     @PostMapping("/verify-token")

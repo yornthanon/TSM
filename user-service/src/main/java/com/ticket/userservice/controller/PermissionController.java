@@ -1,6 +1,7 @@
 package com.ticket.userservice.controller;
 
 import com.ticket.common.exception.ResponseErrorTemplate;
+import com.ticket.common.exception.ApiResponse;
 import com.ticket.userservice.dto.request.PermissionRequest;
 import com.ticket.userservice.dto.request.PermissionFilterRequest;
 import com.ticket.userservice.service.PermissionService;
@@ -20,22 +21,22 @@ public class PermissionController {
 
     @PostMapping("/create")
     public ResponseEntity<ResponseErrorTemplate> createPermission(@Valid @RequestBody PermissionRequest createPermissionRequestDTO) {
-        return ResponseEntity.ok(permissionService.create(createPermissionRequestDTO));
+        return ApiResponse.from(permissionService.create(createPermissionRequestDTO));
     }
 
     @PutMapping("/{id}")
     public ResponseEntity<ResponseErrorTemplate> updatePermission(@PathVariable Long id, @Valid @RequestBody PermissionRequest createPermissionRequestDTO) {
-        return ResponseEntity.ok(permissionService.update(id, createPermissionRequestDTO));
+        return ApiResponse.from(permissionService.update(id, createPermissionRequestDTO));
     }
 
     @GetMapping("/{id}")
     public ResponseEntity<ResponseErrorTemplate> getPermissionById(@PathVariable Long id) {
-        return ResponseEntity.ok(permissionService.findById(id));
+        return ApiResponse.from(permissionService.findById(id));
     }
 
     @GetMapping("/name/{name}")
     public ResponseEntity<ResponseErrorTemplate> getPermissionByName(@PathVariable String name) {
-        return ResponseEntity.ok(permissionService.findByName(name));
+        return ApiResponse.from(permissionService.findByName(name));
     }
 
     @GetMapping
@@ -55,23 +56,23 @@ public class PermissionController {
         filter.setPageSize(size);
         filter.setSortBy(sortBy);
         filter.setDesc(desc);
-        return ResponseEntity.ok(permissionService.findAll(filter));
+        return ApiResponse.from(permissionService.findAll(filter));
     }
 
     @PostMapping("/{permissionId}/roles/{roleId}")
     public ResponseEntity<ResponseErrorTemplate> assignRoleToPermission(@PathVariable Long permissionId, @PathVariable Long roleId) {
-        return ResponseEntity.ok(permissionService.assignRoleToPermission(permissionId, roleId));
+        return ApiResponse.from(permissionService.assignRoleToPermission(permissionId, roleId));
     }
 
     @DeleteMapping("/{permissionId}/roles/{roleId}")
     public ResponseEntity<ResponseErrorTemplate> removeRoleFromPermission(@PathVariable Long permissionId, @PathVariable Long roleId) {
-        return ResponseEntity.ok(permissionService.removeRoleFromPermission(permissionId, roleId));
+        return ApiResponse.from(permissionService.removeRoleFromPermission(permissionId, roleId));
     }
 
     @DeleteMapping("/{id}")
     public ResponseEntity<ResponseErrorTemplate> deletePermission(@PathVariable Long id) {
         permissionService.delete(id);
-        return ResponseEntity.ok(new ResponseErrorTemplate(
+        return ApiResponse.from(new ResponseErrorTemplate(
                 "Permission deleted successfully",
                 "PERMISSION_DELETED",
                 null,

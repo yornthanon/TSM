@@ -26,6 +26,12 @@ const PlatformAdminOnly: React.FC<{ children: React.ReactNode }> = ({ children }
   auth.getUser()?.role === 'ADMIN' ? <>{children}</> : <Navigate to="/admin" replace />
 );
 
+const StaffOnly: React.FC<{ children: React.ReactNode }> = ({ children }) => (
+  ['ADMIN', 'TENANT_ADMIN'].includes(auth.getUser()?.role ?? '')
+    ? <>{children}</>
+    : <Navigate to="/admin" replace />
+);
+
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
@@ -58,7 +64,7 @@ const App: React.FC = () => {
                 <Route path="inventory" element={<Inventory />} />
                 <Route path="orders" element={<Orders />} />
                 <Route path="payments" element={<Payments />} />
-                <Route path="notifications" element={<Notifications />} />
+                <Route path="notifications" element={<StaffOnly><Notifications /></StaffOnly>} />
                 <Route path="users" element={<PlatformAdminOnly><Users /></PlatformAdminOnly>} />
                 <Route path="access" element={<PlatformAdminOnly><Access /></PlatformAdminOnly>} />
                 <Route path="system" element={<PlatformAdminOnly><System /></PlatformAdminOnly>} />

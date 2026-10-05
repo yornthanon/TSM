@@ -1,6 +1,7 @@
 package com.ticket.paymentservice.controller;
 
 import com.ticket.common.exception.ResponseErrorTemplate;
+import com.ticket.common.exception.ApiResponse;
 import com.ticket.common.dto.request.PaymentRequest;
 import com.ticket.paymentservice.service.PaymentService;
 import jakarta.validation.Valid;
@@ -22,31 +23,31 @@ public class PaymentController {
 
     @PostMapping({"", "/process"})
     public ResponseEntity<ResponseErrorTemplate> process(@Valid @RequestBody PaymentRequest request) {
-        return ResponseEntity.ok(paymentService.processPayment(request));
+        return ApiResponse.from(paymentService.processPayment(request));
     }
 
     @GetMapping
     public ResponseEntity<ResponseErrorTemplate> findAll() {
-        return ResponseEntity.ok(paymentService.findAll());
+        return ApiResponse.from(paymentService.findAll());
     }
 
     @GetMapping("/revenue-summary")
     public ResponseEntity<ResponseErrorTemplate> getRevenueSummary() {
-        return ResponseEntity.ok(paymentService.getRevenueSummary());
+        return ApiResponse.from(paymentService.getRevenueSummary());
     }
 
     @GetMapping("/{id}")
     public ResponseEntity<ResponseErrorTemplate> getById(@PathVariable Long id) {
-        return ResponseEntity.ok(paymentService.getById(id));
+        return ApiResponse.from(paymentService.getById(id));
     }
 
     @GetMapping("/transaction/{transactionId}")
     public ResponseEntity<ResponseErrorTemplate> getByTransactionId(@PathVariable String transactionId) {
-        return ResponseEntity.ok(paymentService.getByTransactionId(transactionId));
+        return ApiResponse.from(paymentService.getByTransactionId(transactionId));
     }
 
     @PostMapping("/{id}/refund")
     public ResponseEntity<ResponseErrorTemplate> refund(@PathVariable Long id) {
-        return ResponseEntity.ok(paymentService.refund(id));
+        return ApiResponse.from(paymentService.refund(id));
     }
 }
