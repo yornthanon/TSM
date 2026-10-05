@@ -27,9 +27,7 @@ const PlatformAdminOnly: React.FC<{ children: React.ReactNode }> = ({ children }
 );
 
 const StaffOnly: React.FC<{ children: React.ReactNode }> = ({ children }) => (
-  ['ADMIN', 'TENANT_ADMIN'].includes(auth.getUser()?.role ?? '')
-    ? <>{children}</>
-    : <Navigate to="/admin" replace />
+  auth.getUser()?.role === 'ADMIN' ? <>{children}</> : <Navigate to="/admin" replace />
 );
 
 const queryClient = new QueryClient({

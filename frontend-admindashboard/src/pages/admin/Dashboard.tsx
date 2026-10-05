@@ -22,7 +22,9 @@ const Dashboard: React.FC = () => {
   const orders = useOrderStats();
   const payments = usePayments();
   const revenue = useRevenueSummary();
-  const notifications = useNotificationStats();
+  // This endpoint is ADMIN-only on the backend; a tenant dashboard must not
+  // turn the expected 403 into a full-page dashboard error.
+  const notifications = useNotificationStats({ queryKey: ['notifications', 'stats'], enabled: isPlatformAdmin });
 
   const recentPayments = React.useMemo(
     () =>
@@ -89,10 +91,10 @@ const Dashboard: React.FC = () => {
         </div>
 
         <div className="mt-3 grid max-w-xl grid-cols-2 gap-3">
-          <div className="flex items-center justify-between rounded-lg border border-[#27292d] bg-[#18191c] px-3 py-2.5">
+          {isPlatformAdmin && <div className="flex items-center justify-between rounded-lg border border-[#27292d] bg-[#18191c] px-3 py-2.5">
             <span className="flex items-center gap-2 text-xs text-[#868a91]"><Mail className="h-3.5 w-3.5 text-[#3574f0]" />Notifications</span>
             <span className="font-jetbrains text-sm font-semibold text-[#dfe1e5]">{notifications.data?.total ?? 0}</span>
-          </div>
+          </div>}
           <div className="flex items-center justify-between rounded-lg border border-[#27292d] bg-[#18191c] px-3 py-2.5">
             <span className="flex items-center gap-2 text-xs text-[#868a91]"><TicketIcon className="h-3.5 w-3.5 text-[#ffc66d]" />Tickets sold</span>
             <span className="font-jetbrains text-sm font-semibold text-[#ffc66d]">{tickets.data?.byStatus?.SOLD ?? 0}</span>

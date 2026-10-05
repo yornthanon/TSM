@@ -33,7 +33,7 @@ const navItems = [
   { to: '/admin/inventory', icon: Ticket, label: 'Inventory', shortcut: '⌘3', badge: 'Seats' },
   { to: '/admin/orders', icon: ShoppingCart, label: 'Orders', shortcut: '⌘4', badge: 'Live' },
   { to: '/admin/payments', icon: CreditCard, label: 'Payments', shortcut: '⌘5', badge: 'Mock' },
-  { to: '/admin/notifications', icon: Bell, label: 'Notifications', shortcut: '⌘6', badge: 'Queue' },
+  { to: '/admin/notifications', icon: Bell, label: 'Notifications', shortcut: '⌘6', badge: 'Queue', adminOnly: true },
   { to: '/admin/users', icon: Users, label: 'Users', shortcut: '⌘7', badge: 'Team' },
   { to: '/admin/access', icon: KeyRound, label: 'Access control', shortcut: '⌘8', badge: 'Policy', adminOnly: true },
   { to: '/admin/system', icon: Server, label: 'System', shortcut: '⌘9', badge: 'API', adminOnly: true },
