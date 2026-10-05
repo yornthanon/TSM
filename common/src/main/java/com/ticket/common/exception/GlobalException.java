@@ -6,6 +6,11 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.bind.MethodArgumentNotValidException;
+import org.springframework.http.converter.HttpMessageNotReadableException;
+
+import java.util.LinkedHashMap;
+import java.util.Map;
 import org.springframework.web.multipart.MaxUploadSizeExceededException;
 import org.springframework.web.multipart.MultipartException;
 import org.springframework.web.multipart.support.MissingServletRequestPartException;
@@ -19,6 +24,24 @@ public class GlobalException {
     public ResponseEntity<ResponseErrorTemplate> handle(Exception e) {
         log.error(e.getMessage(), e);
         return new ResponseEntity<>(GeneralErrorResponse.generalError(), HttpStatus.INTERNAL_SERVER_ERROR);
+    }
+
+    @ExceptionHandler(MethodArgumentNotValidException.class)
+    public ResponseEntity<ResponseErrorTemplate> handleValidation(MethodArgumentNotValidException e) {
+        Map<String, String> errors = new LinkedHashMap<>();
+        e.getBindingResult().getFieldErrors().forEach(error ->
+                errors.put(error.getField(), error.getDefaultMessage() == null ? "Invalid value." : error.getDefaultMessage()));
+        String message = errors.isEmpty() ? "Please check the event details." :
+                errors.entrySet().stream().map(entry -> entry.getKey() + ": " + entry.getValue()).reduce((left, right) -> left + "; " + right).orElse("Please check the event details.");
+        return ResponseEntity.badRequest().body(
+                new ResponseErrorTemplate(message, "VALIDATION_ERROR", errors, true));
+    }
+
+    @ExceptionHandler(HttpMessageNotReadableException.class)
+    public ResponseEntity<ResponseErrorTemplate> handleUnreadableRequest(HttpMessageNotReadableException e) {
+        return ResponseEntity.badRequest().body(
+                new ResponseErrorTemplate("The event data is invalid. Check the date, price, capacity, and event type.",
+                        "INVALID_REQUEST", new EmptyObject(), true));
     }
 
     @ExceptionHandler(ResponseStatusException.class)

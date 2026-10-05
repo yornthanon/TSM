@@ -135,9 +135,18 @@ class ApiClient {
     if (error.response?.data) {
       const apiError = error.response.data;
       if (typeof apiError === 'object' && apiError !== null && 'message' in apiError) {
-        const failure = new Error((apiError as { message?: string }).message || 'An error occurred') as Error & { code?: string };
-        const code = (apiError as { code?: unknown }).code;
-        if (typeof code === 'string') failure.code = code;
+        const body = apiError as { message?: unknown; code?: unknown; data?: unknown };
+        let message = typeof body.message === 'string' && body.message.trim() ? body.message : 'The request could not be completed.';
+        if (body.data && typeof body.data === 'object' && !Array.isArray(body.data)) {
+          const details = Object.entries(body.data as Record<string, unknown>)
+            .filter(([, value]) => typeof value === 'string' && value.trim())
+            .map(([field, value]) => `${field}: ${value}`);
+          if (details.length > 0 && !message.toLowerCase().includes(details[0].toLowerCase())) {
+            message = `${message} ${details.join('; ')}`;
+          }
+        }
+        const failure = new Error(message) as Error & { code?: string };
+        if (typeof body.code === 'string') failure.code = body.code;
         return failure;
       }
       return new Error(JSON.stringify(apiError));
