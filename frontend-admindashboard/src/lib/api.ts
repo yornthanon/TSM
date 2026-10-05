@@ -58,7 +58,12 @@ class ApiClient {
   private setupInterceptors(): void {
     this.client.interceptors.request.use(
       (config: InternalAxiosRequestConfig) => {
-        const token = localStorage.getItem('auth_token');
+        const extended = config as InternalAxiosRequestConfig & { _usePrimaryToken?: boolean };
+        const usePrimaryToken = extended._usePrimaryToken === true;
+        delete extended._usePrimaryToken;
+        const token = usePrimaryToken
+          ? localStorage.getItem('auth_token')
+          : (localStorage.getItem('act_as_token') || localStorage.getItem('auth_token'));
         if (token && config.headers) {
           config.headers.Authorization = `Bearer ${token}`;
         }
@@ -83,9 +88,18 @@ class ApiClient {
         const originalRequest = error.config as AxiosRequestConfig & { _retry?: boolean };
 
         if (error.response?.status === 401) {
-          localStorage.removeItem('auth_token');
-          localStorage.removeItem('user');
-          window.location.hash = '#/login';
+          if (localStorage.getItem('act_as_token')) {
+            localStorage.removeItem('act_as_token');
+            localStorage.removeItem('act_as_user');
+            localStorage.removeItem('act_as_session_id');
+            localStorage.removeItem('act_as_expires_at');
+            window.dispatchEvent(new CustomEvent('ticketdesk-act-as-ended'));
+            window.location.hash = '#/admin';
+          } else {
+            localStorage.removeItem('auth_token');
+            localStorage.removeItem('user');
+            window.location.hash = '#/login';
+          }
           return Promise.reject(error);
         }
 
@@ -157,6 +171,13 @@ class ApiClient {
   }
 
   public async post<T>(url: string, data?: unknown, config?: AxiosRequestConfig): Promise<T> {
+    const response = await this.client.post(url, data, config);
+    const responseData = response.data as Record<string, unknown>;
+    return responseData.data as T;
+  }
+
+  public async postAsPrimary<T>(url: string, data?: unknown): Promise<T> {
+    const config = { _usePrimaryToken: true } as AxiosRequestConfig & { _usePrimaryToken: boolean };
     const response = await this.client.post(url, data, config);
     const responseData = response.data as Record<string, unknown>;
     return responseData.data as T;

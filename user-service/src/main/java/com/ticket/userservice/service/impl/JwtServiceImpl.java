@@ -79,6 +79,26 @@ public class JwtServiceImpl extends JwtConfigProperties implements JwtService {
     }
 
     @Override
+    public String generateActAsToken(CustomUserDetail targetUser, Long actorUserId, Long sessionId, Instant expiresAt) {
+        List<String> roles = targetUser.getAuthorities().stream()
+                .map(GrantedAuthority::getAuthority).toList();
+        Instant now = Instant.now();
+        var tokenBuilder = Jwts.builder()
+                .subject(targetUser.getUsername())
+                .claim("authorities", roles)
+                .claim("roles", roles)
+                .claim("act_as", true)
+                .claim("act_as_actor_id", actorUserId)
+                .claim("act_as_session_id", sessionId)
+                .issuedAt(Date.from(now))
+                .expiration(Date.from(expiresAt));
+        if (targetUser.getTenantId() != null) {
+            tokenBuilder.claim("tenant_id", targetUser.getTenantId());
+        }
+        return tokenBuilder.signWith(getKey(), SignatureAlgorithm.HS256).compact();
+    }
+
+    @Override
     public String refreshToken(CustomUserDetail customUserDetail) {
         Instant currentTime = Instant.now();
         var tokenExpiration = Date.from(currentTime.plusMillis(getRefreshTokenExpiration()));

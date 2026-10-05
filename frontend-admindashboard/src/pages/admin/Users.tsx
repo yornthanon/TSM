@@ -1,11 +1,15 @@
 import React from 'react';
-import { Plus, Search, Trash2, UserCheck, UserX } from 'lucide-react';
+import { useQueryClient } from '@tanstack/react-query';
+import { useNavigate } from 'react-router-dom';
+import { LogIn, Plus, Search, Trash2, UserCheck, UserX } from 'lucide-react';
 import { toast } from 'sonner';
 import {
   useActivateUser,
   useCreateUser,
   useDeactivateUser,
   useDeleteUser,
+  useActAsAudit,
+  useStartActAs,
   useUpdateUser,
   useUserStats,
   useUsers,
@@ -27,11 +31,15 @@ import { auth } from '../../lib/auth';
 
 type ContextMenuState =
   | { kind: 'create'; x: number; y: number }
-  | { kind: 'delete'; x: number; y: number; user: User };
+  | { kind: 'user'; x: number; y: number; user: User };
 
 const Users: React.FC = () => {
   const users = useUsers();
   const userStats = useUserStats();
+  const actAsAudit = useActAsAudit();
+  const startActAs = useStartActAs();
+  const queryClient = useQueryClient();
+  const navigate = useNavigate();
   const createUser = useCreateUser();
   const updateUser = useUpdateUser();
   const deleteUser = useDeleteUser();
@@ -80,7 +88,24 @@ const Users: React.FC = () => {
     event.preventDefault();
     event.stopPropagation();
     if (!isPlatformAdmin || isProtectedAdmin(user)) return;
-    setContextMenu({ kind: 'delete', user, x: event.clientX, y: event.clientY });
+    setContextMenu({ kind: 'user', user, x: event.clientX, y: event.clientY });
+  };
+
+  const handleActAs = (user: User) => {
+    if (!isPlatformAdmin || isProtectedAdmin(user) || user.status !== 'ACTIVE' || !user.tenantId) return;
+    startActAs.mutate(user.id, {
+      onSuccess: (response) => {
+        try {
+          auth.beginActAs(response);
+          queryClient.clear();
+          toast.success(`Workspace opened as ${user.email ?? user.username}; session ends in 15 minutes.`);
+          navigate('/admin');
+        } catch (error) {
+          toast.error(error instanceof Error ? error.message : 'Could not start act-as session');
+        }
+      },
+      onError: (error) => toast.error(error.message),
+    });
   };
 
   const handleCreate = (payload: UserPayload) => {
@@ -108,14 +133,14 @@ const Users: React.FC = () => {
     ? Math.max(8, Math.min(contextMenu.x, window.innerWidth - 224))
     : 0;
   const menuTop = contextMenu
-    ? Math.max(8, Math.min(contextMenu.y, window.innerHeight - 88))
+    ? Math.max(8, Math.min(contextMenu.y, window.innerHeight - 132))
     : 0;
 
   return (
     <div className="relative" onContextMenu={handlePageContextMenu}>
       <PageHeader
         title="Users"
-        description="Global account directory. Right-click or two-finger click blank space for Create; right-click a user row for Delete (confirmation required)."
+        description="Global account directory. Right-click or two-finger click blank space for Create; right-click an active user to open their workspace or delete (confirmation required)."
       />
 
       <div className="mb-4 grid grid-cols-2 gap-3 lg:grid-cols-4">
@@ -241,6 +266,37 @@ const Users: React.FC = () => {
         />
       </QueryState>
 
+      <Card className="mt-6 overflow-hidden p-4 shadow-sm">
+        <h2 className="text-sm font-semibold text-[#d7dae0]">Recent act-as audit</h2>
+        <p className="mt-0.5 text-[11px] text-[#9da0a8]">The last 100 session start/stop events and API requests are recorded for the platform CEO.</p>
+        <div className="mt-3">
+          <QueryState
+            isLoading={actAsAudit.isLoading}
+            error={actAsAudit.error}
+            isEmpty={(actAsAudit.data ?? []).length === 0}
+            onRetry={() => { void actAsAudit.refetch(); }}
+            emptyTitle="No act-as activity"
+            emptyDescription="Session activity will appear here when a workspace is opened from the user menu."
+            rows={2}
+          >
+            <Table>
+              <thead><tr><Th>When</Th><Th>Target</Th><Th>Action</Th><Th>Request</Th><Th>Status</Th></tr></thead>
+              <tbody>
+                {(actAsAudit.data ?? []).slice(0, 20).map((entry) => (
+                  <tr key={entry.id} className="border-t border-[#3c3f41]">
+                    <Td className="whitespace-nowrap text-[11px] text-[#9da0a8]">{formatDateTime(entry.occurredAt)}</Td>
+                    <Td>{entry.targetEmail}</Td>
+                    <Td className="text-[#9da0a8]">{entry.action}</Td>
+                    <Td className="max-w-[320px] truncate font-mono text-[10px] text-[#9da0a8]">{entry.httpMethod ? `${entry.httpMethod} ` : ''}{entry.requestPath ?? '-'}</Td>
+                    <Td>{entry.responseStatus ?? '-'}</Td>
+                  </tr>
+                ))}
+              </tbody>
+            </Table>
+          </QueryState>
+        </div>
+      </Card>
+
       {contextMenu && (
         <>
           <div
@@ -265,14 +321,25 @@ const Users: React.FC = () => {
                 <Plus className="h-3.5 w-3.5 text-[#4ec9b0]" /> Create user
               </button>
             ) : (
-              <button
-                type="button"
-                role="menuitem"
-                className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-left text-xs text-[#f07178] hover:bg-[#2b2d30]"
-                onClick={() => { setContextMenu(null); setDeleteTarget(contextMenu.user); }}
-              >
-                <Trash2 className="h-3.5 w-3.5" /> Delete {contextMenu.user.username}
-              </button>
+              <>
+                <button
+                  type="button"
+                  role="menuitem"
+                  disabled={startActAs.isPending || contextMenu.user.status !== 'ACTIVE' || !contextMenu.user.tenantId}
+                  className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-left text-xs text-[#dfe1e5] hover:bg-[#2b2d30] disabled:cursor-not-allowed disabled:opacity-40"
+                  onClick={() => { const target = contextMenu.user; setContextMenu(null); handleActAs(target); }}
+                >
+                  <LogIn className="h-3.5 w-3.5 text-[#4ec9b0]" /> Open workspace as {contextMenu.user.username}
+                </button>
+                <button
+                  type="button"
+                  role="menuitem"
+                  className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-left text-xs text-[#f07178] hover:bg-[#2b2d30]"
+                  onClick={() => { setContextMenu(null); setDeleteTarget(contextMenu.user); }}
+                >
+                  <Trash2 className="h-3.5 w-3.5" /> Delete {contextMenu.user.username}
+                </button>
+              </>
             )}
           </div>
         </>

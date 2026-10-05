@@ -20,7 +20,7 @@ cp .env.example .env
 
 Set a unique `POSTGRES_PASSWORD`. Generate `JWT_SECRET` with `openssl rand -base64 32`; it must decode to 32–64 bytes. Configure `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, and `APP_FRONTEND_URL=http://localhost:5173`. Put the verified Google account(s) with platform-wide administrator access in `PLATFORM_ADMIN_EMAILS`. Add `http://localhost:8080/login/oauth2/code/google` to the Google OAuth client's authorized redirect URIs for local development. Keep `.env` private and out of Git.
 
-`DEFAULT_ADMIN_PASSWORD` may remain blank; the bootstrap creates a random password rather than using a public default, and the product sign-in flow is Google-based. Do not rely on the bootstrap role in place of the configured platform-admin email allowlist.
+There is no default password-admin bootstrap. Sign in through Google OAuth; only the verified address(es) in `PLATFORM_ADMIN_EMAILS` receive platform-wide `ADMIN`. Do not add default-admin username/password variables to the Compose environment.
 
 ## Start and stop
 

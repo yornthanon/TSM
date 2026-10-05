@@ -7,13 +7,16 @@ import {
   ShoppingCart,
   Ticket as TicketIcon,
 } from 'lucide-react';
-import { useEventStats, useNotificationStats, useOrderStats, usePayments, useRevenueSummary, useTicketStats } from '../../hooks/useApi';
+import { useAdminWorkspaceOverview, useEventStats, useNotificationStats, useOrderStats, usePayments, useRevenueSummary, useTicketStats } from '../../hooks/useApi';
 import { PageHeader, QueryState, StatCard, Table, Td, Th } from '../../components/QueryState';
 import { Badge, Card } from '../../components/ui';
 import { formatCurrency, formatDateTime } from '../../utils';
+import { auth } from '../../lib/auth';
 
 /** Latest activity across orders and payments, the two streams with timestamps. */
 const Dashboard: React.FC = () => {
+  const isPlatformAdmin = auth.getUser()?.role === 'ADMIN';
+  const workspaceOverview = useAdminWorkspaceOverview(isPlatformAdmin);
   const events = useEventStats();
   const tickets = useTicketStats();
   const orders = useOrderStats();
@@ -45,7 +48,9 @@ const Dashboard: React.FC = () => {
     <>
       <PageHeader
         title="Dashboard"
-        description="Live operations snapshot from your ticketing system."
+        description={isPlatformAdmin
+          ? 'Platform-wide snapshot across all user workspaces.'
+          : 'Live operations snapshot from your private workspace.'}
       />
 
       <QueryState
@@ -93,6 +98,51 @@ const Dashboard: React.FC = () => {
             <span className="font-jetbrains text-sm font-semibold text-[#ffc66d]">{tickets.data?.byStatus?.SOLD ?? 0}</span>
           </div>
         </div>
+
+        {isPlatformAdmin && (
+          <section className="mt-6" aria-label="CEO workspace totals">
+            <div className="mb-2 flex items-end justify-between gap-3">
+              <div>
+                <h2 className="text-sm font-semibold text-[#d7dae0]">All workspaces</h2>
+                <p className="mt-0.5 text-[11px] text-[#9da0a8]">CEO view · totals are isolated by workspace before aggregation.</p>
+              </div>
+              <Link to="/admin/users" className="text-xs font-medium text-[#3574f0] hover:underline">User directory</Link>
+            </div>
+            <QueryState
+              isLoading={workspaceOverview.isLoading}
+              error={workspaceOverview.error}
+              isEmpty={(workspaceOverview.data ?? []).length === 0}
+              onRetry={() => { void workspaceOverview.refetch(); }}
+              emptyTitle="No workspaces yet"
+              emptyDescription="Workspace totals will appear after users sign in with Google."
+              rows={3}
+            >
+              <Table>
+                <thead><tr>
+                  <Th>Workspace / owner</Th><Th>Users</Th><Th>Events</Th><Th>Tickets</Th>
+                  <Th>Orders</Th><Th>Order value</Th><Th>Payments</Th><Th>Paid</Th>
+                </tr></thead>
+                <tbody>
+                  {(workspaceOverview.data ?? []).map((workspace) => (
+                    <tr key={workspace.workspaceId} className="border-t border-[#3c3f41]">
+                      <Td>
+                        <p className="font-medium">{workspace.workspaceName}</p>
+                        <p className="mt-0.5 text-[11px] text-[#9da0a8]">{workspace.ownerEmail ?? workspace.ownerUsername ?? 'No owner'} · {workspace.status}</p>
+                      </Td>
+                      <Td>{workspace.userCount}</Td>
+                      <Td>{workspace.eventCount}</Td>
+                      <Td>{workspace.ticketCount}</Td>
+                      <Td>{workspace.orderCount}</Td>
+                      <Td>{formatCurrency(workspace.orderAmount)}</Td>
+                      <Td>{workspace.paymentCount}</Td>
+                      <Td className="font-medium text-[#4ec9b0]">{formatCurrency(workspace.completedPaymentAmount)}</Td>
+                    </tr>
+                  ))}
+                </tbody>
+              </Table>
+            </QueryState>
+          </section>
+        )}
 
         <div className="mt-6 grid gap-4 lg:grid-cols-2">
           <Card className="p-4 shadow-sm">

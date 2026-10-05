@@ -21,8 +21,10 @@ import {
 } from '../../components/QueryState';
 import { Badge, Button, Card, ErrorState, Skeleton } from '../../components/ui';
 import { formatCurrency, formatDateTime } from '../../utils';
+import { auth } from '../../lib/auth';
 
 const EventDetail: React.FC = () => {
+  const canManageEvents = auth.getUser()?.role === 'TENANT_ADMIN';
   const { id } = useParams<{ id: string }>();
   const event = useEvent(id ?? '');
   const tickets = useTickets();
@@ -85,7 +87,7 @@ const EventDetail: React.FC = () => {
       <PageHeader
         title={data.title}
         description={data.description ?? 'No description provided.'}
-        actions={
+        actions={canManageEvents ? (
           <>
             <Button
               variant="secondary"
@@ -114,7 +116,7 @@ const EventDetail: React.FC = () => {
               Reject
             </Button>
           </>
-        }
+        ) : undefined}
       />
 
       <div className="mb-4 grid grid-cols-2 gap-3 lg:grid-cols-5">

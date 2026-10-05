@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { NavLink, Outlet, useLocation, useNavigate, Link } from 'react-router-dom';
 import {
   Activity,
@@ -54,10 +54,13 @@ export const AdminLayout: React.FC = () => {
   const [commandOpen, setCommandOpen] = useState(false);
   const [commandQuery, setCommandQuery] = useState('');
   const commandInputRef = useRef<HTMLInputElement>(null);
+  const queryClient = useQueryClient();
   const navigate = useNavigate();
   const location = useLocation();
   const user = auth.getUser() as AppUser | null;
-  const isAdmin = user?.role === 'ADMIN';
+  const isActingAs = auth.isActingAs();
+  const actAsExpiry = auth.getActAsExpiry();
+  const isAdmin = user?.role === 'ADMIN' && !isActingAs;
   const isTenantAdmin = user?.role === 'TENANT_ADMIN';
   const initials = (user?.email || user?.username || 'A').slice(0, 2).toUpperCase();
   const currentWorkspace = useQuery({
@@ -80,8 +83,29 @@ export const AdminLayout: React.FC = () => {
     [visibleItems, commandQuery],
   );
 
-  const handleLogout = () => {
+  const stopActAs = async () => {
+    const sessionId = auth.getActAsSessionId();
+    if (sessionId) {
+      try {
+        await api.postAsPrimary<null>(`/admin/act-as/${sessionId}/stop`, {});
+      } catch {
+        // The short-lived token still expires server-side; never keep it active in this browser.
+      }
+    }
+    auth.endActAs();
+    queryClient.clear();
+    navigate('/admin/users');
+  };
+
+  const handleLogout = async () => {
+    if (auth.isActingAs()) {
+      const sessionId = auth.getActAsSessionId();
+      if (sessionId) {
+        try { await api.postAsPrimary<null>(`/admin/act-as/${sessionId}/stop`, {}); } catch { /* expire naturally */ }
+      }
+    }
     auth.logout();
+    queryClient.clear();
     navigate('/login');
   };
 
@@ -104,6 +128,15 @@ export const AdminLayout: React.FC = () => {
   useEffect(() => {
     if (commandOpen) commandInputRef.current?.focus();
   }, [commandOpen]);
+
+  useEffect(() => {
+    const onActAsEnded = () => {
+      queryClient.clear();
+      navigate('/admin');
+    };
+    window.addEventListener('ticketdesk-act-as-ended', onActAsEnded);
+    return () => window.removeEventListener('ticketdesk-act-as-ended', onActAsEnded);
+  }, [navigate, queryClient]);
 
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
@@ -264,7 +297,7 @@ export const AdminLayout: React.FC = () => {
           </button>
 
           <div className="flex items-center gap-2">
-            {!isAdmin && <Link
+            {isTenantAdmin && <Link
               to="/admin/events"
               className="inline-flex items-center gap-1.5 rounded-lg bg-[#3574f0] px-3 py-1.5 text-xs font-semibold text-white shadow-sm transition-colors hover:bg-[#3062d4]"
             >
@@ -301,6 +334,18 @@ export const AdminLayout: React.FC = () => {
             </div>
           </div>
         </header>
+
+        {isActingAs && (
+          <div role="status" className="flex flex-wrap items-center justify-between gap-2 border-b border-[#7a5522] bg-[#3b2b17] px-4 py-2 text-xs text-[#ffe0a3] sm:px-7">
+            <span>
+              <strong>Acting as {user?.email ?? user?.username}</strong>
+              <span className="ml-2 text-[#d7b978]">Read/write actions are audited; session expires {actAsExpiry ? new Date(actAsExpiry).toLocaleTimeString() : 'soon'}.</span>
+            </span>
+            <button type="button" onClick={() => { void stopActAs(); }} className="rounded border border-[#a87832] px-2.5 py-1 font-medium text-[#ffe0a3] hover:bg-[#4b381f]">
+              End session and return to CEO
+            </button>
+          </div>
+        )}
 
         <main className="flex-1 overflow-auto px-4 py-6 sm:px-7 sm:py-8">
           <div key={location.pathname} className="mx-auto w-full max-w-[1380px]"><Outlet /></div>

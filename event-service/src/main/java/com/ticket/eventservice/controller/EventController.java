@@ -3,9 +3,13 @@ package com.ticket.eventservice.controller;
 import com.ticket.eventservice.dto.EventRequest;
 import com.ticket.common.exception.ResponseErrorTemplate;
 import com.ticket.eventservice.service.EventService;
+import com.ticket.eventservice.service.EventImageStorageService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.MediaType;
+import org.springframework.web.multipart.MultipartFile;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -21,6 +25,13 @@ import org.springframework.web.bind.annotation.RestController;
 public class EventController {
 
     private final EventService eventService;
+    private final EventImageStorageService eventImageStorageService;
+
+    @PostMapping(value = "/upload-photo", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<ResponseErrorTemplate> uploadPhoto(@RequestParam(value = "file", required = false) MultipartFile file) {
+        String imageUrl = eventImageStorageService.upload(file);
+        return ResponseEntity.ok(new ResponseErrorTemplate("Event photo uploaded", "200", imageUrl, false));
+    }
 
     @PostMapping({"", "/create"})
     public ResponseEntity<ResponseErrorTemplate> create(@Valid @RequestBody EventRequest request) {

@@ -18,6 +18,7 @@ import {
   PAYMENT_STATUSES,
   type Payment,
 } from '../../types/api';
+import { auth } from '../../lib/auth';
 
 /** Only a completed payment that the server identified can be refunded. */
 const canRefund = (payment: Payment) =>
@@ -32,6 +33,9 @@ const refundDisabledReason = (payment: Payment) => {
 };
 
 const Payments: React.FC = () => {
+  const activeRole = auth.getUser()?.role;
+  const isActingAs = auth.isActingAs();
+  const canRefundInCurrentSession = activeRole === 'TENANT_ADMIN' && !isActingAs;
   const payments = usePayments();
   const revenue = useRevenueSummary();
   const refundPayment = useRefundPayment();
@@ -61,7 +65,13 @@ const Payments: React.FC = () => {
     <>
       <PageHeader
         title="Payments"
-        description="Every payment transaction recorded by the payment service."
+        description={canRefundInCurrentSession
+          ? 'Payment records in this workspace. Refunds are available to the workspace administrator.'
+          : activeRole === 'ADMIN'
+            ? 'Platform-wide read-only payment view.'
+            : isActingAs
+              ? 'Workspace payment history. Refunds are disabled during an audited act-as session.'
+              : 'Payment history in your workspace.'}
       />
 
       <div className="mb-4 grid grid-cols-2 gap-3 lg:grid-cols-4">
@@ -119,7 +129,7 @@ const Payments: React.FC = () => {
               <Th>Currency</Th>
               <Th>Status</Th>
               <Th>Date</Th>
-              <Th className="text-right">Actions</Th>
+              <Th className="text-right">{canRefundInCurrentSession ? 'Actions' : ''}</Th>
             </tr>
           </thead>
           <tbody>
@@ -140,18 +150,18 @@ const Payments: React.FC = () => {
                   {formatDateTime(payment.paymentDate)}
                 </Td>
                 <Td>
-                  <div className="flex justify-end">
+                  {canRefundInCurrentSession && <div className="flex justify-end">
                     <button
                       type="button"
                       title={refundDisabledReason(payment)}
                       aria-label={`Refund payment ${payment.transactionId ?? payment.orderId}`}
-                      disabled={refundPayment.isPending || !canRefund(payment)}
+                      disabled={!canRefundInCurrentSession || refundPayment.isPending || !canRefund(payment)}
                       onClick={() => setRefundTarget(payment)}
                       className="rounded-md p-1.5 text-[#9da0a8] hover:bg-[#313335] disabled:cursor-not-allowed disabled:text-[#9da0a8]"
                     >
                       <RotateCcw className="h-3.5 w-3.5" />
                     </button>
-                  </div>
+                  </div>}
                 </Td>
               </tr>
             ))}
@@ -166,7 +176,7 @@ const Payments: React.FC = () => {
       </QueryState>
 
       <ConfirmDialog
-        open={refundTarget !== null}
+        open={canRefundInCurrentSession && refundTarget !== null}
         onClose={() => setRefundTarget(null)}
         onConfirm={() => {
           // The action is only reachable for rows that pass canRefund().

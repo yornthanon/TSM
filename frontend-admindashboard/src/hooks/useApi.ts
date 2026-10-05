@@ -6,6 +6,9 @@ import {
 } from '@tanstack/react-query';
 import { api } from '../lib/api';
 import type {
+  ActAsAuditResponse,
+  ActAsResponse,
+  AdminWorkspaceOverviewResponse,
   Event,
   EventPayload,
   EventStats,
@@ -44,6 +47,8 @@ export const queryKeys = {
   permissions: ['permissions'] as const,
   groups: ['groups'] as const,
   health: ['health'] as const,
+  adminWorkspaceOverview: ['admin', 'workspace-overview'] as const,
+  actAsAudit: ['admin', 'act-as-audit'] as const,
 };
 
 /**
@@ -352,6 +357,20 @@ export function useDeleteUser() {
   });
 }
 
+export function useStartActAs() {
+  return useMutation({
+    mutationFn: (userId: number) => api.post<ActAsResponse>(`/admin/act-as/users/${userId}`, {}),
+  });
+}
+
+export function useActAsAudit(options?: UseQueryOptions<ActAsAuditResponse[]>) {
+  return useQuery({
+    queryKey: queryKeys.actAsAudit,
+    queryFn: async () => toArray<ActAsAuditResponse>(await api.get<ActAsAuditResponse[]>('/admin/act-as/audit')),
+    ...options,
+  });
+}
+
 // ---------------------------------------------------------------------------
 // Access control
 // ---------------------------------------------------------------------------
@@ -414,5 +433,15 @@ export function useHealth(options?: UseQueryOptions<HealthPayload>) {
     queryFn: () => api.getFromOrigin<HealthPayload>('/actuator/health'),
     retry: false,
     ...options,
+  });
+}
+
+export function useAdminWorkspaceOverview(enabled = true) {
+  return useQuery({
+    queryKey: queryKeys.adminWorkspaceOverview,
+    queryFn: async () => toArray<AdminWorkspaceOverviewResponse>(
+      await api.get<AdminWorkspaceOverviewResponse[]>('/admin/overview/workspaces'),
+    ),
+    enabled,
   });
 }

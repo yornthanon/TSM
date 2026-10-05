@@ -39,6 +39,8 @@ import {
   type EventStatus,
   type EventType,
 } from '../../types/api';
+import { api } from '../../lib/api';
+import { auth } from '../../lib/auth';
 
 /**
  * Mirrors the backend `EventRequest` constraints: title is @NotBlank and capped
@@ -91,7 +93,12 @@ const EMPTY_FORM: EventFormValues = {
   status: 'DRAFT',
 };
 
+const ALLOWED_PHOTO_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp']);
+const MAX_PHOTO_SIZE_BYTES = 5 * 1024 * 1024;
+
 const Events: React.FC = () => {
+  const activeRole = auth.getUser()?.role;
+  const canManageEvents = activeRole === 'TENANT_ADMIN';
   const events = useEvents();
   const createEvent = useCreateEvent();
   const updateEvent = useUpdateEvent();
@@ -137,11 +144,17 @@ const Events: React.FC = () => {
     <>
       <PageHeader
         title="Events"
-        description="Create, publish and moderate events across the platform."
+        description={canManageEvents
+          ? 'Manage events in this workspace.'
+          : activeRole === 'ADMIN'
+            ? 'Platform-wide read-only view. Open a workspace from Users to manage events with an audited session.'
+            : 'View events in your workspace.'}
         actions={
-          <Button leftIcon={<Plus className="h-3.5 w-3.5" />} onClick={openCreate}>
-            New event
-          </Button>
+          canManageEvents ? (
+            <Button leftIcon={<Plus className="h-3.5 w-3.5" />} onClick={openCreate}>
+              New event
+            </Button>
+          ) : undefined
         }
       />
 
@@ -182,7 +195,7 @@ const Events: React.FC = () => {
           search || statusFilter ? 'Try a different search term.' : 'Create your first event to get started.'
         }
         emptyAction={
-          search || statusFilter ? undefined : (
+          search || statusFilter || !canManageEvents ? undefined : (
             <Button leftIcon={<Plus className="h-3.5 w-3.5" />} onClick={openCreate}>
               New event
             </Button>
@@ -234,7 +247,7 @@ const Events: React.FC = () => {
                     >
                       <Eye className="h-3.5 w-3.5" />
                     </Link>
-                    <button
+                    {canManageEvents && <button
                       type="button"
                       title="Edit"
                       aria-label={`Edit ${event.title}`}
@@ -242,8 +255,8 @@ const Events: React.FC = () => {
                       className="rounded-md p-1.5 text-[#9da0a8] hover:bg-[#313335]"
                     >
                       <Pencil className="h-3.5 w-3.5" />
-                    </button>
-                    <button
+                    </button>}
+                    {canManageEvents && <button
                       type="button"
                       title="Approve"
                       aria-label={`Approve ${event.title}`}
@@ -257,8 +270,8 @@ const Events: React.FC = () => {
                       className="rounded-md p-1.5 text-emerald-600 hover:bg-emerald-50 disabled:opacity-40"
                     >
                       <Check className="h-3.5 w-3.5" />
-                    </button>
-                    <button
+                    </button>}
+                    {canManageEvents && <button
                       type="button"
                       title="Reject"
                       aria-label={`Reject ${event.title}`}
@@ -272,8 +285,8 @@ const Events: React.FC = () => {
                       className="rounded-md p-1.5 text-rose-600 hover:bg-rose-50 disabled:opacity-40"
                     >
                       <X className="h-3.5 w-3.5" />
-                    </button>
-                    <button
+                    </button>}
+                    {canManageEvents && <button
                       type="button"
                       title="Delete"
                       aria-label={`Delete ${event.title}`}
@@ -281,7 +294,7 @@ const Events: React.FC = () => {
                       className="rounded-md p-1.5 text-rose-600 hover:bg-rose-50"
                     >
                       <Trash2 className="h-3.5 w-3.5" />
-                    </button>
+                    </button>}
                   </div>
                 </Td>
               </tr>
@@ -357,9 +370,13 @@ const EventFormModal: React.FC<{
   onSubmit: (payload: EventPayload) => void;
   pending: boolean;
 }> = ({ event, onClose, onSubmit, pending }) => {
+  const [photoFile, setPhotoFile] = React.useState<File | null>(null);
+  const [photoPreviewUrl, setPhotoPreviewUrl] = React.useState<string | null>(null);
+  const [isUploading, setIsUploading] = React.useState(false);
   const {
     register,
     handleSubmit,
+    watch,
     formState: { errors },
   } = useForm<EventFormValues>({
     resolver: zodResolver(eventSchema),
@@ -378,6 +395,64 @@ const EventFormModal: React.FC<{
       : EMPTY_FORM,
   });
 
+  React.useEffect(() => {
+    return () => {
+      if (photoPreviewUrl) URL.revokeObjectURL(photoPreviewUrl);
+    };
+  }, [photoPreviewUrl]);
+
+  const imageUrl = watch('imageUrl');
+  const isSubmitting = pending || isUploading;
+  const previewUrl = photoPreviewUrl ?? imageUrl?.trim();
+
+  const handlePhotoChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    if (!ALLOWED_PHOTO_TYPES.has(file.type)) {
+      setPhotoFile(null);
+      setPhotoPreviewUrl(null);
+      toast.error('Photo must be a JPEG, PNG, or WebP image.');
+      event.target.value = '';
+      return;
+    }
+
+    if (file.size > MAX_PHOTO_SIZE_BYTES) {
+      setPhotoFile(null);
+      setPhotoPreviewUrl(null);
+      toast.error('Photo must be 5 MiB or smaller.');
+      event.target.value = '';
+      return;
+    }
+
+    setPhotoFile(file);
+    setPhotoPreviewUrl(URL.createObjectURL(file));
+  };
+
+  const handleFormSubmit = async (values: EventFormValues) => {
+    if (isSubmitting) return;
+
+    const payload = toPayload(values);
+    if (!photoFile) {
+      onSubmit(payload);
+      return;
+    }
+
+    setIsUploading(true);
+    try {
+      const formData = new FormData();
+      formData.append('file', photoFile);
+      const imageUrl = await api.post<string>('/events/upload-photo', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      });
+      onSubmit({ ...payload, imageUrl });
+    } catch (error) {
+      toast.error(error instanceof Error && error.message ? error.message : 'Photo upload failed.');
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
   return (
     <Modal
       open
@@ -386,16 +461,16 @@ const EventFormModal: React.FC<{
       className="max-w-2xl"
       footer={
         <>
-          <Button variant="secondary" onClick={onClose} disabled={pending}>
+          <Button variant="secondary" onClick={onClose} disabled={isSubmitting}>
             Cancel
           </Button>
-          <Button type="submit" form="event-form" loading={pending}>
+          <Button type="submit" form="event-form" loading={isSubmitting} disabled={isSubmitting}>
             {event ? 'Save changes' : 'Create event'}
           </Button>
         </>
       }
     >
-      <form id="event-form" onSubmit={handleSubmit((values) => onSubmit(toPayload(values)))} className="space-y-4">
+      <form id="event-form" onSubmit={handleSubmit(handleFormSubmit)} className="space-y-4">
         <Input
           label="Event name"
           placeholder="Spring Symphony"
@@ -472,13 +547,28 @@ const EventFormModal: React.FC<{
                 {...register('description')}
               />
             </div>
-            <Input
-              label="Cover image URL"
-              type="url"
-              placeholder="https://example.com/image.jpg"
-              error={errors.imageUrl?.message}
-              {...register('imageUrl')}
-            />
+            <div>
+              <label htmlFor="event-photo" className="label">Upload photo</label>
+              <input
+                id="event-photo"
+                type="file"
+                accept="image/jpeg,image/png,image/webp"
+                onChange={handlePhotoChange}
+                disabled={isSubmitting}
+                className="block w-full cursor-pointer rounded-lg border border-[#3c3f41] bg-[#2b2d30] px-3 py-2 text-sm text-[#c4c7ce] file:mr-3 file:rounded-md file:border-0 file:bg-[#3574f0] file:px-3 file:py-1 file:text-sm file:font-medium file:text-white hover:file:bg-[#2f65d2] disabled:cursor-not-allowed disabled:opacity-50"
+              />
+              <p className="mt-1 text-xs text-[#9da0a8]">JPEG, PNG, or WebP up to 5 MiB.</p>
+            </div>
+            {previewUrl && (
+              <div>
+                <p className="label">Cover photo preview</p>
+                <img
+                  src={previewUrl}
+                  alt="Event cover preview"
+                  className="h-36 w-full rounded-lg border border-[#3c3f41] bg-[#2b2d30] object-cover"
+                />
+              </div>
+            )}
             {event && (
               <div>
                 <label htmlFor="event-status" className="label">Status</label>

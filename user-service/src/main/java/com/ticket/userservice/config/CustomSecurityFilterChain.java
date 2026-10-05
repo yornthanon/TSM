@@ -9,6 +9,7 @@ import com.ticket.userservice.filter.JwtAuthenticationInternalFilter;
 import com.ticket.userservice.filter.TenantScopeFilter;
 import com.ticket.userservice.repository.TenantWorkspaceRepository;
 import com.ticket.userservice.security.GoogleOAuthLoginHandler;
+import com.ticket.userservice.service.AdminActAsService;
 import com.ticket.userservice.service.JwtService;
 import com.ticket.userservice.service.TotpMfaService;
 import com.ticket.userservice.service.handle.CustomUserDetailService;
@@ -50,6 +51,7 @@ public class CustomSecurityFilterChain extends JwtConfigProperties {
     private final ObjectProvider<ClientRegistrationRepository> oauthClientRegistrations;
     private final GoogleOAuthLoginHandler googleOAuthLoginHandler;
     private final TenantWorkspaceRepository tenantWorkspaceRepository;
+    private final AdminActAsService adminActAsService;
 
     @PersistenceContext
     private EntityManager entityManager;
@@ -96,6 +98,36 @@ public class CustomSecurityFilterChain extends JwtConfigProperties {
                         .hasAuthority("ADMIN")
                         .requestMatchers("/api/v1/workspaces/current")
                         .hasAnyAuthority("USER", "TENANT_ADMIN", "ADMIN")
+                        .requestMatchers(HttpMethod.POST,
+                                "/api/v1/events", "/api/v1/events/create", "/api/v1/events/upload-photo")
+                        .hasAuthority("TENANT_ADMIN")
+                        .requestMatchers(HttpMethod.PUT, "/api/v1/events/**")
+                        .hasAuthority("TENANT_ADMIN")
+                        .requestMatchers(HttpMethod.DELETE, "/api/v1/events/**")
+                        .hasAuthority("TENANT_ADMIN")
+                        .requestMatchers(HttpMethod.PUT,
+                                "/api/v1/admin/events/*/approve", "/api/v1/admin/events/*/reject")
+                        .hasAuthority("TENANT_ADMIN")
+                        .requestMatchers(HttpMethod.PUT, "/api/v1/admin/events/**")
+                        .hasAuthority("TENANT_ADMIN")
+                        .requestMatchers(HttpMethod.DELETE, "/api/v1/admin/events/**")
+                        .hasAuthority("TENANT_ADMIN")
+                        .requestMatchers(HttpMethod.POST, "/api/v1/tickets", "/api/v1/tickets/create")
+                        .hasAuthority("TENANT_ADMIN")
+                        .requestMatchers(HttpMethod.PUT, "/api/v1/tickets/**")
+                        .hasAuthority("TENANT_ADMIN")
+                        .requestMatchers(HttpMethod.DELETE, "/api/v1/tickets/**")
+                        .hasAuthority("TENANT_ADMIN")
+                        .requestMatchers(HttpMethod.POST, "/api/v1/tickets/*/unlock", "/api/v1/tickets/unlock")
+                        .hasAuthority("TENANT_ADMIN")
+                        .requestMatchers(HttpMethod.PUT, "/api/v1/orders/*/force-cancel")
+                        .hasAuthority("TENANT_ADMIN")
+                        .requestMatchers(HttpMethod.PUT, "/api/v1/orders/*/cancel")
+                        .hasAnyAuthority("USER", "TENANT_ADMIN")
+                        .requestMatchers(HttpMethod.PUT, "/api/v1/admin/orders/*/cancel")
+                        .hasAuthority("TENANT_ADMIN")
+                        .requestMatchers(HttpMethod.POST, "/api/v1/payments/*/refund")
+                        .hasAuthority("TENANT_ADMIN")
                         .requestMatchers("/api/v1/admin/**", "/api/admin/**").hasAuthority("ADMIN")
                         .anyRequest()
                         .hasAnyAuthority("USER", "TENANT_ADMIN", "ADMIN", "INTERNAL_SERVICE")
@@ -111,7 +143,7 @@ public class CustomSecurityFilterChain extends JwtConfigProperties {
                                         (((request, response, authException)
                                                 -> response.sendError(HttpServletResponse.SC_UNAUTHORIZED))))
                                 .accessDeniedHandler(new CustomAccessDeniedHandler()))
-                .addFilterAfter(new JwtAuthenticationInternalFilter(jwtService, objectMapper, this, customUserDetailService),
+                .addFilterAfter(new JwtAuthenticationInternalFilter(jwtService, objectMapper, this, customUserDetailService, adminActAsService),
                         UsernamePasswordAuthenticationFilter.class)
                 .addFilterAfter(new InternalAuthFilter(internalTokenProvider),
                         JwtAuthenticationInternalFilter.class)

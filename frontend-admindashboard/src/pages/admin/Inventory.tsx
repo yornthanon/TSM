@@ -24,6 +24,7 @@ import {
 } from '../../components/QueryState';
 import { Badge, Button, Card, ConfirmDialog, Input, Modal } from '../../components/ui';
 import { formatCurrency, formatDateTime } from '../../utils';
+import { auth } from '../../lib/auth';
 import {
   TICKET_STATUSES,
   TICKET_TYPES,
@@ -42,6 +43,8 @@ const ticketSchema = z.object({
 type TicketFormValues = z.infer<typeof ticketSchema>;
 
 const Inventory: React.FC = () => {
+  const activeRole = auth.getUser()?.role;
+  const canManageInventory = activeRole === 'TENANT_ADMIN';
   const tickets = useTickets();
   const ticketStats = useTicketStats();
   const events = useEvents();
@@ -81,11 +84,17 @@ const Inventory: React.FC = () => {
     <>
       <PageHeader
         title="Ticket inventory"
-        description="Seats are one row each. Locked seats show the holder and expiry."
+        description={canManageInventory
+          ? 'Seats are one row each. Locked seats show the holder and expiry.'
+          : activeRole === 'ADMIN'
+            ? 'Platform-wide read-only view. Open a workspace from Users to manage inventory with an audited session.'
+            : 'View ticket inventory in your workspace.'}
         actions={
-          <Button leftIcon={<Plus className="h-3.5 w-3.5" />} onClick={() => setFormOpen(true)}>
-            Add seat
-          </Button>
+          canManageInventory ? (
+            <Button leftIcon={<Plus className="h-3.5 w-3.5" />} onClick={() => setFormOpen(true)}>
+              Add seat
+            </Button>
+          ) : undefined
         }
       />
 
@@ -143,11 +152,11 @@ const Inventory: React.FC = () => {
         onRetry={() => void tickets.refetch()}
         emptyTitle={search || statusFilter || eventFilter ? 'No seats match your filters' : 'No seats yet'}
         emptyDescription="Add a seat to make it purchasable."
-        emptyAction={
+        emptyAction={canManageInventory ? (
           <Button leftIcon={<Plus className="h-3.5 w-3.5" />} onClick={() => setFormOpen(true)}>
             Add seat
           </Button>
-        }
+        ) : undefined}
       >
         <Table>
           <thead>
@@ -180,7 +189,7 @@ const Inventory: React.FC = () => {
                 </Td>
                 <Td>
                   <div className="flex items-center justify-end gap-1">
-                    <button
+                    {canManageInventory && <button
                       type="button"
                       title="Release lock"
                       aria-label={`Release lock on seat ${ticket.seatNumber}`}
@@ -194,8 +203,8 @@ const Inventory: React.FC = () => {
                       className="rounded-md p-1.5 text-[#9da0a8] hover:bg-[#313335] disabled:opacity-40"
                     >
                       <Unlock className="h-3.5 w-3.5" />
-                    </button>
-                    <button
+                    </button>}
+                    {canManageInventory && <button
                       type="button"
                       title="Delete seat"
                       aria-label={`Delete seat ${ticket.seatNumber}`}
@@ -203,7 +212,7 @@ const Inventory: React.FC = () => {
                       className="rounded-md p-1.5 text-rose-600 hover:bg-rose-50"
                     >
                       <Trash2 className="h-3.5 w-3.5" />
-                    </button>
+                    </button>}
                   </div>
                 </Td>
               </tr>

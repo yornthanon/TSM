@@ -9,7 +9,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
-@RequestMapping("/api/admin/events")
+@RequestMapping("/api/v1/admin/events")
 @RequiredArgsConstructor
 public class AdminEventController {
 

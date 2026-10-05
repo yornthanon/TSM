@@ -243,6 +243,52 @@ export interface OAuthCodeExchangeResponse extends AuthTokens {
   username: string;
 }
 
+export interface ActAsResponse {
+  accessToken: string;
+  sessionId: number;
+  expiresAt: string;
+  target: {
+    id: number;
+    username: string;
+    email: string;
+    firstName: string | null;
+    lastName: string | null;
+    tenantId: number;
+    roles: string[];
+  };
+}
+
+export interface ActAsAuditResponse {
+  id: number;
+  sessionId: number;
+  actorUserId: number;
+  actorEmail: string;
+  targetUserId: number;
+  targetEmail: string;
+  action: string;
+  httpMethod: string | null;
+  requestPath: string | null;
+  responseStatus: number | null;
+  occurredAt: string;
+}
+
+export interface AdminWorkspaceOverviewResponse {
+  workspaceId: number;
+  workspaceName: string;
+  status: string;
+  ownerUserId: number | null;
+  ownerEmail: string | null;
+  ownerUsername: string | null;
+  userCount: number;
+  eventCount: number;
+  ticketCount: number;
+  orderCount: number;
+  orderAmount: number;
+  paymentCount: number;
+  completedPaymentAmount: number;
+  notificationCount: number;
+}
+
 export interface LoginCredentials {
   username: string;
   password: string;

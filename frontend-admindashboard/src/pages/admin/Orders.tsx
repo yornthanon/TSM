@@ -15,8 +15,11 @@ import {
 import { Badge, Card, ConfirmDialog, Input } from '../../components/ui';
 import { formatCurrency, formatDateTime } from '../../utils';
 import { ORDER_STATUSES, type Order } from '../../types/api';
+import { auth } from '../../lib/auth';
 
 const Orders: React.FC = () => {
+  const activeRole = auth.getUser()?.role;
+  const canCancelOrders = activeRole !== 'ADMIN';
   const orders = useOrders();
   const orderStats = useOrderStats();
   const events = useEvents();
@@ -52,7 +55,9 @@ const Orders: React.FC = () => {
     <>
       <PageHeader
         title="Orders"
-        description="Monitor bookings and cancel orders. Cancelling is only offered for orders that are not already finished."
+        description={canCancelOrders
+          ? 'Monitor bookings and cancel eligible orders in this workspace.'
+          : 'Platform-wide read-only view. Open a workspace from Users to manage orders with an audited session.'}
       />
 
       <div className="mb-4 grid grid-cols-2 gap-3 lg:grid-cols-4">
@@ -111,7 +116,7 @@ const Orders: React.FC = () => {
               <Th>Status</Th>
               <Th>Payment</Th>
               <Th>Placed</Th>
-              <Th className="text-right">Actions</Th>
+            <Th className="text-right">{canCancelOrders ? 'Actions' : ''}</Th>
             </tr>
           </thead>
           <tbody>
@@ -135,7 +140,7 @@ const Orders: React.FC = () => {
                 </Td>
                 <Td>
                   <div className="flex justify-end">
-                    <button
+                    {canCancelOrders && <button
                       type="button"
                       title="Cancel order"
                       aria-label={`Cancel order ${order.id}`}
@@ -144,7 +149,7 @@ const Orders: React.FC = () => {
                       className="rounded-md p-1.5 text-rose-600 hover:bg-rose-50 disabled:cursor-not-allowed disabled:text-[#9da0a8]"
                     >
                       <Ban className="h-3.5 w-3.5" />
-                    </button>
+                    </button>}
                   </div>
                 </Td>
               </tr>
