@@ -95,6 +95,48 @@ class ServiceRoleAuthorizationFilterTest {
     }
 
     @Test
+    void allowsAllApplicationRolesToReadTenantDashboardData() throws Exception {
+        List<String> dashboardRoles = List.of("USER", "TENANT_ADMIN", "ADMIN");
+        List<String> dashboardPaths = List.of(
+                "/api/v1/events/stats",
+                "/api/v1/tickets/stats",
+                "/api/v1/orders/stats",
+                "/api/v1/payments",
+                "/api/v1/payments/revenue-summary",
+                "/api/v1/workspaces/current");
+
+        for (String role : dashboardRoles) {
+            for (String path : dashboardPaths) {
+                MockHttpServletRequest request = authenticated("GET", path, role);
+                MockHttpServletResponse response = new MockHttpServletResponse();
+                FilterChain chain = mock(FilterChain.class);
+                filter.doFilter(request, response, chain);
+                assertThat(response.getStatus()).as("role=%s path=%s", role, path).isEqualTo(200);
+                verify(chain).doFilter(request, response);
+            }
+        }
+    }
+
+    @Test
+    void keepsPlatformNotificationStatsRestrictedToAdmin() throws Exception {
+        for (String role : List.of("USER", "TENANT_ADMIN")) {
+            MockHttpServletRequest request = authenticated("GET", "/api/v1/admin/notifications/stats", role);
+            MockHttpServletResponse response = new MockHttpServletResponse();
+            FilterChain chain = mock(FilterChain.class);
+            filter.doFilter(request, response, chain);
+            assertThat(response.getStatus()).as("role=%s", role).isEqualTo(403);
+            verifyNoInteractions(chain);
+        }
+
+        MockHttpServletRequest adminRequest = authenticated("GET", "/api/v1/admin/notifications/stats", "ADMIN");
+        MockHttpServletResponse adminResponse = new MockHttpServletResponse();
+        FilterChain adminChain = mock(FilterChain.class);
+        filter.doFilter(adminRequest, adminResponse, adminChain);
+        assertThat(adminResponse.getStatus()).isEqualTo(200);
+        verify(adminChain).doFilter(adminRequest, adminResponse);
+    }
+
+    @Test
     void requiresInternalTokenForInternalRoutes() throws Exception {
         MockHttpServletRequest request = request("POST", "/api/v1/tickets/internal/12/reserve");
         MockHttpServletResponse response = new MockHttpServletResponse();
