@@ -1,1 +1,2 @@
 com.ticket.common.config.WebClientConfig
+com.ticket.common.config.ServiceAuthorizationAutoConfiguration

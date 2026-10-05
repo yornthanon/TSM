@@ -21,7 +21,7 @@ public class InternalTokenProvider {
     @Getter
     private final String token;
 
-    public InternalTokenProvider(@Value("${internal.auth.token:}") String configuredToken) {
+    public InternalTokenProvider(@Value("${internal.auth.token:${INTERNAL_AUTH_TOKEN:}}") String configuredToken) {
         boolean generated = configuredToken == null || configuredToken.isBlank();
         this.token = generated ? UUID.randomUUID().toString() : configuredToken;
         if (generated) {
