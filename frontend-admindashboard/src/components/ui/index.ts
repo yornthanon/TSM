@@ -2,6 +2,7 @@ export { Button } from './Button';
 export { Card } from './Card';
 export { Modal } from './Modal';
 export { Input } from './Input';
+export { SelectField } from './SelectField';
 export { Badge } from './Badge';
 export { Skeleton } from './Skeleton';
 export { Spinner } from './Spinner';

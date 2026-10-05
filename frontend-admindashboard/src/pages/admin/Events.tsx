@@ -1,5 +1,5 @@
 import React from 'react';
-import { useForm, useWatch } from 'react-hook-form';
+import { Controller, useForm, useWatch } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Link } from 'react-router-dom';
@@ -29,6 +29,7 @@ import {
   ConfirmDialog,
   Input,
   Modal,
+  SelectField,
 } from '../../components/ui';
 import { formatCurrency, formatDateTime, toDateTimeLocalValue } from '../../utils';
 import {
@@ -169,19 +170,16 @@ const Events: React.FC = () => {
               aria-label="Search events"
             />
           </div>
-          <select
+          <SelectField
             value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value)}
-            aria-label="Filter by status"
-            className="rounded-lg border border-[#3c3f41] bg-white px-3 py-2 text-[13px] text-[#c4c7ce]"
-          >
-            <option value="">All statuses</option>
-            {EVENT_STATUSES.map((status) => (
-              <option key={status} value={status}>
-                {status}
-              </option>
-            ))}
-          </select>
+            onChange={setStatusFilter}
+            ariaLabel="Filter by status"
+            className="w-full px-3 py-2 text-[13px] sm:w-44"
+            options={[
+              { value: '', label: 'All statuses' },
+              ...EVENT_STATUSES.map((status) => ({ value: status, label: status })),
+            ]}
+          />
         </div>
       </Card>
 
@@ -498,11 +496,19 @@ const EventFormModal: React.FC<{
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           <div>
             <label htmlFor="event-type" className="label">Event type</label>
-            <select id="event-type" className="input [color-scheme:dark]" {...register('eventType')}>
-              {EVENT_TYPES.map((type) => (
-                <option key={type} value={type}>{EVENT_TYPE_LABELS[type]}</option>
-              ))}
-            </select>
+            <Controller
+              control={control}
+              name="eventType"
+              render={({ field }) => (
+                <SelectField
+                  id="event-type"
+                  value={field.value ?? 'CONCERT'}
+                  onChange={field.onChange}
+                  disabled={isSubmitting}
+                  options={EVENT_TYPES.map((type) => ({ value: type, label: EVENT_TYPE_LABELS[type] }))}
+                />
+              )}
+            />
           </div>
           <Input
             label="Date and time"
@@ -601,11 +607,19 @@ const EventFormModal: React.FC<{
           {event && (
             <div>
               <label htmlFor="event-status" className="label">Status</label>
-              <select id="event-status" disabled={isSubmitting} className="input [color-scheme:dark]" {...register('status')}>
-                {EVENT_STATUSES.map((status) => (
-                  <option key={status} value={status}>{EVENT_STATUS_LABELS[status]}</option>
-                ))}
-              </select>
+              <Controller
+                control={control}
+                name="status"
+                render={({ field }) => (
+                  <SelectField
+                    id="event-status"
+                    value={field.value ?? 'DRAFT'}
+                    onChange={field.onChange}
+                    disabled={isSubmitting}
+                    options={EVENT_STATUSES.map((status) => ({ value: status, label: EVENT_STATUS_LABELS[status] }))}
+                  />
+                )}
+              />
             </div>
           )}
         </section>
