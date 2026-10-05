@@ -415,23 +415,23 @@ erDiagram
     USERS ||--o{ AUDIT_LOGS : performs
 
     TENANT_WORKSPACES {
-      bigint id PK
+      bigint id
       varchar name
       varchar status
-      bigint owner_user_id UK
+      bigint owner_user_id
       timestamptz created_at
     }
     USERS {
-      bigint id PK
-      bigint tenant_id FK_NULLABLE
-      varchar email UK
-      varchar google_subject UK_NULLABLE
+      bigint id
+      bigint tenant_id
+      varchar email
+      varchar google_subject
       varchar status
       boolean mfa_enabled
     }
     EVENTS {
-      bigint id PK
-      bigint tenant_id FK
+      bigint id
+      bigint tenant_id
       varchar title
       varchar status
       timestamptz starts_at
@@ -439,72 +439,72 @@ erDiagram
       varchar timezone
     }
     TICKET_PRODUCTS {
-      bigint id PK
-      bigint event_id FK
+      bigint id
+      bigint event_id
       varchar code
-      varchar seat_number_NULLABLE
+      varchar seat_number
       numeric unit_price
       int quantity
       int available_quantity
       varchar status
     }
     INVENTORY_HOLDS {
-      bigint id PK
-      bigint ticket_product_id FK
-      bigint user_id FK
-      bigint order_id FK_NULLABLE
+      bigint id
+      bigint ticket_product_id
+      bigint user_id
+      bigint order_id
       varchar status
       timestamptz expires_at
     }
     ORDERS {
-      bigint id PK
-      bigint tenant_id FK
-      bigint user_id FK
-      varchar order_number UK
+      bigint id
+      bigint tenant_id
+      bigint user_id
+      varchar order_number
       varchar status
       numeric subtotal
       numeric total
       varchar idempotency_key
     }
     ORDER_ITEMS {
-      bigint id PK
-      bigint order_id FK
-      bigint ticket_product_id FK
+      bigint id
+      bigint order_id
+      bigint ticket_product_id
       numeric unit_price_snapshot
       int quantity
     }
     PAYMENTS {
-      bigint id PK
-      bigint order_id FK
+      bigint id
+      bigint order_id
       varchar provider
-      varchar provider_transaction_id UK_NULLABLE
+      varchar provider_transaction_id
       numeric amount
       varchar status
     }
     NOTIFICATIONS {
-      bigint id PK
-      bigint tenant_id FK
-      bigint order_id FK_NULLABLE
+      bigint id
+      bigint tenant_id
+      bigint order_id
       varchar channel
       varchar status
       int attempt_count
     }
     AUDIT_LOGS {
-      bigint id PK
-      bigint actor_user_id FK_NULLABLE
-      bigint tenant_id FK_NULLABLE
+      bigint id
+      bigint actor_user_id
+      bigint tenant_id
       varchar action
       varchar resource_type
       bigint resource_id
       jsonb metadata
     }
     OUTBOX_EVENTS {
-      uuid id PK
+      uuid id
       varchar event_type
       jsonb payload
       varchar status
       int attempt_count
-      timestamptz published_at_NULLABLE
+      timestamptz published_at
     }
 ```
 
