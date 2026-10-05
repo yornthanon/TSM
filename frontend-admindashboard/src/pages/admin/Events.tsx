@@ -468,11 +468,12 @@ const EventFormModal: React.FC<{
   return (
     <Modal
       open
+      compact
       onClose={() => {
         if (!isSubmitting) onClose();
       }}
       title={event ? 'Edit event' : 'New event'}
-      className="max-w-2xl"
+      className="max-w-xl"
       footer={
         <>
           <Button variant="secondary" onClick={onClose} disabled={isSubmitting}>
