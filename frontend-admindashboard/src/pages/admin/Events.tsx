@@ -3,7 +3,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Link } from 'react-router-dom';
-import { Check, Eye, Pencil, Plus, Search, Trash2, X } from 'lucide-react';
+import { CalendarDays, Check, Eye, Pencil, Plus, Search, Trash2, X } from 'lucide-react';
 import { toast } from 'sonner';
 import {
   useApproveEvent,
@@ -31,7 +31,14 @@ import {
   Modal,
 } from '../../components/ui';
 import { formatCurrency, formatDateTime, toDateTimeLocalValue } from '../../utils';
-import { EVENT_STATUSES, EVENT_TYPES, type Event, type EventPayload } from '../../types/api';
+import {
+  EVENT_STATUSES,
+  EVENT_TYPES,
+  type Event,
+  type EventPayload,
+  type EventStatus,
+  type EventType,
+} from '../../types/api';
 
 /**
  * Mirrors the backend `EventRequest` constraints: title is @NotBlank and capped
@@ -51,6 +58,26 @@ const eventSchema = z.object({
 });
 
 type EventFormValues = z.infer<typeof eventSchema>;
+
+const EVENT_TYPE_LABELS: Record<EventType, string> = {
+  CONCERT: 'Concert',
+  MOVIE: 'Movie',
+  THEATER: 'Theater',
+  SPORTS: 'Sports',
+  CONFERENCE: 'Conference',
+  WORKSHOP: 'Workshop',
+};
+
+const EVENT_STATUS_LABELS: Record<EventStatus, string> = {
+  DRAFT: 'Draft',
+  UPCOMING: 'Upcoming',
+  ACTIVE: 'Active',
+  ONGOING: 'Ongoing',
+  COMPLETED: 'Completed',
+  CANCELLED: 'Cancelled',
+  POSTPONED: 'Postponed',
+  RESCHEDULED: 'Rescheduled',
+};
 
 const EMPTY_FORM: EventFormValues = {
   title: '',
@@ -355,7 +382,8 @@ const EventFormModal: React.FC<{
     <Modal
       open
       onClose={onClose}
-      title={event ? `Edit "${event.title}"` : 'Create event'}
+      title={event ? 'Edit event' : 'New event'}
+      className="max-w-2xl"
       footer={
         <>
           <Button variant="secondary" onClick={onClose} disabled={pending}>
@@ -367,47 +395,46 @@ const EventFormModal: React.FC<{
         </>
       }
     >
-      <form id="event-form" onSubmit={handleSubmit((values) => onSubmit(toPayload(values)))} className="space-y-3">
+      <form id="event-form" onSubmit={handleSubmit((values) => onSubmit(toPayload(values)))} className="space-y-4">
         <Input
-          label="Title"
+          label="Event name"
           placeholder="Spring Symphony"
+          maxLength={255}
           error={errors.title?.message}
           {...register('title')}
         />
-        <div>
-          <label htmlFor="event-description" className="mb-1.5 block text-xs font-medium text-[#c4c7ce]">
-            Description
-          </label>
-          <textarea
-            id="event-description"
-            rows={3}
-            className="w-full rounded-lg border border-[#3c3f41] px-3 py-2 text-[13px] text-[#d7dae0] outline-none focus:border-[#c4b5fd] focus:ring-2 focus:ring-[#3574f0]/15"
-            placeholder="What is this event about?"
-            {...register('description')}
+
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+          <div>
+            <label htmlFor="event-type" className="label">Event type</label>
+            <select id="event-type" className="input [color-scheme:dark]" {...register('eventType')}>
+              {EVENT_TYPES.map((type) => (
+                <option key={type} value={type}>{EVENT_TYPE_LABELS[type]}</option>
+              ))}
+            </select>
+          </div>
+          <Input
+            label="Date and time"
+            type="datetime-local"
+            leftIcon={CalendarDays}
+            className="[color-scheme:dark]"
+            error={errors.eventDate?.message}
+            {...register('eventDate')}
           />
         </div>
-        <Input
-          label="Location"
-          placeholder="National Theatre, Hall A"
-          error={errors.location?.message}
-          {...register('location')}
-        />
-        <Input
-          label="Image URL"
-          placeholder="https://..."
-          error={errors.imageUrl?.message}
-          {...register('imageUrl')}
-        />
-        <Input
-          label="Date & time"
-          type="datetime-local"
-          error={errors.eventDate?.message}
-          {...register('eventDate')}
-        />
-        <div className="grid grid-cols-2 gap-3">
+
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+          <Input
+            label="Venue"
+            placeholder="City Hall"
+            maxLength={255}
+            error={errors.location?.message}
+            {...register('location')}
+          />
           <Input
             label="Base price"
             type="number"
+            inputMode="decimal"
             step="0.01"
             min="0"
             error={errors.basePrice?.message}
@@ -416,46 +443,54 @@ const EventFormModal: React.FC<{
           <Input
             label="Capacity"
             type="number"
+            inputMode="numeric"
             step="1"
             min="0"
             error={errors.capacity?.message}
             {...register('capacity')}
           />
         </div>
-        <div className="grid grid-cols-2 gap-3">
-          <div>
-            <label htmlFor="event-type" className="mb-1.5 block text-xs font-medium text-[#c4c7ce]">
-              Type
-            </label>
-            <select
-              id="event-type"
-              className="w-full rounded-lg border border-[#3c3f41] bg-white px-3 py-2 text-[13px]"
-              {...register('eventType')}
-            >
-              {EVENT_TYPES.map((type) => (
-                <option key={type} value={type}>
-                  {type}
-                </option>
-              ))}
-            </select>
+
+        {!event && <p className="text-xs text-[#9da0a8]">New events start as Draft.</p>}
+
+        <details
+          className="rounded-lg border border-[#3c3f41] bg-[#1e1f22] px-3 py-2"
+          open={Boolean(event?.description || event?.imageUrl || (event && event.status !== 'DRAFT'))}
+        >
+          <summary className="cursor-pointer select-none text-sm font-medium text-[#dfe1e5]">
+            Optional details <span className="ml-1 text-xs font-normal text-[#9da0a8]">Description, cover image{event ? ', status' : ''}</span>
+          </summary>
+          <div className="mt-3 space-y-3">
+            <div>
+              <label htmlFor="event-description" className="label">Description</label>
+              <textarea
+                id="event-description"
+                rows={2}
+                maxLength={2000}
+                className="input resize-y"
+                placeholder="A short note about the event (optional)"
+                {...register('description')}
+              />
+            </div>
+            <Input
+              label="Cover image URL"
+              type="url"
+              placeholder="https://example.com/image.jpg"
+              error={errors.imageUrl?.message}
+              {...register('imageUrl')}
+            />
+            {event && (
+              <div>
+                <label htmlFor="event-status" className="label">Status</label>
+                <select id="event-status" className="input [color-scheme:dark]" {...register('status')}>
+                  {EVENT_STATUSES.map((status) => (
+                    <option key={status} value={status}>{EVENT_STATUS_LABELS[status]}</option>
+                  ))}
+                </select>
+              </div>
+            )}
           </div>
-          <div>
-            <label htmlFor="event-status" className="mb-1.5 block text-xs font-medium text-[#c4c7ce]">
-              Status
-            </label>
-            <select
-              id="event-status"
-              className="w-full rounded-lg border border-[#3c3f41] bg-white px-3 py-2 text-[13px]"
-              {...register('status')}
-            >
-              {EVENT_STATUSES.map((status) => (
-                <option key={status} value={status}>
-                  {status}
-                </option>
-              ))}
-            </select>
-          </div>
-        </div>
+        </details>
       </form>
     </Modal>
   );

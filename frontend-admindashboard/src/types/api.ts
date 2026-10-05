@@ -27,7 +27,8 @@ export type EventStatus = (typeof EVENT_STATUSES)[number];
 
 export const EVENT_TYPES = [
   'CONCERT',
-  'MOVIE_THEATER',
+  'MOVIE',
+  'THEATER',
   'SPORTS',
   'CONFERENCE',
   'WORKSHOP',
