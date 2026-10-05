@@ -1,6 +1,7 @@
 package com.ticket.eventservice.service;
 
 import com.ticket.common.tenant.TenantContextHolder;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
@@ -15,6 +16,7 @@ public class EventImageStorageService {
     private static final long MAX_BYTES = 5L * 1024L * 1024L;
     private final ImageUploadClient uploadClient;
 
+    @Autowired
     public EventImageStorageService(ImageUploadClient uploadClient) {
         this.uploadClient = uploadClient;
     }
