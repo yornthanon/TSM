@@ -73,7 +73,8 @@ public class EventImageStorageService {
 
     private String normalizeMime(String contentType) {
         if (contentType == null) return "";
-        return switch (contentType.toLowerCase()) {
+        String mediaType = contentType.split(";", 2)[0].trim().toLowerCase();
+        return switch (mediaType) {
             case "image/jpeg", "image/jpg" -> "jpeg";
             case "image/png" -> "png";
             case "image/webp" -> "webp";

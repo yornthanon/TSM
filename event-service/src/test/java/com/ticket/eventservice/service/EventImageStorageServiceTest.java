@@ -76,6 +76,20 @@ class EventImageStorageServiceTest {
     }
 
     @Test
+    void acceptsPngContentTypeWithParametersBeforeCheckingStorageConfiguration() {
+        TenantContextHolder.set(42L, false);
+        MockMultipartFile file = new MockMultipartFile(
+                "file", "cover.png", "image/png; charset=binary", validPngBytes());
+
+        ResponseStatusException exception = assertThrows(ResponseStatusException.class,
+                () -> service.upload(file));
+
+        assertEquals(HttpStatus.SERVICE_UNAVAILABLE, exception.getStatusCode());
+        assertEquals("Photo storage is not configured. Set CLOUDINARY_URL on the backend service.",
+                exception.getReason());
+    }
+
+    @Test
     void reportsMissingCloudinaryConfigurationAfterValidatingImage() {
         TenantContextHolder.set(42L, false);
         MockMultipartFile file = new MockMultipartFile(
