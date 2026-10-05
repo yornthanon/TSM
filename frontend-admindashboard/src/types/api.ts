@@ -362,6 +362,13 @@ export interface ListResponse<T> {
   totalPages?: number;
   pageNumber?: number;
   pageSize?: number;
+  metadata?: {
+    totalUsers?: number;
+    currentPage?: number;
+    pageSize?: number;
+    hasNext?: boolean;
+    hasPrevious?: boolean;
+  };
 }
 
 export interface ApiErrorResponse {

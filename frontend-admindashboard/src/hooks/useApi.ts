@@ -314,7 +314,22 @@ export function useUsers(params: { pageNumber: number; pageSize: number; usernam
   if (params.status) query.set('status', params.status);
   return useQuery({
     queryKey: [...queryKeys.users, params],
-    queryFn: () => api.get<ListResponse<User>>(`/admin/users?${query.toString()}`),
+    queryFn: async () => {
+      const payload = await api.get<ListResponse<User>>(`/admin/users?${query.toString()}`);
+      const metadata = payload.metadata;
+      const content = payload.content ?? payload.data ?? [];
+      const totalElements = payload.totalElements ?? metadata?.totalUsers ?? content.length;
+      const pageSize = payload.pageSize ?? metadata?.pageSize ?? params.pageSize;
+      const pageNumber = payload.pageNumber ?? metadata?.currentPage ?? params.pageNumber;
+      return {
+        ...payload,
+        content,
+        totalElements,
+        totalPages: payload.totalPages ?? Math.ceil(totalElements / Math.max(1, pageSize)),
+        pageNumber,
+        pageSize,
+      };
+    },
     ...options,
   });
 }
