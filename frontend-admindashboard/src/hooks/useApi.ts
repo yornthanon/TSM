@@ -304,6 +304,17 @@ export function useUserStats(options?: UseQueryOptions<UserStats>) {
   });
 }
 
+export function useCreateUser() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (payload: UserPayload) => api.post<User>('/admin/users', payload),
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: queryKeys.users });
+      void qc.invalidateQueries({ queryKey: queryKeys.userStats });
+    },
+  });
+}
+
 export function useUpdateUser() {
   const qc = useQueryClient();
   return useMutation({
@@ -329,6 +340,17 @@ function useUserStatusAction(action: 'activate' | 'deactivate') {
 
 export const useActivateUser = () => useUserStatusAction('activate');
 export const useDeactivateUser = () => useUserStatusAction('deactivate');
+
+export function useDeleteUser() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: number) => api.delete<null>(`/admin/users/${id}`),
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: queryKeys.users });
+      void qc.invalidateQueries({ queryKey: queryKeys.userStats });
+    },
+  });
+}
 
 // ---------------------------------------------------------------------------
 // Access control

@@ -22,4 +22,6 @@ public interface OAuthLoginCodeRepository extends JpaRepository<OAuthLoginCode, 
     @Modifying
     @Query("delete from OAuthLoginCode code where code.expiresAt < :now")
     int deleteExpired(@Param("now") Instant now);
+
+    long deleteAllByUserId(Long userId);
 }

@@ -87,7 +87,7 @@ export const Login: React.FC = () => {
                 <GoogleMark />
                 Continue with Google
               </button>
-              <p className="mt-4 text-center text-xs leading-5 text-[#8b929e]">A separate workspace is created for each verified Google account.</p>
+              <p className="mt-4 text-center text-xs leading-5 text-[#8b929e]">Google will ask which account to use. Check the email shown and choose “Use another account” if it is not the one you intended. Each verified Google account receives its own workspace.</p>
             </Card>
 
             <p className="mt-5 text-center text-xs leading-5 text-[#777f8b]">Password sign-in is disabled. Authenticator verification may be requested for accounts with MFA enabled.</p>

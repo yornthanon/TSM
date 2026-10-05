@@ -297,6 +297,7 @@ export interface UserPayload {
   phoneNumber?: string | null;
   userType?: string | null;
   status?: 'ACTIVE' | 'INACTIVE';
+  roles?: string[];
 }
 
 // ---------------------------------------------------------------------------

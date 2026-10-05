@@ -30,6 +30,7 @@ import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.http.HttpMethod;
 import org.springframework.security.oauth2.client.registration.ClientRegistrationRepository;
+import org.springframework.security.oauth2.client.web.DefaultOAuth2AuthorizationRequestResolver;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
@@ -117,8 +118,16 @@ public class CustomSecurityFilterChain extends JwtConfigProperties {
                 .addFilterAfter(new TenantScopeFilter(entityManager, tenantWorkspaceRepository, customUserDetailService),
                         InternalAuthFilter.class);
 
-        if (oauthClientRegistrations.getIfAvailable() != null) {
+        ClientRegistrationRepository clientRegistrations = oauthClientRegistrations.getIfAvailable();
+        if (clientRegistrations != null) {
+            DefaultOAuth2AuthorizationRequestResolver authorizationRequestResolver =
+                    new DefaultOAuth2AuthorizationRequestResolver(clientRegistrations, "/oauth2/authorization");
+            authorizationRequestResolver.setAuthorizationRequestCustomizer(
+                    builder -> builder.additionalParameters(parameters ->
+                            parameters.put("prompt", "select_account")));
             httpSecurity.oauth2Login(oauth -> oauth
+                    .authorizationEndpoint(endpoint ->
+                            endpoint.authorizationRequestResolver(authorizationRequestResolver))
                     .successHandler(googleOAuthLoginHandler)
                     .failureHandler(googleOAuthLoginHandler));
         }

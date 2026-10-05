@@ -21,6 +21,11 @@ public class AdminUserController {
         return ResponseEntity.ok(userService.findAll(filterRequest));
     }
 
+    @PostMapping
+    public ResponseEntity<ResponseErrorTemplate> createUser(@Valid @RequestBody UserRequest userRequest) {
+        return ResponseEntity.ok(userService.create(userRequest));
+    }
+
     @GetMapping("/{id}")
     public ResponseEntity<ResponseErrorTemplate> getUserById(@PathVariable Long id) {
         return ResponseEntity.ok(userService.findById(id));

@@ -16,11 +16,14 @@ import com.ticket.userservice.entity.Role;
 import com.ticket.userservice.entity.User;
 import com.ticket.userservice.exception.BasedException;
 import com.ticket.userservice.repository.GroupRepository;
+import com.ticket.userservice.repository.OAuthLoginCodeRepository;
+import com.ticket.userservice.repository.RefreshTokenRepository;
 import com.ticket.userservice.repository.RoleRepository;
 import com.ticket.userservice.repository.UserRepository;
 import com.ticket.userservice.service.UserService;
 import com.ticket.userservice.service.handle.UserHandlerService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -31,6 +34,7 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.List;
+import java.util.Locale;
 import java.util.Set;
 
 @Service
@@ -45,6 +49,11 @@ public class UserServiceImpl implements UserService {
     private final PasswordEncoder passwordEncoder;
     private final BaseRepository baseRepository;
     private final UserSearchServiceImpl userSearchService;
+    private final RefreshTokenRepository refreshTokenRepository;
+    private final OAuthLoginCodeRepository oauthLoginCodeRepository;
+
+    @Value("${app.auth.platform-admin-emails:}")
+    private String platformAdminEmails;
 
     @Transactional
     public ResponseErrorTemplate create(UserRequest userRequest) {
@@ -220,6 +229,11 @@ public class UserServiceImpl implements UserService {
         if (user == null) {
             throw new BasedException("USER_NOT_FOUND", "User not found with id: " + id, null, "id", String.valueOf(id));
         }
+        if (isPlatformAdminEmail(user.getEmail())) {
+            throw new BasedException("PLATFORM_ADMIN_PROTECTED",
+                    "The configured platform administrator account cannot be deactivated.",
+                    null, "id", String.valueOf(id));
+        }
 
         user.setStatus("INACTIVE");
         baseRepository.saveOrUpdate(user);
@@ -278,6 +292,13 @@ public class UserServiceImpl implements UserService {
         if (user == null) {
             throw new BasedException("USER_NOT_FOUND", "User not found with id: " + id, null, "id", String.valueOf(id));
         }
+        if (isPlatformAdminEmail(user.getEmail())) {
+            throw new BasedException("PLATFORM_ADMIN_PROTECTED",
+                    "The configured platform administrator account cannot be deleted.",
+                    null, "id", String.valueOf(id));
+        }
+        refreshTokenRepository.deleteByUser(user);
+        oauthLoginCodeRepository.deleteAllByUserId(id);
         baseRepository.delete(user);
         return new ResponseErrorTemplate(
                 "User deleted successfully",
@@ -285,6 +306,16 @@ public class UserServiceImpl implements UserService {
                 null,
                 false
         );
+    }
+
+    private boolean isPlatformAdminEmail(String email) {
+        if (!StringUtils.hasText(email) || !StringUtils.hasText(platformAdminEmails)) return false;
+        String normalizedEmail = email.trim().toLowerCase(Locale.ROOT);
+        return java.util.Arrays.stream(platformAdminEmails.split(","))
+                .map(String::trim)
+                .filter(StringUtils::hasText)
+                .map(value -> value.toLowerCase(Locale.ROOT))
+                .anyMatch(normalizedEmail::equals);
     }
 
     @Override
