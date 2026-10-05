@@ -291,7 +291,7 @@ export function useResendNotification() {
 export function useUsers(options?: UseQueryOptions<User[]>) {
   return useQuery({
     queryKey: queryKeys.users,
-    queryFn: async () => toArray<User>(await api.get<User[]>('/users')),
+    queryFn: async () => toArray<User>(await api.get<User[]>('/admin/users')),
     ...options,
   });
 }
@@ -299,7 +299,7 @@ export function useUsers(options?: UseQueryOptions<User[]>) {
 export function useUserStats(options?: UseQueryOptions<UserStats>) {
   return useQuery({
     queryKey: queryKeys.userStats,
-    queryFn: () => api.get<UserStats>('/users/stats'),
+    queryFn: () => api.get<UserStats>('/admin/users/stats'),
     ...options,
   });
 }

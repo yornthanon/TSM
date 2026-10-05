@@ -6,6 +6,7 @@ import { ErrorBoundary } from './components/ErrorBoundary';
 import { AdminLayout } from './layouts/AdminLayout';
 import { RequireAuth } from './components/RequireAuth';
 import { Navigate } from 'react-router-dom';
+import { auth } from './lib/auth';
 
 const Login = lazy(() => import('./pages/Login').then((module) => ({ default: module.Login })));
 const OAuthCallback = lazy(() => import('./pages/OAuthCallback').then((module) => ({ default: module.OAuthCallback })));
@@ -20,6 +21,10 @@ const Users = lazy(() => import('./pages/admin/Users'));
 const Access = lazy(() => import('./pages/admin/Access'));
 const System = lazy(() => import('./pages/admin/System'));
 const Workspaces = lazy(() => import('./pages/admin/Workspaces'));
+
+const PlatformAdminOnly: React.FC<{ children: React.ReactNode }> = ({ children }) => (
+  auth.getUser()?.role === 'ADMIN' ? <>{children}</> : <Navigate to="/admin" replace />
+);
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -54,10 +59,10 @@ const App: React.FC = () => {
                 <Route path="orders" element={<Orders />} />
                 <Route path="payments" element={<Payments />} />
                 <Route path="notifications" element={<Notifications />} />
-                <Route path="users" element={<Users />} />
-                <Route path="access" element={<Access />} />
-                <Route path="system" element={<System />} />
-                <Route path="workspaces" element={<Workspaces />} />
+                <Route path="users" element={<PlatformAdminOnly><Users /></PlatformAdminOnly>} />
+                <Route path="access" element={<PlatformAdminOnly><Access /></PlatformAdminOnly>} />
+                <Route path="system" element={<PlatformAdminOnly><System /></PlatformAdminOnly>} />
+                <Route path="workspaces" element={<PlatformAdminOnly><Workspaces /></PlatformAdminOnly>} />
               </Route>
               <Route path="*" element={<Navigate to="/admin" replace />} />
             </Routes>

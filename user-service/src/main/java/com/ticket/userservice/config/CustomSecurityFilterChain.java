@@ -88,7 +88,7 @@ public class CustomSecurityFilterChain extends JwtConfigProperties {
                         .requestMatchers("/api/v1/users/me/mfa/**", "/api/v1/users/me")
                         .hasAnyAuthority("USER", "TENANT_ADMIN", "ADMIN")
                         .requestMatchers(HttpMethod.GET, "/api/v1/users/**")
-                        .hasAnyAuthority("ADMIN", "TENANT_ADMIN", "INTERNAL_SERVICE")
+                        .hasAnyAuthority("ADMIN", "INTERNAL_SERVICE")
                         .requestMatchers("/api/v1/users/**")
                         .hasAnyAuthority("ADMIN", "INTERNAL_SERVICE")
                         .requestMatchers("/api/v1/roles/**", "/api/v1/groups/**", "/api/v1/permissions/**")

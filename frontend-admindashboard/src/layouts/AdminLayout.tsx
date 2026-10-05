@@ -71,8 +71,8 @@ export const AdminLayout: React.FC = () => {
 
   const visibleItems = useMemo(
     () => navItems.filter((item) => (!item.adminOnly || isAdmin)
-      && (item.to !== '/admin/users' || isAdmin || isTenantAdmin)),
-    [isAdmin, isTenantAdmin],
+      && (item.to !== '/admin/users' || isAdmin)),
+    [isAdmin],
   );
   const title = titleFor(location.pathname, visibleItems);
   const filteredItems = useMemo(
@@ -291,7 +291,7 @@ export const AdminLayout: React.FC = () => {
                       <p className="truncate text-xs font-medium text-[#dfe1e5]">{user?.email || user?.username || 'Admin user'}</p>
                       <p className="mt-0.5 font-jetbrains text-[10px] text-[#868a91]">{user?.role ?? 'USER'}</p>
                     </div>
-                    {(isAdmin || isTenantAdmin) && <Link to="/admin/users" onClick={() => setUserMenuOpen(false)} className="block px-3.5 py-2.5 text-xs text-[#bcbec4] hover:bg-[#2b2d30]">Manage users</Link>}
+                    {isAdmin && <Link to="/admin/users" onClick={() => setUserMenuOpen(false)} className="block px-3.5 py-2.5 text-xs text-[#bcbec4] hover:bg-[#2b2d30]">Manage users</Link>}
                     <button onClick={handleLogout} className="flex w-full items-center gap-2 px-3.5 py-2.5 text-left text-xs text-[#f07178] hover:bg-[#2b2d30]">
                       <LogOut className="h-3.5 w-3.5" /> Log out
                     </button>

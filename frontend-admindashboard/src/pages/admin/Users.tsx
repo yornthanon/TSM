@@ -56,7 +56,7 @@ const Users: React.FC = () => {
     <>
       <PageHeader
         title="Users"
-        description="Accounts in the current isolated workspace."
+        description="Global account directory. Visible only to the platform administrator."
       />
 
       <div className="mb-4 grid grid-cols-2 gap-3 lg:grid-cols-4">
