@@ -61,6 +61,12 @@ class ApiClient {
         const extended = config as InternalAxiosRequestConfig & { _usePrimaryToken?: boolean };
         const usePrimaryToken = extended._usePrimaryToken === true;
         delete extended._usePrimaryToken;
+        // Let the browser/Axios add the multipart boundary for FormData. Setting
+        // `multipart/form-data` manually omits that boundary in some browsers,
+        // so Spring cannot parse the `file` part and returns a generic error.
+        if (typeof FormData !== 'undefined' && config.data instanceof FormData && config.headers) {
+          config.headers.delete?.('Content-Type');
+        }
         const token = usePrimaryToken
           ? localStorage.getItem('auth_token')
           : (localStorage.getItem('act_as_token') || localStorage.getItem('auth_token'));

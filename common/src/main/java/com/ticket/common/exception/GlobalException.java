@@ -7,6 +7,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.multipart.MaxUploadSizeExceededException;
+import org.springframework.web.multipart.MultipartException;
+import org.springframework.web.multipart.support.MissingServletRequestPartException;
 import org.springframework.web.server.ResponseStatusException;
 
 @Slf4j
@@ -30,6 +32,15 @@ public class GlobalException {
     public ResponseEntity<ResponseErrorTemplate> handleUploadLimit(MaxUploadSizeExceededException e) {
         return ResponseEntity.status(HttpStatus.PAYLOAD_TOO_LARGE).body(
                 new ResponseErrorTemplate("Image must be 5 MiB or smaller.", "413", new EmptyObject(), true));
+    }
+
+    @ExceptionHandler({MultipartException.class, MissingServletRequestPartException.class})
+    public ResponseEntity<ResponseErrorTemplate> handleMultipart(Exception e) {
+        log.warn("Multipart request could not be parsed: {}", e.getMessage());
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(
+                new ResponseErrorTemplate(
+                        "The uploaded file could not be read. Please choose the file again and retry.",
+                        "400", new EmptyObject(), true));
     }
 
     @ExceptionHandler(CustomMessageException.class)

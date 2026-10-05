@@ -442,9 +442,9 @@ const EventFormModal: React.FC<{
     try {
       const formData = new FormData();
       formData.append('file', photoFile);
-      const imageUrl = await api.post<string>('/events/upload-photo', formData, {
-        headers: { 'Content-Type': 'multipart/form-data' },
-      });
+      // The browser must add the multipart boundary; setting Content-Type here
+      // can make Spring unable to read the uploaded file part.
+      const imageUrl = await api.post<string>('/events/upload-photo', formData);
       onSubmit({ ...payload, imageUrl });
     } catch (error) {
       toast.error(error instanceof Error && error.message ? error.message : 'Photo upload failed.');
