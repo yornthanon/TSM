@@ -1,5 +1,5 @@
 import React from 'react';
-import { ArrowLeft, KeyRound, Loader2, ShieldCheck } from 'lucide-react';
+import { ArrowLeft, KeyRound, Loader2 } from 'lucide-react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Button } from '../components/ui/Button';
 import { Card } from '../components/ui/Card';
@@ -68,14 +68,9 @@ export const OAuthCallback: React.FC = () => {
   return (
     <div className="flex min-h-screen items-center justify-center bg-[#101318] p-5 text-[#d7dae0]">
       <Card className="w-full max-w-md border border-[#2b3039] bg-[#1b1f26] p-7 shadow-[0_24px_80px_rgba(0,0,0,0.36)] sm:p-9">
-        <div className="mb-7 flex items-center gap-3">
-          <div className="flex h-10 w-10 items-center justify-center rounded-xl border border-[#355486] bg-[#20314b] text-[#72a7ff]">
-            <ShieldCheck className="h-5 w-5" />
-          </div>
-          <div>
-            <p className="font-semibold text-[#e7e9ed]">TicketDesk</p>
-            <p className="text-xs text-[#9298a3]">Secure account sign-in</p>
-          </div>
+        <div className="mb-7 flex items-center justify-between gap-3">
+          <img src="/kora-cambodia-wordmark.png" alt="KORA Cambodia" className="h-auto w-[152px] rounded-md object-contain" />
+          <p className="text-right text-xs text-[#9298a3]">Secure account sign-in</p>
         </div>
 
         {needsMfa ? (
@@ -111,7 +106,7 @@ export const OAuthCallback: React.FC = () => {
           <div className="py-6 text-center">
             <Loader2 className="mx-auto h-7 w-7 animate-spin text-[#72a7ff]" aria-hidden="true" />
             <h1 className="mt-4 text-base font-semibold text-[#eef0f3]">Securing your session</h1>
-            <p className="mt-2 text-sm text-[#9298a3]">Verifying your TicketDesk account…</p>
+            <p className="mt-2 text-sm text-[#9298a3]">Verifying your KORA Cambodia account…</p>
           </div>
         )}
       </Card>

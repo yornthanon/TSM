@@ -275,14 +275,9 @@ export const AdminLayout: React.FC = () => {
             >
               <Menu className="h-4 w-4" />
             </button>
-            <div className="flex items-center gap-2">
-              <div className="flex h-8 w-8 items-center justify-center rounded-lg border border-[#3574f0]/40 bg-[#3574f0]/15 text-[#6f9bff]">
-                <Ticket className="h-4 w-4" />
-              </div>
-              <div className="leading-tight">
-                <p className="font-semibold tracking-tight text-[#dfe1e5]">TicketDesk</p>
-                <p className="hidden max-w-[180px] truncate text-[9px] uppercase tracking-[0.14em] text-[#6c707e] sm:block">{isAdmin ? 'Platform administration' : workspaceName || 'Workspace'}</p>
-              </div>
+            <div className="flex min-w-0 items-center gap-2">
+              <img src="/kora-cambodia-wordmark.png" alt="KORA Cambodia" className="h-8 w-auto max-w-[112px] shrink-0 rounded-sm object-contain" />
+              <p className="hidden max-w-[180px] truncate text-[9px] uppercase tracking-[0.14em] text-[#6c707e] md:block">{isAdmin ? 'Platform administration' : workspaceName || 'Workspace'}</p>
             </div>
           </div>
 
@@ -353,7 +348,7 @@ export const AdminLayout: React.FC = () => {
 
         <footer className="ide-statusbar flex min-h-7 shrink-0 items-center justify-between gap-3 px-3 text-[10px] text-[#868a91] sm:px-5">
           <div className="flex min-w-0 items-center gap-3 sm:gap-4">
-            <div className="flex shrink-0 items-center gap-1.5 text-[#dfe1e5]"><Activity className="h-3 w-3 text-[#3574f0]" /><span>TicketDesk</span></div>
+            <div className="flex shrink-0 items-center gap-1.5 text-[#dfe1e5]"><Activity className="h-3 w-3 text-[#d8b64b]" /><span>KORA Cambodia</span></div>
             <div className="hidden items-center gap-1.5 sm:flex"><span>Spring Boot API</span></div>
             <div className="hidden items-center gap-1.5 md:flex"><span>PostgreSQL</span></div>
           </div>
@@ -405,7 +400,7 @@ export const AdminLayout: React.FC = () => {
               )}
             </div>
             <div className="flex items-center justify-between border-t border-[#2b2d30] px-4 py-2 font-jetbrains text-[9px] text-[#6c707e]">
-              <span>Navigate to a ticket workspace</span><span>TicketDesk</span>
+              <span>Navigate to a ticket workspace</span><span>KORA Cambodia</span>
             </div>
           </section>
         </div>

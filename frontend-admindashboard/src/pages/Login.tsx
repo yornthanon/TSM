@@ -5,7 +5,7 @@ import { auth } from '../lib/auth';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 
 const OAUTH_ERROR_MESSAGES: Record<string, string> = {
-  account_not_linked: 'Google sign-in could not be linked to a TicketDesk account. Please try again or contact the platform administrator.',
+  account_not_linked: 'Google sign-in could not be linked to a KORA Cambodia account. Please try again or contact the platform administrator.',
   google_signin_failed: 'Google sign-in could not be completed. Please try again.',
   missing_code: 'The Google sign-in link was incomplete. Please try again.',
 };
@@ -38,13 +38,7 @@ export const Login: React.FC = () => {
       <div className="relative grid w-full max-w-5xl overflow-hidden rounded-2xl border border-[#2b3039] bg-[#171a20] shadow-[0_28px_100px_rgba(0,0,0,0.42)] lg:grid-cols-[1fr_1.02fr]">
         <section className="hidden flex-col justify-between border-r border-[#2b3039] bg-[#15181e] p-10 lg:flex xl:p-12">
           <div>
-            <div className="flex items-center gap-3">
-              <div className="flex h-10 w-10 items-center justify-center rounded-xl border border-[#355486] bg-[#20314b] text-sm font-bold tracking-tight text-[#86b6ff]">TD</div>
-              <div>
-                <p className="font-semibold tracking-wide text-[#e7e9ed]">TicketDesk</p>
-                <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-[#7e8795]">Private operations workspace</p>
-              </div>
-            </div>
+            <img src="/kora-cambodia-wordmark.png" alt="KORA Cambodia" className="h-auto w-[176px] rounded-md object-contain" />
             <div className="mt-20 max-w-sm">
               <p className="font-mono text-xs uppercase tracking-[0.18em] text-[#6fa6ff]">// isolated by design</p>
               <h1 className="mt-4 text-3xl font-semibold leading-tight tracking-[-0.03em] text-[#edf0f5] xl:text-4xl">Your ticket operations, in one place.</h1>
@@ -59,17 +53,13 @@ export const Login: React.FC = () => {
 
         <main className="flex items-center justify-center p-6 sm:p-10 xl:p-12">
           <div className="w-full max-w-md">
-            <div className="mb-7 flex items-center gap-3 lg:hidden">
-              <div className="flex h-10 w-10 items-center justify-center rounded-xl border border-[#355486] bg-[#20314b] text-sm font-bold text-[#86b6ff]">TD</div>
-              <div>
-                <p className="font-semibold text-[#e7e9ed]">TicketDesk</p>
-                <p className="font-mono text-[10px] uppercase tracking-[0.15em] text-[#7e8795]">Private operations workspace</p>
-              </div>
+            <div className="mb-7 lg:hidden">
+              <img src="/kora-cambodia-wordmark.png" alt="KORA Cambodia" className="h-auto w-[148px] rounded-md object-contain" />
             </div>
 
             <div className="mb-7">
               <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-[#6fa6ff]">Google authentication</p>
-              <h2 className="mt-2 text-2xl font-semibold tracking-[-0.02em] text-[#eef0f3]">Sign in to TicketDesk</h2>
+              <h2 className="mt-2 text-2xl font-semibold tracking-[-0.02em] text-[#eef0f3]">Sign in to KORA Cambodia</h2>
               <p className="mt-2 text-sm leading-6 text-[#9299a4]">Continue with a verified Google account. New accounts are enrolled automatically.</p>
             </div>
 
