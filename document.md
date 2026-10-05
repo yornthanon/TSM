@@ -533,6 +533,80 @@ CREATE INDEX ix_orders_tenant_created
 
 > Exact SQL must be reconciled with existing migrations before adding a version. Never reuse a migration version that already exists in any deployed database.
 
+### 8.5 Detailed table responsibilities
+
+#### A. Identity and access tables
+
+- **`tenant_workspaces`**: កំណត់ boundary របស់អាជីវកម្មមួយ។ `owner_user_id` អាចមាន unique constraint ប្រសិនបើ policy គឺមួយ owner មាន workspace មួយ។ កុំដាក់ event/order នៅទីនេះ; វារក្សាតែ metadata របស់ workspace។
+- **`users`**: រក្សា profile, verified email, OAuth subject, account status, MFA flags និង `tenant_id`។ `ADMIN` platform អាចមាន `tenant_id = NULL`; non-admin ត្រូវមាន active tenant។
+- **`roles` / `permissions`**: catalog នៃសិទ្ធិ។ Role អាចមាន permission ជាច្រើនតាម `role_permissions`; កុំ hard-code permission logic នៅ frontend។
+- **`user_roles`**: many-to-many រវាង user និង role។ Composite primary key ការពារ duplicate assignment។
+- **`refresh_tokens`**: ត្រូវរក្សាទុក hash មិនមែន raw token។ មាន `revoked_at`, `replaced_by`, `expires_at` និង reuse-detected state ដើម្បីការពារ token theft។
+- **`oauth_login_codes`**: one-time short-lived handoff ពី Google callback ទៅ frontend។ រក្សា hash, expiry និង consumed timestamp; replay ត្រូវបានបដិសេធ។
+
+#### B. Event and inventory tables
+
+- **`events`**: business identity របស់ event។ `tenant_id` ជា owner scope; `status` គ្រប់គ្រងថាអាចបង្ហាញ/លក់បានឬអត់។ Event ដែលមាន order មិនត្រូវ hard-delete; ប្រើ `CANCELLED` ឬ `ARCHIVED`។
+- **`event_images`**: រក្សា object-storage URL, public ID, alt text និង display order។ File binary មិនគួររក្សាក្នុង PostgreSQL។
+- **`ticket_products`**: អាចតំណាងឲ្យ general-admission category ឬ physical seat។ `unit_price` គឺ price source of truth; `quantity` និង `available_quantity` ត្រូវ update ក្នុង transaction/locking strategy។
+- **`inventory_holds`**: reservation បណ្តោះអាសន្ន។ `expires_at` ជា deadline; status អាចជា `ACTIVE`, `CONVERTED`, `RELEASED`, `EXPIRED`។ កុំទុក Redis lock ជា source of truth តែមួយ; PostgreSQL constraint/transaction ត្រូវការពារជាន់ទីពីរ។
+
+#### C. Order and money tables
+
+- **`orders`**: aggregate root របស់ checkout។ រក្សា owner, tenant, status, amount snapshots និង idempotency key។ Status transitions ត្រូវ enforce ដោយ service មិនមែន client។
+- **`order_items`**: line items របស់ order។ រក្សា `unit_price_snapshot`, title/code snapshot និង tax/fee snapshot ដើម្បីឲ្យ invoice ចាស់មិនប្តូរតាម event price ថ្មី។
+- **`payments`**: ledger នៃ payment attempts។ Order មួយអាចមាន attempts ច្រើន ប៉ុន្តែ provider transaction ID ត្រូវ unique។ មិនរក្សា card number/CVV។
+- **`refunds`**: compensating financial record។ កុំកែ amount របស់ payment ចាស់ដោយផ្ទាល់; បង្កើត refund record និង update derived status។
+
+#### D. Operations and reliability tables
+
+- **`notifications`**: មួយ delivery attempt ក្នុង channel មួយ ឬរក្សា attempt count; មាន provider message ID, last error, next retry time និង sent timestamp។ Notification failure មិនត្រូវ rollback confirmed order។
+- **`audit_logs`**: append-only record សម្រាប់ login, role change, act-as, event approval, refund និង admin mutation។ `metadata` ត្រូវ redact secret/PII។
+- **`outbox_events`**: រក្សា domain event ក្នុង transaction ដូចគ្នានឹង business change។ Worker publish បន្ទាប់ពី commit ហើយ retry តាម `attempt_count`/`next_attempt_at`។ នេះការពារ case order confirmed ប៉ុន្តែ notification event បាត់។
+
+### 8.6 How to read the ERD
+
+1. ចាប់ពី **`tenant_workspaces`**: វាជា root របស់ tenant-owned data។ Event, order, payment និង notification ត្រូវអាច trace ត្រឡប់ទៅ tenant បាន។
+2. ចាប់ពី **`users`**: user ម្នាក់អាចមាន role ច្រើន និងអាចបង្កើត hold/order ច្រើន។ `ADMIN` គឺជា platform identity មិនមែនជាអ្នកកាន់កាប់ tenant ទាំងអស់ទេ។
+3. ចាប់ពី **`events -> ticket_products`**: Event មួយមាន ticket category/seat ច្រើន។ Ticket product មួយអាចចូលក្នុង order items ច្រើនតាម lifecycle ប៉ុន្តែ active inventory មិនត្រូវលក់លើស quantity។
+4. ចាប់ពី **`inventory_holds -> orders`**: Hold កើតមុន order confirmation។ បើ payment success វា `CONVERTED`; បើ fail/timeout វា `RELEASED` ឬ `EXPIRED`។
+5. ចាប់ពី **`orders -> order_items -> payments`**: Order ជា purchase aggregate, items ជា price snapshot, payment ជា external money attempt។ កុំភ្ជាប់ payment តែដោយ username ឬ client amount។
+6. ចាប់ពី **`orders -> notifications/outbox_events`**: Business transaction commit ជាមុន; delivery/publish ជា asynchronous និងអាច retry។
+7. **Solid relationship** ក្នុង diagram មានន័យថា table ទាំងនោះស្ថិតក្នុង database boundary ដូចគ្នា និងគួរមាន SQL foreign key។ ប្រសិនបើថ្ងៃក្រោយ extract service ចេញ ត្រូវប្តូរទៅ logical ID + contract/event មិនមែន cross-database FK។
+
+### 8.7 Main state machines
+
+```text
+Event:
+DRAFT -> PENDING_APPROVAL -> APPROVED -> PUBLISHED -> COMPLETED
+                                             |             |
+                                             +-> CANCELLED <-+
+
+Inventory hold:
+ACTIVE -> CONVERTED
+   |
+   +-> RELEASED / EXPIRED
+
+Order:
+PENDING_PAYMENT -> CONFIRMED -> COMPLETED
+       |               |
+       +-> FAILED      +-> CANCELLED / REFUNDED
+       +-> EXPIRED
+
+Payment:
+CREATED -> PROCESSING -> SUCCEEDED
+                    \-> FAILED / EXPIRED
+SUCCEEDED -> REFUNDED / PARTIALLY_REFUNDED
+```
+
+**State transition rules:**
+
+- Client អាច request action ប៉ុណ្ណោះ; service ជាអ្នកសម្រេច state transition។
+- Transition មិនត្រឹមត្រូវត្រូវ `409 CONFLICT`។
+- Order `CONFIRMED` មិនអាចត្រឡប់ទៅ `PENDING_PAYMENT`។
+- Payment `SUCCEEDED` មិនត្រូវ overwrite ទៅ `FAILED`; ប្រើ refund/compensation record។
+- Job ត្រូវ expire active holds និង pending orders ជាប្រចាំ ហើយត្រូវ idempotent។
+
 ---
 
 ## 9. API contract (target)
@@ -581,7 +655,132 @@ CREATE INDEX ix_orders_tenant_created
 | Notifications | `GET /admin/notifications`, `POST /admin/notifications/{id}/retry` | Admin |
 | Reports | `GET /reports/overview`, `GET /reports/revenue`, `GET /reports/export` | Tenant Admin/Admin |
 
-### 9.3 Checkout request/response
+### 9.3 MVP endpoint specification
+
+> All paths below are relative to `/api/v1`. `ADMIN` means platform admin; `TENANT_ADMIN` means the active workspace admin. `USER` means an authenticated user in their own scope.
+
+#### A. Authentication and current user
+
+| Method | Endpoint | Auth | Purpose |
+|---|---|---|---|
+| `GET` | `/auth/oauth/google` | Public | Redirect to Google OAuth |
+| `GET` | `/auth/oauth/google/callback` | Public | Validate Google identity and issue one-time exchange code |
+| `POST` | `/auth/oauth/exchange` | Public | Exchange one-time code for access/refresh tokens; code is one-use |
+| `POST` | `/auth/refresh` | Public with refresh token | Rotate refresh token and return new access token |
+| `POST` | `/auth/logout` | Authenticated | Revoke current refresh-token family |
+| `GET` | `/users/me` | USER/TENANT_ADMIN/ADMIN | Return profile, roles, tenant, permissions and MFA status |
+| `PATCH` | `/users/me` | USER/TENANT_ADMIN/ADMIN | Update own safe profile fields |
+| `POST` | `/users/me/mfa/setup` | Authenticated | Create TOTP setup secret/QR payload |
+| `POST` | `/users/me/mfa/enable` | Authenticated | Verify code and enable MFA |
+| `POST` | `/users/me/mfa/disable` | Authenticated | Disable MFA after password/TOTP confirmation |
+
+**Rules:** login failure returns `401`; invalid/expired exchange code returns `400`; revoked refresh token returns `401`; never return raw OAuth code or refresh token in logs.
+
+#### B. Workspace and Admin access
+
+| Method | Endpoint | Auth | Purpose |
+|---|---|---|---|
+| `GET` | `/workspaces/current` | USER/TENANT_ADMIN/ADMIN | Return active workspace context and status |
+| `GET` | `/admin/workspaces` | ADMIN | Paginated global workspace list with status/owner/search filters |
+| `GET` | `/admin/workspaces/{workspaceId}` | ADMIN | Global workspace detail and aggregate counts |
+| `PATCH` | `/admin/workspaces/{workspaceId}/status` | ADMIN | Suspend/activate/archive workspace; audit required |
+| `POST` | `/admin/act-as` | ADMIN | Start short-lived audited selected-workspace session |
+| `DELETE` | `/admin/act-as/{sessionId}` | ADMIN | End act-as session |
+| `GET` | `/admin/act-as/audit` | ADMIN | Search act-as history |
+
+`X-Tenant-Id` ត្រូវ ignore សម្រាប់ USER/TENANT_ADMIN។ Admin tenant mutation ត្រូវប្រើ selected workspace context ដែល server បាន validate និង audit។
+
+#### C. Event management
+
+| Method | Endpoint | Auth | Purpose |
+|---|---|---|---|
+| `GET` | `/events` | Authenticated | List events in scope; supports `page`, `size`, `status`, `type`, `q`, `from`, `to`, `sort` |
+| `POST` | `/events` | TENANT_ADMIN / ADMIN with tenant context | Create draft event |
+| `GET` | `/events/{eventId}` | Authenticated | View event if in tenant scope or public-approved scope |
+| `PATCH` | `/events/{eventId}` | TENANT_ADMIN / ADMIN with tenant context | Update editable fields |
+| `POST` | `/events/{eventId}/submit` | TENANT_ADMIN | Submit draft for approval |
+| `POST` | `/events/{eventId}/approve` | TENANT_ADMIN / ADMIN policy | Approve and optionally publish event |
+| `POST` | `/events/{eventId}/reject` | TENANT_ADMIN / ADMIN policy | Reject with mandatory reason |
+| `POST` | `/events/{eventId}/cancel` | TENANT_ADMIN / ADMIN | Cancel event with reason; existing orders follow refund policy |
+| `DELETE` | `/events/{eventId}` | TENANT_ADMIN / ADMIN | Soft-delete draft only; reject if sales exist |
+| `POST` | `/events/{eventId}/images` | TENANT_ADMIN / ADMIN | Upload/register event image metadata |
+| `DELETE` | `/events/{eventId}/images/{imageId}` | TENANT_ADMIN / ADMIN | Remove image metadata |
+| `GET` | `/events/{eventId}/stats` | TENANT_ADMIN / ADMIN | Event inventory/order summary |
+
+Create event request must include `title`, `description`, `type`, `venue`, `startsAt`, `endsAt`, `timezone`; server rejects `endsAt <= startsAt` and invalid tenant context.
+
+#### D. Ticket inventory and holds
+
+| Method | Endpoint | Auth | Purpose |
+|---|---|---|---|
+| `GET` | `/events/{eventId}/tickets` | Authenticated | List ticket products and availability |
+| `POST` | `/events/{eventId}/tickets` | TENANT_ADMIN / ADMIN with tenant context | Create category/seat inventory |
+| `GET` | `/tickets/{ticketProductId}` | Authenticated | View price and current availability |
+| `PATCH` | `/tickets/{ticketProductId}` | TENANT_ADMIN / ADMIN | Update price/quantity only when policy allows |
+| `DELETE` | `/tickets/{ticketProductId}` | TENANT_ADMIN / ADMIN | Archive unsold inventory |
+| `POST` | `/holds` | USER/TENANT_ADMIN | Atomically hold one or more items; returns `holdId` and expiry |
+| `GET` | `/holds/{holdId}` | Hold owner/TENANT_ADMIN | Read hold status |
+| `DELETE` | `/holds/{holdId}` | Hold owner/TENANT_ADMIN | Release active hold |
+| `POST` | `/admin/inventory/reconcile` | ADMIN | Reconcile counts; audit and dry-run supported |
+
+Hold creation uses a database transaction plus Redis lock (if enabled). If any requested item is unavailable, return `409 INVENTORY_UNAVAILABLE` and do not create a partial hold.
+
+#### E. Orders and checkout
+
+| Method | Endpoint | Auth | Purpose |
+|---|---|---|---|
+| `POST` | `/orders` | USER/TENANT_ADMIN | Create idempotent checkout and payment attempt |
+| `GET` | `/orders` | Authenticated | List own/workspace/global orders with filters |
+| `GET` | `/orders/{orderId}` | Owner/TENANT_ADMIN/ADMIN | View order, items, payment summary and timeline |
+| `POST` | `/orders/{orderId}/cancel` | Owner/TENANT_ADMIN | Cancel if state/policy allows |
+| `POST` | `/admin/orders/{orderId}/force-cancel` | ADMIN | Force-cancel with mandatory reason and audit |
+| `GET` | `/orders/{orderId}/receipt` | Owner/TENANT_ADMIN/ADMIN | Return receipt/download reference |
+| `GET` | `/orders/{orderId}/events` | Owner/TENANT_ADMIN/ADMIN | Read order status/audit timeline (not raw secrets) |
+
+Required headers for `POST /orders`: `Authorization`, `Idempotency-Key`, `X-Correlation-ID` optional. The server calculates every monetary field and locks inventory before creating the payment attempt.
+
+#### F. Payments and refunds
+
+| Method | Endpoint | Auth | Purpose |
+|---|---|---|---|
+| `GET` | `/payments` | TENANT_ADMIN/ADMIN; user sees own via order | Filter payment ledger by status/date/provider |
+| `GET` | `/payments/{paymentId}` | Owner/TENANT_ADMIN/ADMIN | View payment status and safe provider reference |
+| `POST` | `/payments/{paymentId}/refund` | TENANT_ADMIN/ADMIN policy | Full/partial refund with reason |
+| `GET` | `/payments/{paymentId}/refunds` | TENANT_ADMIN/ADMIN/owner | View refund history |
+| `POST` | `/payments/webhooks/{provider}` | Provider signature | Process signed async result idempotently |
+| `GET` | `/payments/{paymentId}/reconciliation` | ADMIN | Compare internal ledger and provider result |
+
+Webhook processing must be idempotent by provider event ID, verify signature before parsing business payload, and return `2xx` only after safely recording the event for processing.
+
+#### G. Notifications and reports
+
+| Method | Endpoint | Auth | Purpose |
+|---|---|---|---|
+| `GET` | `/admin/notifications` | ADMIN | Paginated notification log with status/channel filters |
+| `GET` | `/admin/notifications/{notificationId}` | ADMIN | View delivery attempts and safe error detail |
+| `POST` | `/admin/notifications/{notificationId}/retry` | ADMIN | Enqueue retry; do not send synchronously in request |
+| `DELETE` | `/admin/notifications/{notificationId}` | ADMIN | Archive log only; no hard delete of audit history |
+| `GET` | `/reports/overview` | TENANT_ADMIN/ADMIN | KPI summary scoped by tenant/date |
+| `GET` | `/reports/revenue` | TENANT_ADMIN/ADMIN | Revenue/payment status breakdown |
+| `GET` | `/reports/events/{eventId}` | TENANT_ADMIN/ADMIN | Event sales and inventory report |
+| `GET` | `/reports/export` | TENANT_ADMIN/ADMIN | Async CSV export with filter snapshot |
+
+Non-admin users must not call `/admin/notifications/**`; frontend must not include forbidden admin queries in tenant dashboard loading state.
+
+### 9.4 Standard error catalog
+
+| HTTP | Code | When |
+|---:|---|---|
+| `400` | `VALIDATION_ERROR` | Missing/invalid request fields |
+| `401` | `UNAUTHENTICATED` | Missing, expired, revoked token |
+| `403` | `FORBIDDEN` | Valid identity lacks permission/scope |
+| `404` | `RESOURCE_NOT_FOUND` | Resource does not exist in authorized scope |
+| `409` | `CONFLICT` / `INVENTORY_UNAVAILABLE` / `IDEMPOTENCY_CONFLICT` | Invalid state, sold out, or same key with different payload |
+| `422` | `BUSINESS_RULE_VIOLATION` | Valid shape but business rule fails |
+| `429` | `RATE_LIMITED` | Rate limit exceeded |
+| `500` | `INTERNAL_ERROR` | Unexpected server failure; details omitted |
+
+### 9.5 Checkout request/response
 
 ```http
 POST /api/v1/orders
