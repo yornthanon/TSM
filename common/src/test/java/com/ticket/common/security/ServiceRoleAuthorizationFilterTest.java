@@ -59,6 +59,18 @@ class ServiceRoleAuthorizationFilterTest {
     }
 
     @Test
+    void acceptsRolePrefixedAdminClaim() throws Exception {
+        MockHttpServletRequest request = authenticated("GET", "/api/v1/admin/users", "role_admin");
+        MockHttpServletResponse response = new MockHttpServletResponse();
+        FilterChain chain = mock(FilterChain.class);
+
+        filter.doFilter(request, response, chain);
+
+        assertThat(response.getStatus()).isEqualTo(200);
+        verify(chain).doFilter(request, response);
+    }
+
+    @Test
     void acceptsAdminRouteForPlatformAdminOnly() throws Exception {
         MockHttpServletRequest request = authenticated("GET", "/api/v1/admin/users", "ADMIN");
         MockHttpServletResponse response = new MockHttpServletResponse();

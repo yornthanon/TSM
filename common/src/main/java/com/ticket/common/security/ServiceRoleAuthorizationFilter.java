@@ -112,10 +112,16 @@ public final class ServiceRoleAuthorizationFilter extends OncePerRequestFilter {
 
     private void addClaimRoles(Set<String> roles, Object claim) {
         if (claim instanceof Collection<?> values) {
-            values.stream().filter(String.class::isInstance).map(String.class::cast).forEach(roles::add);
+            values.stream().filter(String.class::isInstance).map(String.class::cast)
+                    .map(this::normalizeRole).forEach(roles::add);
         } else if (claim instanceof String value) {
-            roles.add(value);
+            roles.add(normalizeRole(value));
         }
+    }
+
+    private String normalizeRole(String role) {
+        String normalized = role.trim().toUpperCase(java.util.Locale.ROOT);
+        return normalized.startsWith("ROLE_") ? normalized.substring("ROLE_".length()) : normalized;
     }
 
     private String requiredRole(String method, String path) {

@@ -9,8 +9,11 @@ const ACT_AS_SESSION_KEY = 'act_as_session_id';
 const ACT_AS_EXPIRY_KEY = 'act_as_expires_at';
 
 function appRole(roles: string[] | null | undefined): User['role'] {
-  if (roles?.includes('ADMIN')) return 'ADMIN';
-  if (roles?.includes('TENANT_ADMIN')) return 'TENANT_ADMIN';
+  const normalizedRoles = new Set(
+    (roles ?? []).map((role) => role.trim().toUpperCase().replace(/^ROLE_/, '')),
+  );
+  if (normalizedRoles.has('ADMIN')) return 'ADMIN';
+  if (normalizedRoles.has('TENANT_ADMIN')) return 'TENANT_ADMIN';
   return 'USER';
 }
 
