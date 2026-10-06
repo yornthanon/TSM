@@ -2,6 +2,7 @@ package com.ticket.eventservice.controller;
 
 import com.ticket.common.exception.ResponseErrorTemplate;
 import com.ticket.common.exception.ApiResponse;
+import com.ticket.eventservice.Enum.EventStatus;
 import com.ticket.eventservice.dto.EventRequest;
 import com.ticket.eventservice.service.EventService;
 import jakarta.validation.Valid;
@@ -39,12 +40,12 @@ public class AdminEventController {
 
     @PutMapping("/{id}/approve")
     public ResponseEntity<ResponseErrorTemplate> approve(@PathVariable Long id) {
-        return ApiResponse.from(eventService.updateStatus(id, "APPROVED"));
+        return ApiResponse.from(eventService.updateStatus(id, EventStatus.APPROVED));
     }
 
     @PutMapping("/{id}/reject")
     public ResponseEntity<ResponseErrorTemplate> reject(@PathVariable Long id) {
-        return ApiResponse.from(eventService.updateStatus(id, "REJECTED"));
+        return ApiResponse.from(eventService.updateStatus(id, EventStatus.REJECTED));
     }
 
     @DeleteMapping("/{id}")

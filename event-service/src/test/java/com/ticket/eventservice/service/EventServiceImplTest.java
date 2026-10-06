@@ -16,6 +16,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertSame;
@@ -94,5 +95,37 @@ class EventServiceImplTest {
         assertFalse(result.isError());
         assertEquals(response, result.data());
         verify(eventRepository).save(entity);
+    }
+
+    @Test
+    void approvesEventWithSupportedStatus() {
+        Event event = new Event();
+        EventResponse response = new EventResponse();
+        when(eventRepository.findById(17L)).thenReturn(Optional.of(event));
+        when(eventRepository.save(event)).thenReturn(event);
+        when(eventMapper.toResponse(event)).thenReturn(response);
+
+        ResponseErrorTemplate result = service.updateStatus(17L, EventStatus.APPROVED);
+
+        assertFalse(result.isError());
+        assertEquals(EventStatus.APPROVED, event.getStatus());
+        assertSame(response, result.data());
+        verify(eventRepository).save(event);
+    }
+
+    @Test
+    void rejectsEventWithSupportedStatus() {
+        Event event = new Event();
+        EventResponse response = new EventResponse();
+        when(eventRepository.findById(18L)).thenReturn(Optional.of(event));
+        when(eventRepository.save(event)).thenReturn(event);
+        when(eventMapper.toResponse(event)).thenReturn(response);
+
+        ResponseErrorTemplate result = service.updateStatus(18L, EventStatus.REJECTED);
+
+        assertFalse(result.isError());
+        assertEquals(EventStatus.REJECTED, event.getStatus());
+        assertSame(response, result.data());
+        verify(eventRepository).save(event);
     }
 }

@@ -2,6 +2,7 @@ package com.ticket.eventservice.service;
 
 import com.ticket.eventservice.dto.EventRequest;
 import com.ticket.common.exception.ResponseErrorTemplate;
+import com.ticket.eventservice.Enum.EventStatus;
 
 public interface EventService {
 
@@ -12,5 +13,5 @@ public interface EventService {
     ResponseErrorTemplate getStats();
     void delete(Long id);
 
-    ResponseErrorTemplate updateStatus(Long id, String status);
+    ResponseErrorTemplate updateStatus(Long id, EventStatus status);
 }

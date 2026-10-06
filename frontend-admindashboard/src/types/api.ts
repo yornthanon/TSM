@@ -15,6 +15,8 @@
 
 export const EVENT_STATUSES = [
   'DRAFT',
+  'APPROVED',
+  'REJECTED',
   'UPCOMING',
   'ACTIVE',
   'ONGOING',

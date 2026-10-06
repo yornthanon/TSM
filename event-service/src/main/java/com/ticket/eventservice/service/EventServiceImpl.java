@@ -2,6 +2,7 @@ package com.ticket.eventservice.service;
 
 import com.ticket.common.constant.ApiConstant;
 import com.ticket.common.dto.EmptyObject;
+import com.ticket.eventservice.Enum.EventStatus;
 import com.ticket.eventservice.dto.EventRequest;
 import com.ticket.eventservice.dto.EventResponse;
 import com.ticket.common.exception.ResponseErrorTemplate;
@@ -127,7 +128,7 @@ public class EventServiceImpl implements EventService {
     }
 
     @Override
-    public ResponseErrorTemplate updateStatus(Long id, String status) {
+    public ResponseErrorTemplate updateStatus(Long id, EventStatus status) {
         Optional<Event> event = eventRepository.findById(id);
         if (event.isEmpty()) {
             return new ResponseErrorTemplate(
@@ -138,7 +139,7 @@ public class EventServiceImpl implements EventService {
         }
 
         Event existing = event.get();
-        existing.setStatus(com.ticket.eventservice.Enum.EventStatus.valueOf(status));
+        existing.setStatus(status);
         eventRepository.save(existing);
 
         return new ResponseErrorTemplate(

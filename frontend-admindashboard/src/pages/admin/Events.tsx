@@ -73,6 +73,8 @@ const EVENT_TYPE_LABELS: Record<EventType, string> = {
 
 const EVENT_STATUS_LABELS: Record<EventStatus, string> = {
   DRAFT: 'Draft',
+  APPROVED: 'Approved',
+  REJECTED: 'Rejected',
   UPCOMING: 'Upcoming',
   ACTIVE: 'Active',
   ONGOING: 'Ongoing',
