@@ -11,7 +11,7 @@ public interface EventService {
     ResponseErrorTemplate getById(Long id);
     ResponseErrorTemplate findAll();
     ResponseErrorTemplate getStats();
-    void delete(Long id);
+    ResponseErrorTemplate delete(Long id);
 
     ResponseErrorTemplate updateStatus(Long id, EventStatus status);
 }

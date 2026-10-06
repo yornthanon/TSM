@@ -50,8 +50,6 @@ public class AdminEventController {
 
     @DeleteMapping("/{id}")
     public ResponseEntity<ResponseErrorTemplate> delete(@PathVariable Long id) {
-        eventService.delete(id);
-        return ApiResponse.from(new ResponseErrorTemplate(
-                "Event deleted successfully", "200", null, false));
+        return ApiResponse.from(eventService.delete(id));
     }
 }

@@ -50,6 +50,8 @@ public enum ApiConstant {
 
     SEAT_NUMBER_ALREADY_EXISTS("400", "Seat number %s already exists."),
     EVENT_NOT_FOUND("404", "Event not found for ID %s."),
+    EVENT_HAS_LINKED_RECORDS("409", "Event cannot be deleted while linked seats or order history exist."),
+    EVENT_DEPENDENCY_CHECK_UNAVAILABLE("503", "Could not verify linked seats and orders; the event was not deleted."),
     TICKET_NOT_FOUND("404", "Ticket not found for ID %s."),
     TICKET_ALREADY_SOLD("400", "Ticket ID %s is already sold and cannot be modified."),
     TICKET_NOT_EDITABLE("400", "Ticket ID %s cannot be edited while its status is %s."),

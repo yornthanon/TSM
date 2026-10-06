@@ -10,6 +10,7 @@ import com.ticket.eventservice.entity.Event;
 import com.ticket.eventservice.mapper.EventMapper;
 import com.ticket.eventservice.repository.EventRepository;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.dao.DataAccessException;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
@@ -150,7 +151,44 @@ public class EventServiceImpl implements EventService {
     }
 
     @Override
-    public void delete(Long id) {
-        eventRepository.deleteById(id);
+    public ResponseErrorTemplate delete(Long id) {
+        Optional<Event> event = eventRepository.findById(id);
+        if (event.isEmpty()) {
+            return new ResponseErrorTemplate(
+                    ApiConstant.EVENT_NOT_FOUND.getFormattedDescription(id),
+                    ApiConstant.EVENT_NOT_FOUND.getKey(),
+                    new EmptyObject(),
+                    true);
+        }
+
+        final boolean hasLinkedSeats;
+        final boolean hasLinkedOrders;
+        try {
+            hasLinkedSeats = eventRepository.hasLinkedSeats(id);
+            hasLinkedOrders = eventRepository.hasLinkedOrders(id);
+        } catch (DataAccessException exception) {
+            log.error("Event deletion dependency check failed for event {} ({})",
+                    id, exception.getClass().getSimpleName());
+            return new ResponseErrorTemplate(
+                    ApiConstant.EVENT_DEPENDENCY_CHECK_UNAVAILABLE.getDescription(),
+                    ApiConstant.EVENT_DEPENDENCY_CHECK_UNAVAILABLE.getKey(),
+                    new EmptyObject(),
+                    true);
+        }
+
+        if (hasLinkedSeats || hasLinkedOrders) {
+            return new ResponseErrorTemplate(
+                    ApiConstant.EVENT_HAS_LINKED_RECORDS.getDescription(),
+                    ApiConstant.EVENT_HAS_LINKED_RECORDS.getKey(),
+                    Map.of("hasLinkedSeats", hasLinkedSeats, "hasLinkedOrders", hasLinkedOrders),
+                    true);
+        }
+
+        eventRepository.delete(event.get());
+        return new ResponseErrorTemplate(
+                "Event deleted successfully",
+                ApiConstant.SUCCESS.getKey(),
+                null,
+                false);
     }
 }

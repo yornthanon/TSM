@@ -13,6 +13,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.dao.DataAccessResourceFailureException;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -21,6 +22,9 @@ import java.util.Optional;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -153,9 +157,71 @@ class EventServiceImplTest {
     }
 
     @Test
-    void deletesRequestedEventId() {
-        service.delete(22L);
+    void rejectsEventDeleteWhenSeatsRemain() {
+        Event event = new Event();
+        when(eventRepository.findById(22L)).thenReturn(Optional.of(event));
+        when(eventRepository.hasLinkedSeats(22L)).thenReturn(true);
+        when(eventRepository.hasLinkedOrders(22L)).thenReturn(false);
 
-        verify(eventRepository).deleteById(22L);
+        ResponseErrorTemplate result = service.delete(22L);
+
+        assertTrue(result.isError());
+        assertEquals("409", result.code());
+        verify(eventRepository, never()).delete(any(Event.class));
+    }
+
+    @Test
+    void rejectsEventDeleteWhenOrderHistoryExists() {
+        Event event = new Event();
+        when(eventRepository.findById(23L)).thenReturn(Optional.of(event));
+        when(eventRepository.hasLinkedSeats(23L)).thenReturn(false);
+        when(eventRepository.hasLinkedOrders(23L)).thenReturn(true);
+
+        ResponseErrorTemplate result = service.delete(23L);
+
+        assertTrue(result.isError());
+        assertEquals("409", result.code());
+        verify(eventRepository, never()).delete(any(Event.class));
+    }
+
+    @Test
+    void returnsNotFoundBeforeCheckingDependencies() {
+        when(eventRepository.findById(24L)).thenReturn(Optional.empty());
+
+        ResponseErrorTemplate result = service.delete(24L);
+
+        assertTrue(result.isError());
+        assertEquals("404", result.code());
+        verify(eventRepository, never()).hasLinkedSeats(24L);
+        verify(eventRepository, never()).hasLinkedOrders(24L);
+        verify(eventRepository, never()).delete(any(Event.class));
+    }
+
+    @Test
+    void failsClosedWhenDependencyCheckCannotBeCompleted() {
+        Event event = new Event();
+        when(eventRepository.findById(25L)).thenReturn(Optional.of(event));
+        when(eventRepository.hasLinkedSeats(25L))
+                .thenThrow(new DataAccessResourceFailureException("database unavailable"));
+
+        ResponseErrorTemplate result = service.delete(25L);
+
+        assertTrue(result.isError());
+        assertEquals("503", result.code());
+        verify(eventRepository, never()).delete(any(Event.class));
+    }
+
+    @Test
+    void deletesEventOnlyWhenNoSeatsOrOrdersAreLinked() {
+        Event event = new Event();
+        when(eventRepository.findById(26L)).thenReturn(Optional.of(event));
+        when(eventRepository.hasLinkedSeats(26L)).thenReturn(false);
+        when(eventRepository.hasLinkedOrders(26L)).thenReturn(false);
+
+        ResponseErrorTemplate result = service.delete(26L);
+
+        assertFalse(result.isError());
+        assertEquals("200", result.code());
+        verify(eventRepository).delete(event);
     }
 }
