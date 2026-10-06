@@ -174,10 +174,33 @@ export function useCreateTicket() {
   });
 }
 
+export function useUpdateTicket() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, payload }: { id: number; payload: TicketPayload }) =>
+      api.put<Ticket>(`/tickets/${id}`, payload),
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: queryKeys.tickets });
+      void qc.invalidateQueries({ queryKey: queryKeys.ticketStats });
+    },
+  });
+}
+
 export function useDeleteTicket() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (id: number) => api.delete<unknown>(`/tickets/${id}`),
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: queryKeys.tickets });
+      void qc.invalidateQueries({ queryKey: queryKeys.ticketStats });
+    },
+  });
+}
+
+export function useLockTicket() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: number) => api.post<unknown>(`/tickets/${id}/lock`),
     onSuccess: () => {
       void qc.invalidateQueries({ queryKey: queryKeys.tickets });
       void qc.invalidateQueries({ queryKey: queryKeys.ticketStats });

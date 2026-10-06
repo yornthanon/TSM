@@ -2,6 +2,8 @@ package com.ticket.ticketservice.service;
 
 import com.ticket.common.exception.ResponseErrorTemplate;
 import com.ticket.ticketservice.Enum.TicketStatus;
+import com.ticket.ticketservice.Enum.TicketType;
+import com.ticket.ticketservice.dto.TicketRequest;
 import com.ticket.ticketservice.dto.TicketResponse;
 import com.ticket.ticketservice.entity.Ticket;
 import com.ticket.ticketservice.mapper.TicketMapper;
@@ -131,6 +133,116 @@ class TicketServiceImplTest {
         assertThat(second.getTicketStatus()).isEqualTo(TicketStatus.AVAILABLE);
         assertThat(second.getLockedBy()).isNull();
         verify(ticketRepository).saveAll(List.of(first, second));
+    }
+
+    @Test
+    void updatesAvailableSeatDetailsWithoutChangingEventAssignment() {
+        Ticket ticket = ticket(14L, TicketStatus.AVAILABLE);
+        TicketRequest request = ticketRequest(1L, "B-14", new BigDecimal("25.00"), TicketType.VIP);
+        when(ticketRepository.findById(14L)).thenReturn(Optional.of(ticket));
+        when(ticketRepository.findFirstBySeatNumberAndEventId("B-14", 1L)).thenReturn(Optional.empty());
+        when(ticketRepository.save(ticket)).thenReturn(ticket);
+
+        ResponseErrorTemplate response = service.updateTicket(14L, request);
+
+        assertThat(response.isError()).isFalse();
+        assertThat(ticket.getEventId()).isEqualTo(1L);
+        assertThat(ticket.getSeatNumber()).isEqualTo("B-14");
+        assertThat(ticket.getPrice()).isEqualByComparingTo("25.00");
+        assertThat(ticket.getTicketType()).isEqualTo(TicketType.VIP);
+        verify(ticketRepository).save(ticket);
+    }
+
+    @Test
+    void rejectsSeatNumberAlreadyUsedByAnotherTicket() {
+        Ticket ticket = ticket(15L, TicketStatus.AVAILABLE);
+        Ticket conflictingTicket = ticket(16L, TicketStatus.AVAILABLE);
+        TicketRequest request = ticketRequest(1L, "A-16", BigDecimal.TEN, TicketType.STANDARD);
+        when(ticketRepository.findById(15L)).thenReturn(Optional.of(ticket));
+        when(ticketRepository.findFirstBySeatNumberAndEventId("A-16", 1L))
+                .thenReturn(Optional.of(conflictingTicket));
+
+        ResponseErrorTemplate response = service.updateTicket(15L, request);
+
+        assertThat(response.isError()).isTrue();
+        assertThat(response.code()).isEqualTo("400");
+        verify(ticketRepository, never()).save(any(Ticket.class));
+    }
+
+    @Test
+    void refusesToEditSoldSeat() {
+        Ticket ticket = ticket(17L, TicketStatus.SOLD);
+        TicketRequest request = ticketRequest(1L, "B-17", new BigDecimal("40.00"), TicketType.VIP);
+        when(ticketRepository.findById(17L)).thenReturn(Optional.of(ticket));
+
+        ResponseErrorTemplate response = service.updateTicket(17L, request);
+
+        assertThat(response.isError()).isTrue();
+        verify(ticketRepository, never()).save(any(Ticket.class));
+    }
+
+    @Test
+    void requiresDedicatedActionsForTicketStatusChanges() {
+        Ticket ticket = ticket(18L, TicketStatus.AVAILABLE);
+        TicketRequest request = ticketRequest(1L, "A-18", BigDecimal.TEN, TicketType.STANDARD);
+        request.setTicketStatus(TicketStatus.SOLD);
+        when(ticketRepository.findById(18L)).thenReturn(Optional.of(ticket));
+
+        ResponseErrorTemplate response = service.updateTicket(18L, request);
+
+        assertThat(response.isError()).isTrue();
+        verify(ticketRepository, never()).save(any(Ticket.class));
+    }
+
+    @Test
+    void refusesToDeleteLockedSeatUntilItIsReleased() {
+        Ticket ticket = ticket(19L, TicketStatus.LOCKED);
+        when(ticketRepository.findById(19L)).thenReturn(Optional.of(ticket));
+
+        ResponseErrorTemplate response = service.deleteTicket(19L);
+
+        assertThat(response.isError()).isTrue();
+        verify(ticketRepository, never()).deleteById(19L);
+    }
+
+    @Test
+    void adminLockAndUnlockTransitionsKeepLockMetadataConsistent() {
+        Ticket ticket = ticket(20L, TicketStatus.AVAILABLE);
+        when(ticketRepository.findById(20L)).thenReturn(Optional.of(ticket));
+
+        ResponseErrorTemplate locked = service.lockTicketById(20L);
+        assertThat(locked.isError()).isFalse();
+        assertThat(ticket.getTicketStatus()).isEqualTo(TicketStatus.LOCKED);
+        assertThat(ticket.getLockedBy()).isEqualTo("admin");
+        assertThat(ticket.getLockedUntil()).isAfter(LocalDateTime.now());
+
+        ResponseErrorTemplate unlocked = service.unlockTicketById(20L);
+        assertThat(unlocked.isError()).isFalse();
+        assertThat(ticket.getTicketStatus()).isEqualTo(TicketStatus.AVAILABLE);
+        assertThat(ticket.getLockedBy()).isNull();
+        assertThat(ticket.getLockedUntil()).isNull();
+        verify(ticketRepository, times(2)).save(ticket);
+    }
+
+    @Test
+    void rejectsIncompleteSeatCreationBeforePersistence() {
+        TicketRequest request = ticketRequest(1L, "A-21", null, TicketType.STANDARD);
+
+        ResponseErrorTemplate response = service.createTicket(request);
+
+        assertThat(response.isError()).isTrue();
+        assertThat(response.code()).isEqualTo("400");
+        verify(ticketRepository, never()).save(any(Ticket.class));
+        verify(eventClient, never()).getEventById(anyLong());
+    }
+
+    private TicketRequest ticketRequest(Long eventId, String seatNumber, BigDecimal price, TicketType type) {
+        TicketRequest request = new TicketRequest();
+        request.setEventId(eventId);
+        request.setSeatNumber(seatNumber);
+        request.setPrice(price);
+        request.setTicketType(type);
+        return request;
     }
 
     private Ticket ticket(Long id, TicketStatus status) {

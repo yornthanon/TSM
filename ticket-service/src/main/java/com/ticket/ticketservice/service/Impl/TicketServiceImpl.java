@@ -39,12 +39,31 @@ public class TicketServiceImpl implements TicketService {
 
     @Override
     public ResponseErrorTemplate createTicket(TicketRequest ticketRequest) {
+        if (ticketRequest == null || ticketRequest.getEventId() == null
+                || ticketRequest.getSeatNumber() == null || ticketRequest.getSeatNumber().isBlank()
+                || ticketRequest.getPrice() == null || ticketRequest.getPrice().signum() <= 0
+                || ticketRequest.getTicketType() == null) {
+            return new ResponseErrorTemplate(
+                    "Event, seat number, positive price, and tier are required to add a seat.",
+                    ApiConstant.INVALID_REQUEST.getKey(),
+                    new EmptyObject(),
+                    true);
+        }
+        if (ticketRequest.getTicketStatus() != null && ticketRequest.getTicketStatus() != TicketStatus.AVAILABLE) {
+            return new ResponseErrorTemplate(
+                    "New seats must start as AVAILABLE; use lock or checkout actions for later status changes.",
+                    ApiConstant.TICKET_STATUS_CHANGE_REQUIRES_ACTION.getKey(),
+                    new EmptyObject(),
+                    true);
+        }
+
+        String seatNumber = ticketRequest.getSeatNumber().trim();
 
         Optional<Ticket> ticketInDb = ticketRepository.findFirstBySeatNumberAndEventId(
-                ticketRequest.getSeatNumber(), ticketRequest.getEventId());
+                seatNumber, ticketRequest.getEventId());
         if(ticketInDb.isPresent()) {
             return new ResponseErrorTemplate(
-                    ApiConstant.SEAT_NUMBER_ALREADY_EXISTS.getFormattedDescription(ticketRequest.getSeatNumber()),
+                    ApiConstant.SEAT_NUMBER_ALREADY_EXISTS.getFormattedDescription(seatNumber),
                     ApiConstant.SEAT_NUMBER_ALREADY_EXISTS.getKey(),
                     new EmptyObject(),
                     true);
@@ -61,9 +80,8 @@ public class TicketServiceImpl implements TicketService {
 
         Ticket ticket = ticketMapper.toEntity(ticketRequest);
         ticket.setEventId(ticketRequest.getEventId());
-        if (ticketRequest.getTicketStatus() == null) {
-            ticket.setTicketStatus(TicketStatus.AVAILABLE);
-        }
+        ticket.setSeatNumber(seatNumber);
+        ticket.setTicketStatus(TicketStatus.AVAILABLE);
         ticketRepository.save(ticket);
 
         return new ResponseErrorTemplate(
@@ -211,17 +229,56 @@ public class TicketServiceImpl implements TicketService {
         }
 
         Ticket ticket = existing.get();
+        if (ticket.getTicketStatus() == TicketStatus.SOLD) {
+            return new ResponseErrorTemplate(
+                    ApiConstant.TICKET_ALREADY_SOLD.getFormattedDescription(ticketId),
+                    ApiConstant.TICKET_ALREADY_SOLD.getKey(),
+                    new EmptyObject(),
+                    true);
+        }
+        if (ticket.getTicketStatus() != TicketStatus.AVAILABLE) {
+            return new ResponseErrorTemplate(
+                    ApiConstant.TICKET_NOT_EDITABLE.getFormattedDescription(ticketId, ticket.getTicketStatus()),
+                    ApiConstant.TICKET_NOT_EDITABLE.getKey(),
+                    new EmptyObject(),
+                    true);
+        }
+        if (ticketRequest.getTicketStatus() != null && ticketRequest.getTicketStatus() != ticket.getTicketStatus()) {
+            return new ResponseErrorTemplate(
+                    ApiConstant.TICKET_STATUS_CHANGE_REQUIRES_ACTION.getDescription(),
+                    ApiConstant.TICKET_STATUS_CHANGE_REQUIRES_ACTION.getKey(),
+                    new EmptyObject(),
+                    true);
+        }
+        if (!Objects.equals(ticketRequest.getEventId(), ticket.getEventId())) {
+            return new ResponseErrorTemplate(
+                    "A seat cannot be reassigned to a different event after creation.",
+                    ApiConstant.INVALID_REQUEST.getKey(),
+                    new EmptyObject(),
+                    true);
+        }
+
+        String requestedSeatNumber = ticketRequest.getSeatNumber();
+        if (requestedSeatNumber != null && !requestedSeatNumber.isBlank()) {
+            requestedSeatNumber = requestedSeatNumber.trim();
+            if (!requestedSeatNumber.equals(ticket.getSeatNumber())) {
+                Optional<Ticket> seatConflict = ticketRepository.findFirstBySeatNumberAndEventId(
+                        requestedSeatNumber, ticket.getEventId());
+                if (seatConflict.isPresent() && !Objects.equals(seatConflict.get().getId(), ticketId)) {
+                    return new ResponseErrorTemplate(
+                            ApiConstant.SEAT_NUMBER_ALREADY_EXISTS.getFormattedDescription(requestedSeatNumber),
+                            ApiConstant.SEAT_NUMBER_ALREADY_EXISTS.getKey(),
+                            new EmptyObject(),
+                            true);
+                }
+                ticket.setSeatNumber(requestedSeatNumber);
+            }
+        }
         if (ticketRequest.getPrice() != null) {
             ticket.setPrice(ticketRequest.getPrice());
         }
-        if (ticketRequest.getSeatNumber() != null && !ticketRequest.getSeatNumber().isBlank()) {
-            ticket.setSeatNumber(ticketRequest.getSeatNumber());
-        }
         if (ticketRequest.getTicketType() != null) {
             ticket.setTicketType(ticketRequest.getTicketType());
-        }
-        if (ticketRequest.getTicketStatus() != null) {
-            ticket.setTicketStatus(ticketRequest.getTicketStatus());
         }
         ticketRepository.save(ticket);
 
@@ -246,6 +303,13 @@ public class TicketServiceImpl implements TicketService {
             return new ResponseErrorTemplate(
                     ApiConstant.TICKET_ALREADY_SOLD.getFormattedDescription(ticketId),
                     ApiConstant.TICKET_ALREADY_SOLD.getKey(),
+                    new EmptyObject(),
+                    true);
+        }
+        if (existing.get().getTicketStatus() == TicketStatus.LOCKED) {
+            return new ResponseErrorTemplate(
+                    ApiConstant.TICKET_LOCKED_CANNOT_DELETE.getFormattedDescription(ticketId),
+                    ApiConstant.TICKET_LOCKED_CANNOT_DELETE.getKey(),
                     new EmptyObject(),
                     true);
         }
@@ -301,6 +365,13 @@ public class TicketServiceImpl implements TicketService {
                     "Ticket is already locked or sold",
                     "TICKET_ALREADY_LOCKED",
                     ticketMapper.toResponse(ticket),
+                    true);
+        }
+        if (ticket.getTicketStatus() != TicketStatus.AVAILABLE) {
+            return new ResponseErrorTemplate(
+                    "Only available tickets can be locked.",
+                    ApiConstant.INVALID_REQUEST.getKey(),
+                    new EmptyObject(),
                     true);
         }
 

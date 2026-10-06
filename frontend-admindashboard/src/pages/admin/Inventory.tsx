@@ -2,14 +2,16 @@ import React from 'react';
 import { Controller, useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { Plus, Search, Trash2, Unlock } from 'lucide-react';
+import { Lock, Pencil, Plus, Search, Trash2, Unlock } from 'lucide-react';
 import { toast } from 'sonner';
 import {
   useCreateTicket,
   useDeleteTicket,
   useEvents,
+  useLockTicket,
   useTicketStats,
   useTickets,
+  useUpdateTicket,
   useUnlockTicket,
 } from '../../hooks/useApi';
 import { usePagedRows } from '../../hooks/usePagedRows';
@@ -49,14 +51,22 @@ const Inventory: React.FC = () => {
   const ticketStats = useTicketStats();
   const events = useEvents();
   const createTicket = useCreateTicket();
+  const updateTicket = useUpdateTicket();
   const deleteTicket = useDeleteTicket();
+  const lockTicket = useLockTicket();
   const unlockTicket = useUnlockTicket();
 
   const [search, setSearch] = React.useState('');
   const [statusFilter, setStatusFilter] = React.useState('');
   const [eventFilter, setEventFilter] = React.useState('');
   const [formOpen, setFormOpen] = React.useState(false);
+  const [editingTicket, setEditingTicket] = React.useState<Ticket | null>(null);
   const [deleteTarget, setDeleteTarget] = React.useState<Ticket | null>(null);
+
+  const openCreate = () => {
+    setEditingTicket(null);
+    setFormOpen(true);
+  };
 
   const eventTitleById = React.useMemo(() => {
     const map = new Map<number, string>();
@@ -91,7 +101,7 @@ const Inventory: React.FC = () => {
             : 'View ticket inventory in your workspace.'}
         actions={
           canManageInventory ? (
-            <Button leftIcon={<Plus className="h-3.5 w-3.5" />} onClick={() => setFormOpen(true)}>
+            <Button leftIcon={<Plus className="h-3.5 w-3.5" />} onClick={openCreate}>
               Add seat
             </Button>
           ) : undefined
@@ -147,7 +157,7 @@ const Inventory: React.FC = () => {
         emptyTitle={search || statusFilter || eventFilter ? 'No seats match your filters' : 'No seats yet'}
         emptyDescription="Add a seat to make it purchasable."
         emptyAction={canManageInventory ? (
-          <Button leftIcon={<Plus className="h-3.5 w-3.5" />} onClick={() => setFormOpen(true)}>
+          <Button leftIcon={<Plus className="h-3.5 w-3.5" />} onClick={openCreate}>
             Add seat
           </Button>
         ) : undefined}
@@ -183,7 +193,22 @@ const Inventory: React.FC = () => {
                 </Td>
                 <Td>
                   <div className="flex items-center justify-end gap-1">
-                    {canManageInventory && <button
+                    {canManageInventory && ticket.ticketStatus === 'AVAILABLE' && <button
+                      type="button"
+                      title="Lock seat"
+                      aria-label={`Lock seat ${ticket.seatNumber}`}
+                      disabled={lockTicket.isPending}
+                      onClick={() =>
+                        lockTicket.mutate(ticket.id, {
+                          onSuccess: () => toast.success(`Seat ${ticket.seatNumber} locked`),
+                          onError: (e) => toast.error(e.message),
+                        })
+                      }
+                      className="rounded-md p-1.5 text-[#9da0a8] hover:bg-[#313335] disabled:opacity-40"
+                    >
+                      <Lock className="h-3.5 w-3.5" />
+                    </button>}
+                    {canManageInventory && ticket.ticketStatus === 'LOCKED' && <button
                       type="button"
                       title="Release lock"
                       aria-label={`Release lock on seat ${ticket.seatNumber}`}
@@ -198,12 +223,25 @@ const Inventory: React.FC = () => {
                     >
                       <Unlock className="h-3.5 w-3.5" />
                     </button>}
+                    {canManageInventory && ticket.ticketStatus === 'AVAILABLE' && <button
+                      type="button"
+                      title="Edit seat"
+                      aria-label={`Edit seat ${ticket.seatNumber}`}
+                      onClick={() => {
+                        setEditingTicket(ticket);
+                        setFormOpen(true);
+                      }}
+                      className="rounded-md p-1.5 text-[#9da0a8] hover:bg-[#313335]"
+                    >
+                      <Pencil className="h-3.5 w-3.5" />
+                    </button>}
                     {canManageInventory && <button
                       type="button"
-                      title="Delete seat"
+                      title={ticket.ticketStatus === 'LOCKED' ? 'Release the lock before deleting' : ticket.ticketStatus === 'SOLD' ? 'Sold seats cannot be deleted' : 'Delete seat'}
                       aria-label={`Delete seat ${ticket.seatNumber}`}
+                      disabled={ticket.ticketStatus === 'LOCKED' || ticket.ticketStatus === 'SOLD'}
                       onClick={() => setDeleteTarget(ticket)}
-                      className="rounded-md p-1.5 text-rose-600 hover:bg-rose-50"
+                      className="rounded-md p-1.5 text-rose-600 hover:bg-rose-50 disabled:cursor-not-allowed disabled:opacity-40"
                     >
                       <Trash2 className="h-3.5 w-3.5" />
                     </button>}
@@ -223,18 +261,33 @@ const Inventory: React.FC = () => {
 
       {formOpen && (
         <TicketFormModal
+          ticket={editingTicket}
           events={(events.data ?? []).map((event) => ({ id: event.id, title: event.title }))}
-          onClose={() => setFormOpen(false)}
-          onSubmit={(payload) =>
+          onClose={() => {
+            setFormOpen(false);
+            setEditingTicket(null);
+          }}
+          onSubmit={(payload) => {
+            if (editingTicket) {
+              updateTicket.mutate({ id: editingTicket.id, payload }, {
+                onSuccess: () => {
+                  toast.success('Seat updated');
+                  setFormOpen(false);
+                  setEditingTicket(null);
+                },
+                onError: (e) => toast.error(e.message),
+              });
+              return;
+            }
             createTicket.mutate(payload, {
               onSuccess: () => {
                 toast.success('Seat added');
                 setFormOpen(false);
               },
               onError: (e) => toast.error(e.message),
-            })
-          }
-          pending={createTicket.isPending}
+            });
+          }}
+          pending={createTicket.isPending || updateTicket.isPending}
         />
       )}
 
@@ -264,11 +317,15 @@ const Inventory: React.FC = () => {
 };
 
 const TicketFormModal: React.FC<{
+  ticket: Ticket | null;
   events: { id: number; title: string }[];
   onClose: () => void;
   onSubmit: (payload: TicketPayload) => void;
   pending: boolean;
-}> = ({ events, onClose, onSubmit, pending }) => {
+}> = ({ ticket, events, onClose, onSubmit, pending }) => {
+  const eventOptions = ticket && !events.some((event) => event.id === ticket.eventId)
+    ? [...events, { id: ticket.eventId, title: `Event #${ticket.eventId}` }]
+    : events;
   const {
     register,
     handleSubmit,
@@ -276,26 +333,31 @@ const TicketFormModal: React.FC<{
     formState: { errors },
   } = useForm<TicketFormValues>({
     resolver: zodResolver(ticketSchema),
-    defaultValues: { ticketType: 'STANDARD', price: 0 },
+    defaultValues: {
+      eventId: ticket?.eventId,
+      seatNumber: ticket?.seatNumber ?? '',
+      price: ticket?.price ?? 0,
+      ticketType: ticket?.ticketType ?? 'STANDARD',
+    },
   });
 
   return (
     <Modal
       open
       onClose={onClose}
-      title="Add seat"
+      title={ticket ? `Edit seat ${ticket.seatNumber}` : 'Add seat'}
       footer={
         <>
           <Button variant="secondary" onClick={onClose} disabled={pending}>
             Cancel
           </Button>
-          <Button type="submit" form="ticket-form" loading={pending} disabled={events.length === 0}>
-            Add seat
+          <Button type="submit" form="ticket-form" loading={pending} disabled={eventOptions.length === 0}>
+            {ticket ? 'Save changes' : 'Add seat'}
           </Button>
         </>
       }
     >
-      {events.length === 0 ? (
+      {eventOptions.length === 0 ? (
         <p className="text-[13px] text-[#9da0a8]">Create an event first - a seat must belong to one.</p>
       ) : (
         <form id="ticket-form" onSubmit={handleSubmit((values) => onSubmit(values))} className="space-y-3">
@@ -311,10 +373,10 @@ const TicketFormModal: React.FC<{
                   id="ticket-event"
                   value={field.value ? String(field.value) : ''}
                   onChange={(value) => field.onChange(value ? Number(value) : '')}
-                  disabled={pending}
+                  disabled={pending || ticket !== null}
                   options={[
                     { value: '', label: 'Select an event' },
-                    ...events.map((event) => ({ value: String(event.id), label: event.title })),
+                    ...eventOptions.map((event) => ({ value: String(event.id), label: event.title })),
                   ]}
                 />
               )}
@@ -322,6 +384,7 @@ const TicketFormModal: React.FC<{
             {errors.eventId && (
               <p className="mt-1 text-[11px] text-rose-400">{errors.eventId.message}</p>
             )}
+            {ticket && <p className="mt-1 text-[11px] text-[#7d8188]">Event assignment cannot be changed after creation.</p>}
           </div>
           <Input
             label="Seat number"

@@ -128,4 +128,34 @@ class EventServiceImplTest {
         assertSame(response, result.data());
         verify(eventRepository).save(event);
     }
+
+    @Test
+    void updatesEventDetailsAndImageUrl() {
+        Event event = new Event();
+        event.setId(21L);
+        EventRequest request = new EventRequest(
+                "Updated QA Draft", "Updated description", "https://cdn.example.com/updated.jpg",
+                "Phnom Penh", LocalDateTime.of(2026, 12, 22, 18, 0),
+                new BigDecimal("30.00"), 250, EventType.CONCERT, EventStatus.DRAFT);
+        EventResponse response = new EventResponse();
+        when(eventRepository.findById(21L)).thenReturn(Optional.of(event));
+        when(eventRepository.save(event)).thenReturn(event);
+        when(eventMapper.toResponse(event)).thenReturn(response);
+
+        ResponseErrorTemplate result = service.update(21L, request);
+
+        assertFalse(result.isError());
+        assertEquals("Updated QA Draft", event.getTitle());
+        assertEquals("https://cdn.example.com/updated.jpg", event.getImageUrl());
+        assertEquals(EventStatus.DRAFT, event.getStatus());
+        assertSame(response, result.data());
+        verify(eventRepository).save(event);
+    }
+
+    @Test
+    void deletesRequestedEventId() {
+        service.delete(22L);
+
+        verify(eventRepository).deleteById(22L);
+    }
 }
