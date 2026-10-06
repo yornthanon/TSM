@@ -17,7 +17,7 @@
 3. Do not enter card details or submit a checkout against the production database. Do not interpret the mock gateway as a real sandbox payment provider.
 4. Use a unique idempotency key such as `qa-checkout-<run-id>`; do not paste bearer tokens into reports or chat.
 5. Preserve order/payment history. After an order has been created, the new Event delete guard should block deleting that event. Do not bypass the guard or delete order rows manually.
-6. **Do not run cancellation tests yet.** Current `cancelOrder`/`forceCancelOrder` only mark an order `CANCELLED`; they do not refund the payment or release/transition the sold ticket. The user-level cancellation path also does not compare the authenticated username to `order.username`. Define the cancellation/refund/seat-restoration policy and fix those paths first.
+6. Cancellation tests are allowed for `PENDING`/`PROCESSING` orders in QA only. The user path checks that the authenticated username owns the order; cancellation refunds a recorded payment and releases the reservation, and fails closed if either compensation step fails. `COMPLETED` orders remain non-cancellable until a separate customer refund policy is approved.
 
 ## 3. Test matrix (isolated QA only)
 
@@ -32,6 +32,9 @@
 | Idempotent retry | Repeat the successful request with the same username and idempotency key | Same order ID is returned; no duplicate payment or second order is created |
 | Payment failure compensation | In a test harness, stub the payment client/gateway to fail | Order becomes `CANCELLED`; reservation is released; no ticket sale is confirmed. Existing unit coverage verifies this path; add an integration test when the harness is available |
 | Sale-confirmation failure compensation | In a test harness, make ticket confirmation fail after mock payment success | Payment refund is requested; order becomes `CANCELLED`; reservation is released; ticket is not left sold |
+| Owner cancellation compensation | Owner cancels a `PROCESSING` QA order with a payment and active reservation | Payment is refunded, reservation is released, and order becomes `CANCELLED` |
+| Cross-owner cancellation | A different QA user cancels the order | HTTP 403; no refund, release, or order mutation |
+| Compensation failure | Make refund or reservation release fail | HTTP 409; order is not marked `CANCELLED` and the failure is visible for retry/operations |
 | Concurrent checkout | Two QA requests race for the same available ticket | At most one reservation/order succeeds; the losing request receives a conflict/unavailable result |
 | Event deletion with linked seat | Delete a QA event while a QA seat still references it | HTTP 409; event remains; response identifies that linked seats/orders block deletion |
 | Event deletion with order history | Delete an event with an order, including a cancelled order | HTTP 409; event remains to preserve history |

@@ -4,6 +4,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Toaster } from 'sonner';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { AdminLayout } from './layouts/AdminLayout';
+import { CustomerLayout } from './layouts/CustomerLayout';
 import { RequireAuth } from './components/RequireAuth';
 import { Navigate } from 'react-router-dom';
 import { auth } from './lib/auth';
@@ -21,6 +22,9 @@ const Users = lazy(() => import('./pages/admin/Users'));
 const Access = lazy(() => import('./pages/admin/Access'));
 const System = lazy(() => import('./pages/admin/System'));
 const Workspaces = lazy(() => import('./pages/admin/Workspaces'));
+const CustomerEvents = lazy(() => import('./pages/customer/Events'));
+const CustomerEventDetail = lazy(() => import('./pages/customer/EventDetail'));
+const CustomerOrders = lazy(() => import('./pages/customer/Orders'));
 
 const PlatformAdminOnly: React.FC<{ children: React.ReactNode }> = ({ children }) => (
   auth.getUser()?.role === 'ADMIN' ? <>{children}</> : <Navigate to="/admin" replace />
@@ -48,6 +52,27 @@ const App: React.FC = () => {
             <Routes>
               <Route path="/login" element={<Login />} />
               <Route path="/oauth/callback" element={<OAuthCallback />} />
+              <Route
+                path="/events"
+                element={
+                  <RequireAuth>
+                    <CustomerLayout />
+                  </RequireAuth>
+                }
+              >
+                <Route index element={<CustomerEvents />} />
+                <Route path=":id" element={<CustomerEventDetail />} />
+              </Route>
+              <Route
+                path="/orders"
+                element={
+                  <RequireAuth>
+                    <CustomerLayout />
+                  </RequireAuth>
+                }
+              >
+                <Route index element={<CustomerOrders />} />
+              </Route>
               <Route
                 path="/admin"
                 element={

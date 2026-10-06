@@ -14,7 +14,6 @@ import com.ticket.orderservice.client.TicketClient;
 import com.ticket.orderservice.client.UserClient;
 import com.ticket.orderservice.dto.OrderRequest;
 import com.ticket.common.dto.request.PaymentRequest;
-import com.ticket.orderservice.entity.Order;
 import com.ticket.orderservice.repository.OrderRepository;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
@@ -133,8 +132,7 @@ public class OrderServiceImpl implements OrderService{
                     true);
         }
 
-        Object rawPaymentId = paymentResponse.data() instanceof Map<?, ?> data ? data.get("paymentId") : null;
-        Long paymentId = rawPaymentId != null ? ((Number) rawPaymentId).longValue() : null;
+        Long paymentId = paymentIdFrom(paymentResponse.data());
         order.setPaymentId(paymentId);
         ResponseErrorTemplate sale = ticketClient.confirm(orderRequest.getTicketId(), username).block();
         if (sale == null || sale.isError()) {
@@ -218,8 +216,11 @@ public class OrderServiceImpl implements OrderService{
 
     @Override
     public ResponseErrorTemplate cancelOrder(Long orderId, HttpServletRequest httpServletRequest) {
-        // Check user authentication and authorization
         String username = handleUnauthorized(httpServletRequest);
+        if (!StringUtils.hasText(username)) {
+            return new ResponseErrorTemplate(ApiConstant.UN_AUTHORIZATION.getDescription(),
+                    ApiConstant.UN_AUTHORIZATION.getKey(), new EmptyObject(), true);
+        }
         Optional<Order> order = orderRepository.findById(orderId);
         if(order.isEmpty()) {
             return new ResponseErrorTemplate(
@@ -228,17 +229,11 @@ public class OrderServiceImpl implements OrderService{
                     new EmptyObject(),
                     true);
         }
-        ResponseErrorTemplate statusCheck = validateCancellable(order.get());
-        if (statusCheck != null) return statusCheck;
-        order.get().setOrderStatus(OrderStatus.CANCELLED);
-        order.get().setUpdatedBy(username);
-        orderRepository.save(order.get());
-
-        return new ResponseErrorTemplate(
-                ApiConstant.SUCCESS.getDescription(),
-                ApiConstant.SUCCESS.getKey(),
-                new EmptyObject(),
-                false);
+        if (!username.equals(order.get().getUsername())) {
+            return new ResponseErrorTemplate("You can only cancel your own order.", "403",
+                    new EmptyObject(), true);
+        }
+        return cancelExistingOrder(order.get(), username);
     }
 
     private String handleUnauthorized(HttpServletRequest request) {
@@ -305,18 +300,45 @@ public class OrderServiceImpl implements OrderService{
                     true);
         }
 
-        Order existing = order.get();
-        ResponseErrorTemplate statusCheck = validateCancellable(existing);
-        if (statusCheck != null) return statusCheck;
-        existing.setOrderStatus(OrderStatus.CANCELLED);
-        existing.setUpdatedBy("admin");
-        orderRepository.save(existing);
+        return cancelExistingOrder(order.get(), "admin");
+    }
 
-        return new ResponseErrorTemplate(
-                ApiConstant.SUCCESS.getDescription(),
-                ApiConstant.SUCCESS.getKey(),
-                orderMapper.toResponse(existing),
-                false);
+    private ResponseErrorTemplate cancelExistingOrder(Order order, String actor) {
+        ResponseErrorTemplate statusCheck = validateCancellable(order);
+        if (statusCheck != null) return statusCheck;
+
+        if (order.getPaymentId() != null) {
+            ResponseErrorTemplate refund = paymentClient.refund(order.getPaymentId()).block();
+            if (refund == null || refund.isError()) {
+                return new ResponseErrorTemplate(
+                        "Cancellation is blocked because the payment could not be refunded.",
+                        "409", new EmptyObject(), true);
+            }
+        }
+        if (order.getTicketId() != null && StringUtils.hasText(order.getUsername())) {
+            ResponseErrorTemplate release = ticketClient.release(order.getTicketId(), order.getUsername()).block();
+            if (release == null || release.isError()) {
+                return new ResponseErrorTemplate(
+                        "Cancellation is blocked because the ticket reservation could not be released.",
+                        "409", new EmptyObject(), true);
+            }
+        }
+        order.setOrderStatus(OrderStatus.CANCELLED);
+        order.setUpdatedBy(actor);
+        orderRepository.save(order);
+        return new ResponseErrorTemplate(ApiConstant.SUCCESS.getDescription(),
+                ApiConstant.SUCCESS.getKey(), orderMapper.toResponse(order), false);
+    }
+
+    private Long paymentIdFrom(Object paymentData) {
+        if (paymentData instanceof Map<?, ?> data) {
+            Object value = data.get("paymentId");
+            if (value instanceof Number number) return number.longValue();
+            if (value != null) {
+                try { return Long.valueOf(value.toString()); } catch (NumberFormatException ignored) { }
+            }
+        }
+        return null;
     }
 
     private ResponseErrorTemplate validateCancellable(Order order) {
