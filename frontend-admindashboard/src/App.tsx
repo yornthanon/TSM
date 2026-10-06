@@ -30,9 +30,12 @@ const PlatformAdminOnly: React.FC<{ children: React.ReactNode }> = ({ children }
   auth.getUser()?.role === 'ADMIN' ? <>{children}</> : <Navigate to="/admin" replace />
 );
 
-const StaffOnly: React.FC<{ children: React.ReactNode }> = ({ children }) => (
-  auth.getUser()?.role === 'ADMIN' ? <>{children}</> : <Navigate to="/admin" replace />
-);
+const TenantStaffOnly: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const role = auth.getUser()?.role;
+  return role === 'ADMIN' || role === 'TENANT_ADMIN'
+    ? <>{children}</>
+    : <Navigate to="/admin" replace />;
+};
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -87,8 +90,8 @@ const App: React.FC = () => {
                 <Route path="inventory" element={<Inventory />} />
                 <Route path="orders" element={<Orders />} />
                 <Route path="payments" element={<Payments />} />
-                <Route path="notifications" element={<StaffOnly><Notifications /></StaffOnly>} />
-                <Route path="users" element={<PlatformAdminOnly><Users /></PlatformAdminOnly>} />
+                <Route path="notifications" element={<TenantStaffOnly><Notifications /></TenantStaffOnly>} />
+                <Route path="users" element={<TenantStaffOnly><Users /></TenantStaffOnly>} />
                 <Route path="access" element={<PlatformAdminOnly><Access /></PlatformAdminOnly>} />
                 <Route path="system" element={<PlatformAdminOnly><System /></PlatformAdminOnly>} />
                 <Route path="workspaces" element={<PlatformAdminOnly><Workspaces /></PlatformAdminOnly>} />

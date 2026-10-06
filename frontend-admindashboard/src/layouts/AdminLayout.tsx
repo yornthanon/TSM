@@ -33,8 +33,8 @@ const navItems = [
   { to: '/admin/inventory', icon: Ticket, label: 'Inventory', shortcut: '⌘3', badge: 'Seats' },
   { to: '/admin/orders', icon: ShoppingCart, label: 'Orders', shortcut: '⌘4', badge: 'Live' },
   { to: '/admin/payments', icon: CreditCard, label: 'Payments', shortcut: '⌘5', badge: 'Mock' },
-  { to: '/admin/notifications', icon: Bell, label: 'Notifications', shortcut: '⌘6', badge: 'Queue', adminOnly: true },
-  { to: '/admin/users', icon: Users, label: 'Users', shortcut: '⌘7', badge: 'Team' },
+  { to: '/admin/notifications', icon: Bell, label: 'Notifications', shortcut: '⌘6', tenantStaffOnly: true },
+  { to: '/admin/users', icon: Users, label: 'Users', shortcut: '⌘7', tenantStaffOnly: true },
   { to: '/admin/access', icon: KeyRound, label: 'Access control', shortcut: '⌘8', badge: 'Policy', adminOnly: true },
   { to: '/admin/system', icon: Server, label: 'System', shortcut: '⌘9', badge: 'API', adminOnly: true },
   { to: '/admin/workspaces', icon: Building2, label: 'Workspaces', shortcut: '⌘0', badge: 'Platform', adminOnly: true },
@@ -74,8 +74,8 @@ export const AdminLayout: React.FC = () => {
 
   const visibleItems = useMemo(
     () => navItems.filter((item) => (!item.adminOnly || isAdmin)
-      && (item.to !== '/admin/users' || isAdmin)),
-    [isAdmin],
+      && (!item.tenantStaffOnly || isAdmin || isTenantAdmin)),
+    [isAdmin, isTenantAdmin],
   );
   const title = titleFor(location.pathname, visibleItems);
   const filteredItems = useMemo(
