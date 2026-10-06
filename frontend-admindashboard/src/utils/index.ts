@@ -25,6 +25,16 @@ export function truncate(str: string, length: number): string {
   return str.slice(0, length).trim() + '...';
 }
 
+/** Convert backend enum values into readable labels without changing the API value. */
+export function formatStatusLabel(status: string | null | undefined): string {
+  if (!status) return 'Unknown';
+  return status
+    .toLowerCase()
+    .split('_')
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .join(' ');
+}
+
 /**
  * Status -> badge colour. Handles both the event-ticketing statuses the backend
  * actually returns (upper case) and the legacy helpdesk values, because the

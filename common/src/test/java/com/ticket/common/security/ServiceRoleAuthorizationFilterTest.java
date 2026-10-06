@@ -95,6 +95,23 @@ class ServiceRoleAuthorizationFilterTest {
     }
 
     @Test
+    void restrictsOrderCancellationToTenantAdmin() throws Exception {
+        MockHttpServletRequest tenantRequest = authenticated("PUT", "/api/v1/orders/12/cancel", "TENANT_ADMIN");
+        MockHttpServletResponse tenantResponse = new MockHttpServletResponse();
+        FilterChain tenantChain = mock(FilterChain.class);
+        filter.doFilter(tenantRequest, tenantResponse, tenantChain);
+        assertThat(tenantResponse.getStatus()).isEqualTo(200);
+        verify(tenantChain).doFilter(tenantRequest, tenantResponse);
+
+        MockHttpServletRequest userRequest = authenticated("PUT", "/api/v1/orders/12/cancel", "USER");
+        MockHttpServletResponse userResponse = new MockHttpServletResponse();
+        FilterChain userChain = mock(FilterChain.class);
+        filter.doFilter(userRequest, userResponse, userChain);
+        assertThat(userResponse.getStatus()).isEqualTo(403);
+        verifyNoInteractions(userChain);
+    }
+
+    @Test
     void allowsAllApplicationRolesToReadTenantDashboardData() throws Exception {
         List<String> dashboardRoles = List.of("USER", "TENANT_ADMIN", "ADMIN");
         List<String> dashboardPaths = List.of(

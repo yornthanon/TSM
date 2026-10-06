@@ -70,9 +70,6 @@ const Users: React.FC = () => {
   const totalPages = Math.max(1, users.data?.totalPages ?? Math.ceil(totalElements / 10));
   const byStatus = userStats.data?.byStatus ?? {};
   React.useEffect(() => {
-    setPage(0);
-  }, [search, statusFilter]);
-  React.useEffect(() => {
     if (page >= totalPages) setPage(Math.max(0, totalPages - 1));
   }, [page, totalPages]);
 

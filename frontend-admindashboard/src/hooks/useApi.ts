@@ -246,6 +246,10 @@ export function useCancelOrder() {
     onSuccess: () => {
       void qc.invalidateQueries({ queryKey: queryKeys.orders });
       void qc.invalidateQueries({ queryKey: queryKeys.orderStats });
+      void qc.invalidateQueries({ queryKey: queryKeys.tickets });
+      void qc.invalidateQueries({ queryKey: queryKeys.ticketStats });
+      void qc.invalidateQueries({ queryKey: queryKeys.payments });
+      void qc.invalidateQueries({ queryKey: queryKeys.revenue });
     },
   });
 }

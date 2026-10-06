@@ -13,13 +13,15 @@ import {
   Th,
 } from '../../components/QueryState';
 import { Badge, Card, ConfirmDialog, Input, SelectField } from '../../components/ui';
-import { formatCurrency, formatDateTime } from '../../utils';
+import { formatCurrency, formatDateTime, formatStatusLabel } from '../../utils';
 import { ORDER_STATUSES, type Order } from '../../types/api';
 import { auth } from '../../lib/auth';
 
+const CANCELLABLE_ORDER_STATUSES = new Set(['PENDING', 'PROCESSING']);
+
 const Orders: React.FC = () => {
   const activeRole = auth.getUser()?.role;
-  const canCancelOrders = activeRole !== 'ADMIN';
+  const canCancelOrders = activeRole === 'TENANT_ADMIN';
   const orders = useOrders();
   const orderStats = useOrderStats();
   const events = useEvents();
@@ -88,7 +90,7 @@ const Orders: React.FC = () => {
             className="w-full px-3 py-2 text-[13px] sm:w-44"
             options={[
               { value: '', label: 'All statuses' },
-              ...ORDER_STATUSES.map((status) => ({ value: status, label: status })),
+              ...ORDER_STATUSES.map((status) => ({ value: status, label: formatStatusLabel(status) })),
             ]}
           />
         </div>
@@ -137,16 +139,21 @@ const Orders: React.FC = () => {
                 </Td>
                 <Td>
                   <div className="flex justify-end">
-                    {canCancelOrders && <button
+                    {canCancelOrders && CANCELLABLE_ORDER_STATUSES.has(order.orderStatus ?? '') && <button
                       type="button"
-                      title="Cancel order"
+                      title="Cancel pending order"
                       aria-label={`Cancel order ${order.id}`}
-                      disabled={order.orderStatus === 'CANCELLED' || order.orderStatus === 'COMPLETED'}
+                      disabled={cancelOrder.isPending}
                       onClick={() => setCancelTarget(order)}
-                      className="rounded-md p-1.5 text-rose-600 hover:bg-rose-50 disabled:cursor-not-allowed disabled:text-[#9da0a8]"
+                      className="rounded-md p-1.5 text-rose-400 transition-colors hover:bg-rose-500/10 hover:text-rose-300 disabled:cursor-not-allowed disabled:opacity-40"
                     >
                       <Ban className="h-3.5 w-3.5" />
                     </button>}
+                    {canCancelOrders && !CANCELLABLE_ORDER_STATUSES.has(order.orderStatus ?? '') && (
+                      <span className="px-1.5 text-[11px] text-[#6f737c]" title="Only pending or processing orders can be cancelled">
+                        —
+                      </span>
+                    )}
                   </div>
                 </Td>
               </tr>
@@ -177,9 +184,11 @@ const Orders: React.FC = () => {
             },
           });
         }}
-        title="Cancel order"
-        description={`Order #${cancelTarget?.id ?? ''} for ${formatCurrency(cancelTarget?.amount)} will be cancelled.`}
-        confirmLabel="Cancel order"
+        title={`Cancel order #${cancelTarget?.id ?? ''}?`}
+        description={cancelTarget
+          ? `This will mark the ${formatStatusLabel(cancelTarget.orderStatus)} order for ${formatCurrency(cancelTarget.amount)} as cancelled. The current backend does not automatically issue a payment refund.`
+          : 'Review the order before cancelling it.'}
+        confirmLabel="Yes, cancel order"
         loading={cancelOrder.isPending}
       />
     </>

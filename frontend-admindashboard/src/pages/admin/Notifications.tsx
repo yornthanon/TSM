@@ -12,9 +12,9 @@ import {
   Td,
   Th,
 } from '../../components/QueryState';
-import { Badge, Card, Input, SelectField } from '../../components/ui';
-import { truncate } from '../../utils';
-import { NOTIFICATION_STATUSES, NOTIFICATION_TYPES } from '../../types/api';
+import { Badge, Card, ConfirmDialog, Input, SelectField } from '../../components/ui';
+import { formatStatusLabel, truncate } from '../../utils';
+import { NOTIFICATION_STATUSES, NOTIFICATION_TYPES, type Notification } from '../../types/api';
 
 const Notifications: React.FC = () => {
   const notifications = useNotifications();
@@ -25,6 +25,7 @@ const Notifications: React.FC = () => {
   const [search, setSearch] = React.useState('');
   const [statusFilter, setStatusFilter] = React.useState('');
   const [typeFilter, setTypeFilter] = React.useState('');
+  const [deleteTarget, setDeleteTarget] = React.useState<Notification | null>(null);
 
   const filtered = React.useMemo(() => {
     const term = search.trim().toLowerCase();
@@ -76,7 +77,7 @@ const Notifications: React.FC = () => {
             className="w-full px-3 py-2 text-[13px] lg:w-44"
             options={[
               { value: '', label: 'All channels' },
-              ...NOTIFICATION_TYPES.map((type) => ({ value: type, label: type })),
+              ...NOTIFICATION_TYPES.map((type) => ({ value: type, label: formatStatusLabel(type) })),
             ]}
           />
           <SelectField
@@ -86,7 +87,7 @@ const Notifications: React.FC = () => {
             className="w-full px-3 py-2 text-[13px] lg:w-44"
             options={[
               { value: '', label: 'All statuses' },
-              ...NOTIFICATION_STATUSES.map((status) => ({ value: status, label: status })),
+              ...NOTIFICATION_STATUSES.map((status) => ({ value: status, label: formatStatusLabel(status) })),
             ]}
           />
         </div>
@@ -122,7 +123,7 @@ const Notifications: React.FC = () => {
                     </p>
                   )}
                 </Td>
-                <Td className="text-[#9da0a8]">{n.notificationType ?? '-'}</Td>
+                <Td className="text-[#9da0a8]">{formatStatusLabel(n.notificationType)}</Td>
                 <Td className="text-[#9da0a8]">{n.recipient ?? n.username ?? '-'}</Td>
                 <Td className="text-[#9da0a8]">{n.orderId ? `#${n.orderId}` : '-'}</Td>
                 <Td>
@@ -130,7 +131,7 @@ const Notifications: React.FC = () => {
                 </Td>
                 <Td>
                   <div className="flex justify-end">
-                    <button
+                    {n.status === 'FAILED' && <button
                       type="button"
                       title="Resend"
                       aria-label={`Resend notification ${n.id}`}
@@ -142,20 +143,15 @@ const Notifications: React.FC = () => {
                         })
                       }
                       className="rounded-md p-1.5 text-[#9da0a8] hover:bg-[#313335] disabled:opacity-40"
-                    >
+                      >
                       <RefreshCw className="h-3.5 w-3.5" />
-                    </button>
+                    </button>}
                     <button
                       type="button"
                       title="Delete"
                       aria-label={`Delete notification ${n.id}`}
                       disabled={remove.isPending}
-                      onClick={() =>
-                        remove.mutate(n.id, {
-                          onSuccess: () => toast.success('Notification deleted'),
-                          onError: (e) => toast.error(e.message),
-                        })
-                      }
+                      onClick={() => setDeleteTarget(n)}
                       className="rounded-md p-1.5 text-[#9da0a8] hover:bg-[#313335] disabled:opacity-40"
                     >
                       <Trash2 className="h-3.5 w-3.5" />
@@ -173,6 +169,25 @@ const Notifications: React.FC = () => {
           onChange={paged.setPage}
         />
       </QueryState>
+
+      <ConfirmDialog
+        open={deleteTarget !== null}
+        onClose={() => setDeleteTarget(null)}
+        onConfirm={() => {
+          if (!deleteTarget) return;
+          remove.mutate(deleteTarget.id, {
+            onSuccess: () => {
+              toast.success('Notification deleted');
+              setDeleteTarget(null);
+            },
+            onError: (e) => toast.error(e.message),
+          });
+        }}
+        title="Delete notification?"
+        description={`Notification #${deleteTarget?.id ?? ''} will be removed from the activity log. This cannot be undone.`}
+        confirmLabel="Delete notification"
+        loading={remove.isPending}
+      />
     </>
   );
 };

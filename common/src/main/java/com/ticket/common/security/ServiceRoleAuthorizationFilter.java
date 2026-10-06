@@ -139,7 +139,7 @@ public final class ServiceRoleAuthorizationFilter extends OncePerRequestFilter {
         if (path.startsWith("/api/v1/events") || path.startsWith("/api/v1/tickets")) {
             return mutating ? "TENANT_ADMIN" : null;
         }
-        if (path.matches("/api/v1/orders/[^/]+/force-cancel")
+        if (path.matches("/api/v1/orders/[^/]+/(cancel|force-cancel)")
                 || path.matches("/api/v1/payments/[^/]+/refund")) {
             return "TENANT_ADMIN";
         }

@@ -13,7 +13,7 @@ import {
   Th,
 } from '../../components/QueryState';
 import { Badge, Card, ConfirmDialog, Input, SelectField } from '../../components/ui';
-import { formatCurrency, formatDateTime } from '../../utils';
+import { formatCurrency, formatDateTime, formatStatusLabel } from '../../utils';
 import {
   PAYMENT_STATUSES,
   type Payment,
@@ -103,7 +103,7 @@ const Payments: React.FC = () => {
             className="w-full px-3 py-2 text-[13px] sm:w-44"
             options={[
               { value: '', label: 'All statuses' },
-              ...PAYMENT_STATUSES.map((status) => ({ value: status, label: status })),
+              ...PAYMENT_STATUSES.map((status) => ({ value: status, label: formatStatusLabel(status) })),
             ]}
           />
         </div>

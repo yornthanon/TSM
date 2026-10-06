@@ -1,6 +1,6 @@
 import React from 'react';
 import { cn } from '../../utils';
-import { getStatusColor } from '../../utils';
+import { formatStatusLabel, getStatusColor } from '../../utils';
 
 export interface BadgeProps extends React.HTMLAttributes<HTMLSpanElement> {
   status?: string;
@@ -17,7 +17,7 @@ export const Badge: React.FC<BadgeProps> = ({ status, children, className }) => 
   }
   return (
     <span className={cn(getStatusColor(status || ''), 'badge capitalize', className)}>
-      {status}
+      {formatStatusLabel(status)}
     </span>
   );
 };

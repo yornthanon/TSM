@@ -77,4 +77,18 @@ class OrderServiceImplTest {
         verify(ticketClient).release(21L, "buyer");
         verify(ticketClient, never()).confirm(any(), any());
     }
+
+    @Test
+    void forceCancelRejectsCompletedOrder() {
+        Order order = new Order();
+        order.setId(100L);
+        order.setOrderStatus(OrderStatus.COMPLETED);
+        when(orderRepository.findById(100L)).thenReturn(java.util.Optional.of(order));
+
+        ResponseErrorTemplate response = service.forceCancelOrder(100L);
+
+        assertThat(response.isError()).isTrue();
+        assertThat(response.code()).isEqualTo("400");
+        verify(orderRepository, never()).save(any(Order.class));
+    }
 }

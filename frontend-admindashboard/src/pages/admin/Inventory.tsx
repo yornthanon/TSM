@@ -25,7 +25,7 @@ import {
   Th,
 } from '../../components/QueryState';
 import { Badge, Button, Card, ConfirmDialog, Input, Modal, SelectField } from '../../components/ui';
-import { formatCurrency, formatDateTime } from '../../utils';
+import { formatCurrency, formatDateTime, formatStatusLabel } from '../../utils';
 import { auth } from '../../lib/auth';
 import {
   TICKET_STATUSES,
@@ -143,7 +143,7 @@ const Inventory: React.FC = () => {
             className="w-full px-3 py-2 text-[13px] lg:w-44"
             options={[
               { value: '', label: 'All statuses' },
-              ...TICKET_STATUSES.map((status) => ({ value: status, label: status })),
+              ...TICKET_STATUSES.map((status) => ({ value: status, label: formatStatusLabel(status) })),
             ]}
           />
         </div>

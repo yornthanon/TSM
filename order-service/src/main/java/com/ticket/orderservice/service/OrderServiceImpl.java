@@ -228,6 +228,8 @@ public class OrderServiceImpl implements OrderService{
                     new EmptyObject(),
                     true);
         }
+        ResponseErrorTemplate statusCheck = validateCancellable(order.get());
+        if (statusCheck != null) return statusCheck;
         order.get().setOrderStatus(OrderStatus.CANCELLED);
         order.get().setUpdatedBy(username);
         orderRepository.save(order.get());
@@ -304,6 +306,8 @@ public class OrderServiceImpl implements OrderService{
         }
 
         Order existing = order.get();
+        ResponseErrorTemplate statusCheck = validateCancellable(existing);
+        if (statusCheck != null) return statusCheck;
         existing.setOrderStatus(OrderStatus.CANCELLED);
         existing.setUpdatedBy("admin");
         orderRepository.save(existing);
@@ -313,5 +317,24 @@ public class OrderServiceImpl implements OrderService{
                 ApiConstant.SUCCESS.getKey(),
                 orderMapper.toResponse(existing),
                 false);
+    }
+
+    private ResponseErrorTemplate validateCancellable(Order order) {
+        if (order.getOrderStatus() == OrderStatus.CANCELLED) {
+            return new ResponseErrorTemplate(
+                    "Order is already cancelled.",
+                    ApiConstant.INVALID_REQUEST.getKey(),
+                    orderMapper.toResponse(order),
+                    true);
+        }
+        if (order.getOrderStatus() != OrderStatus.PENDING
+                && order.getOrderStatus() != OrderStatus.PROCESSING) {
+            return new ResponseErrorTemplate(
+                    "Only pending or processing orders can be cancelled.",
+                    ApiConstant.INVALID_REQUEST.getKey(),
+                    orderMapper.toResponse(order),
+                    true);
+        }
+        return null;
     }
 }

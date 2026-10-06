@@ -31,7 +31,7 @@ import {
   Modal,
   SelectField,
 } from '../../components/ui';
-import { formatCurrency, formatDateTime, toDateTimeLocalValue } from '../../utils';
+import { formatCurrency, formatDateTime, formatStatusLabel, toDateTimeLocalValue } from '../../utils';
 import {
   EVENT_STATUSES,
   EVENT_TYPES,
@@ -179,7 +179,7 @@ const Events: React.FC = () => {
             className="w-full px-3 py-2 text-[13px] sm:w-44"
             options={[
               { value: '', label: 'All statuses' },
-              ...EVENT_STATUSES.map((status) => ({ value: status, label: status })),
+              ...EVENT_STATUSES.map((status) => ({ value: status, label: formatStatusLabel(status) })),
             ]}
           />
         </div>
@@ -256,7 +256,7 @@ const Events: React.FC = () => {
                     >
                       <Pencil className="h-3.5 w-3.5" />
                     </button>}
-                    {canManageEvents && <button
+                    {canManageEvents && (event.status === 'DRAFT' || event.status === 'REJECTED') && <button
                       type="button"
                       title="Approve"
                       aria-label={`Approve ${event.title}`}
@@ -271,7 +271,7 @@ const Events: React.FC = () => {
                     >
                       <Check className="h-3.5 w-3.5" />
                     </button>}
-                    {canManageEvents && <button
+                    {canManageEvents && (event.status === 'DRAFT' || event.status === 'APPROVED') && <button
                       type="button"
                       title="Reject"
                       aria-label={`Reject ${event.title}`}
