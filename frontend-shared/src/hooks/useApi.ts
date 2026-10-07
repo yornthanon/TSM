@@ -105,11 +105,11 @@ export function useEvent(id: number | string, options?: UseQueryOptions<Event>) 
   });
 }
 
-export function usePublicEvent(id: number | string, options?: UseQueryOptions<Event>) {
+export function usePublicEvent(shareToken: string, options?: UseQueryOptions<Event>) {
   return useQuery({
-    queryKey: queryKeys.publicEvent(id),
-    queryFn: () => api.get<Event>(`/api/public/events/${id}`),
-    enabled: id !== undefined && id !== '',
+    queryKey: queryKeys.publicEvent(shareToken),
+    queryFn: () => api.get<Event>(`/api/public/events/${shareToken}`),
+    enabled: shareToken !== undefined && shareToken !== '',
     ...options,
   });
 }
@@ -177,14 +177,11 @@ export function useTickets(options?: UseQueryOptions<Ticket[]>) {
   });
 }
 
-export function usePublicTickets(eventId: number | string, tenantId: number | string | null | undefined, options?: UseQueryOptions<Ticket[]>) {
+export function usePublicTickets(shareToken: string, options?: UseQueryOptions<Ticket[]>) {
   return useQuery({
-    queryKey: queryKeys.publicTickets(eventId),
-    queryFn: async () => {
-      const query = tenantId ? `?tenantId=${encodeURIComponent(String(tenantId))}` : '';
-      return toArray<Ticket>(await api.get<Ticket[]>(`/api/public/events/${eventId}/tickets${query}`));
-    },
-    enabled: eventId !== undefined && eventId !== '',
+    queryKey: queryKeys.publicTickets(shareToken),
+    queryFn: async () => toArray<Ticket>(await api.get<Ticket[]>(`/api/public/events/${shareToken}/tickets`)),
+    enabled: shareToken !== undefined && shareToken !== '',
     ...options,
   });
 }

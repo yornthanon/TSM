@@ -8,7 +8,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
@@ -18,10 +17,8 @@ public class PublicTicketController {
 
     private final TicketService ticketService;
 
-    @GetMapping("/{eventId}/tickets")
-    public ResponseEntity<ResponseErrorTemplate> findPublicTickets(
-            @PathVariable Long eventId,
-            @RequestParam(required = false) Long tenantId) {
-        return ApiResponse.from(ticketService.findPublicTickets(eventId, tenantId));
+    @GetMapping("/{shareToken}/tickets")
+    public ResponseEntity<ResponseErrorTemplate> findPublicTickets(@PathVariable String shareToken) {
+        return ApiResponse.from(ticketService.findPublicTicketsByShareToken(shareToken));
     }
 }

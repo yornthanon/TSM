@@ -3,7 +3,7 @@ import { Link, useParams } from 'react-router-dom';
 import { ArrowLeft, CreditCard, Mail, Phone, Ticket as TicketIcon, User } from 'lucide-react';
 import { toast } from 'sonner';
 import { QueryState } from 'frontend-shared/components/QueryState';
-import { useCreateOrder, useEvent, useTickets } from 'frontend-shared/hooks/useApi';
+import { useCreateOrder, usePublicEvent, usePublicTickets } from 'frontend-shared/hooks/useApi';
 import { Button, Card, Input, SelectField } from 'frontend-shared/components/ui';
 import { formatCurrency } from 'frontend-shared/utils';
 import { PAYMENT_METHODS, type PaymentMethod, type Ticket } from 'frontend-shared/types/api';
@@ -11,14 +11,14 @@ import { PAYMENT_METHODS, type PaymentMethod, type Ticket } from 'frontend-share
 const CUSTOMER_ORDER_KEY = 'customer_order_idempotency';
 
 export default function CustomerCheckout() {
-  const { id = '' } = useParams();
-  const eventQuery = useEvent(id);
-  const ticketsQuery = useTickets();
+  const { id: shareToken = '' } = useParams();
+  const eventQuery = usePublicEvent(shareToken);
+  const ticketsQuery = usePublicTickets(shareToken);
   const createOrder = useCreateOrder();
 
   const event = eventQuery.data;
   const tickets = ticketsQuery.data ?? [];
-  const eventTickets = tickets.filter((ticket) => String(ticket.eventId) === String(id));
+  const eventTickets = tickets;
   const availableTickets = eventTickets.filter((ticket) => ticket.ticketStatus === 'AVAILABLE');
   const byType = availableTickets.reduce<Record<string, Ticket[]>>((groups, ticket) => {
     const type = ticket.ticketType ?? 'STANDARD';
@@ -34,15 +34,15 @@ export default function CustomerCheckout() {
 
   const selectedTicket = availableTickets.find((ticket) => String(ticket.id) === selectedTicketId);
 
-  const handleSubmit = async (event: React.FormEvent) => {
-    event.preventDefault();
-    if (!selectedTicket) {
+  const handleSubmit = async (formEvent: React.FormEvent) => {
+    formEvent.preventDefault();
+    if (!selectedTicket || !event?.id) {
       toast.error('Please select a ticket');
       return;
     }
     try {
       await createOrder.mutateAsync({
-        eventId: Number(id),
+        eventId: event.id,
         ticketId: selectedTicket.id,
         quantity: 1,
         amount: selectedTicket.price,
@@ -63,7 +63,7 @@ export default function CustomerCheckout() {
 
   return (
     <div>
-      <Link to={`/public/events/${id}`} className="mb-6 inline-flex items-center gap-2 text-xs text-[#9da0a8] hover:text-white">
+      <Link to={`/public/events/${shareToken}`} className="mb-6 inline-flex items-center gap-2 text-xs text-[#9da0a8] hover:text-white">
         <ArrowLeft className="h-4 w-4" /> Back to event
       </Link>
       <QueryState isLoading={eventQuery.isLoading} error={eventQuery.error as Error | null} isEmpty={!event} onRetry={() => void eventQuery.refetch()} emptyTitle="Event not found" emptyDescription="This event may have been removed or is not available.">

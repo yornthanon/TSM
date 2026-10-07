@@ -14,6 +14,8 @@ import org.springframework.dao.DataAccessException;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
+import java.security.SecureRandom;
+import java.util.HexFormat;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -23,6 +25,13 @@ import java.util.stream.Collectors;
 @Service
 @Slf4j
 public class EventServiceImpl implements EventService {
+    private static final SecureRandom SECURE_RANDOM = new SecureRandom();
+
+    private static String newShareToken() {
+        byte[] bytes = new byte[32];
+        SECURE_RANDOM.nextBytes(bytes);
+        return HexFormat.of().formatHex(bytes);
+    }
 
     private final EventMapper eventMapper;
     private final EventRepository eventRepository;
@@ -35,6 +44,7 @@ public class EventServiceImpl implements EventService {
     @Override
     public ResponseErrorTemplate create(EventRequest request) {
         Event event = eventMapper.toEntity(request);
+        event.setShareToken(newShareToken());
         eventRepository.save(event);
         EventResponse eventResponse = eventMapper.toResponse(event);
         return new ResponseErrorTemplate(
@@ -194,39 +204,62 @@ public class EventServiceImpl implements EventService {
 
     @Override
     public List<EventResponse> findPublicEvents() {
-        return eventRepository.findByStatus(EventStatus.APPROVED)
-                .stream()
-                .map(eventMapper::toResponse)
-                .toList();
+        return eventRepository.findByStatus(EventStatus.APPROVED).stream()
+                .map(eventMapper::toResponse).toList();
     }
 
     @Override
     public List<EventResponse> findPublicEvents(Long tenantId) {
-        if (tenantId == null) {
-            return findPublicEvents();
-        }
-        return eventRepository.findByStatusAndTenantId(EventStatus.APPROVED, tenantId)
-                .stream()
-                .map(eventMapper::toResponse)
-                .toList();
+        if (tenantId == null) return findPublicEvents();
+        return eventRepository.findByStatusAndTenantId(EventStatus.APPROVED, tenantId).stream()
+                .map(eventMapper::toResponse).toList();
     }
 
     @Override
     public EventResponse getPublicEventById(Long id) {
-        return eventRepository.findById(id)
-                .filter(event -> event.getStatus() == EventStatus.APPROVED)
-                .map(eventMapper::toResponse)
-                .orElse(null);
+        return eventRepository.findById(id).filter(event -> event.getStatus() == EventStatus.APPROVED)
+                .map(eventMapper::toResponse).orElse(null);
     }
 
     @Override
     public EventResponse getPublicEventById(Long id, Long tenantId) {
-        if (tenantId == null) {
-            return getPublicEventById(id);
-        }
+        if (tenantId == null) return getPublicEventById(id);
         return eventRepository.findByIdAndTenantId(id, tenantId)
                 .filter(event -> event.getStatus() == EventStatus.APPROVED)
-                .map(eventMapper::toResponse)
-                .orElse(null);
+                .map(eventMapper::toResponse).orElse(null);
     }
+
+    @Override
+    public EventResponse getPublicEventByShareToken(String shareToken) {
+        if (shareToken == null || !shareToken.matches("[0-9a-fA-F]{64}")) return null;
+        return eventRepository.findByShareToken(shareToken)
+                .filter(event -> event.getStatus() == EventStatus.APPROVED)
+                .map(eventMapper::toResponse).orElse(null);
+    }
+
+    @Override
+    public ResponseErrorTemplate getShareLink(Long id) {
+        return eventRepository.findById(id)
+                .map(event -> new ResponseErrorTemplate("Share link retrieved", "SHARE_LINK_FOUND", event.getShareToken(), false))
+                .orElseGet(() -> new ResponseErrorTemplate("Event not found", "EVENT_NOT_FOUND", new EmptyObject(), true));
+    }
+
+    @Override
+    public ResponseErrorTemplate regenerateShareLink(Long id) {
+        return eventRepository.findById(id).map(event -> {
+            event.setShareToken(newShareToken());
+            eventRepository.save(event);
+            return new ResponseErrorTemplate("Share link regenerated", "SHARE_LINK_REGENERATED", event.getShareToken(), false);
+        }).orElseGet(() -> new ResponseErrorTemplate("Event not found", "EVENT_NOT_FOUND", new EmptyObject(), true));
+    }
+
+    @Override
+    public ResponseErrorTemplate revokeShareLink(Long id) {
+        return eventRepository.findById(id).map(event -> {
+            event.setShareToken(newShareToken());
+            eventRepository.save(event);
+            return new ResponseErrorTemplate("Share link revoked; a new token is ready to share", "SHARE_LINK_REVOKED", null, false);
+        }).orElseGet(() -> new ResponseErrorTemplate("Event not found", "EVENT_NOT_FOUND", new EmptyObject(), true));
+    }
+
 }

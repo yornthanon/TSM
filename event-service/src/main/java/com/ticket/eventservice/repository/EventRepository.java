@@ -25,4 +25,6 @@ public interface EventRepository extends JpaRepository<Event, Long> {
     List<Event> findByStatusAndTenantId(com.ticket.eventservice.Enum.EventStatus status, Long tenantId);
 
     Optional<Event> findByIdAndTenantId(Long id, Long tenantId);
+    Optional<Event> findByShareToken(String shareToken);
+    Optional<Event> findByIdAndTenantIdAndShareToken(Long id, Long tenantId, String shareToken);
 }

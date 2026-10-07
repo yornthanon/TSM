@@ -36,10 +36,20 @@ const EventDetail: React.FC = () => {
   const [copied, setCopied] = React.useState(false);
 
   React.useEffect(() => {
+    let cancelled = false;
     if (event.data?.id) {
-      setShareUrl(`${window.location.origin}/#/public/events/${event.data.id}`);
+      void api.get<string>(`/events/${event.data.id}/share-link`).then((token) => {
+        if (!cancelled && token) setShareUrl(`${import.meta.env.VITE_CUSTOMER_APP_URL || window.location.origin}/#/public/events/${token}`);
+      }).catch(() => setShareUrl(''));
     }
+    return () => { cancelled = true; };
   }, [event.data?.id]);
+  const regenerateShareLink = async () => {
+    if (!event.data?.id) return;
+    const token = await api.post<string>(`/events/${event.data.id}/share-link/regenerate`, {});
+    setShareUrl(`${import.meta.env.VITE_CUSTOMER_APP_URL || window.location.origin}/#/public/events/${token}`);
+    setCopied(false);
+  };
 
   const handleShare = async () => {
     if (!shareUrl) return;
@@ -119,6 +129,9 @@ const EventDetail: React.FC = () => {
               onClick={handleShare}
             >
               {copied ? 'Copied!' : 'Share event'}
+            </Button>
+            <Button variant="secondary" onClick={() => void regenerateShareLink()}>
+              Regenerate link
             </Button>
             <Button
               variant="secondary"

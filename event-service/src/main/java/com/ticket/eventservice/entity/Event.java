@@ -58,4 +58,6 @@ public class Event extends BaseEntity {
     @Enumerated(EnumType.STRING)
     @Column(name = "status")
     private EventStatus status;
+    @Column(name = "share_token", nullable = false, unique = true, length = 64)
+    private String shareToken;
 }

@@ -40,4 +40,6 @@ public interface TicketRepository extends JpaRepository<Ticket, Long> {
     Optional<Ticket> findFirstBySeatNumberAndEventId(String seatNumber, Long eventId);
 
     List<Ticket> findByEventIdAndTenantId(Long eventId, Long tenantId);
+    @Query(value = "SELECT t.* FROM tt_ticket t JOIN event e ON e.id = t.event_id WHERE e.share_token = :shareToken AND e.status = 'APPROVED'", nativeQuery = true)
+    List<Ticket> findPublicByShareToken(@Param("shareToken") String shareToken);
 }

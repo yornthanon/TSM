@@ -8,18 +8,17 @@ const dateLabel = (value: string | null) => value ? new Intl.DateTimeFormat('en-
 const money = (value: number | null) => value == null ? 'Price to be announced' : new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(value);
 
 export default function PublicEventDetail() {
-  const { id = '' } = useParams();
-  const eventQuery = usePublicEvent(id);
+  const { id: shareToken = '' } = useParams();
+  const eventQuery = usePublicEvent(shareToken);
   const event = eventQuery.data;
-  const tenantId = event?.tenantId ?? null;
-  const ticketsQuery = usePublicTickets(id, tenantId);
+  const ticketsQuery = usePublicTickets(shareToken);
   const tickets = ticketsQuery.data ?? [];
   const available = tickets.filter((ticket) => ticket.ticketStatus === 'AVAILABLE');
   const byType = tickets.reduce<Record<string, Ticket[]>>((groups, ticket) => { const type = ticket.ticketType ?? 'STANDARD'; (groups[type] ??= []).push(ticket); return groups; }, {});
   const unavailable = event && !['APPROVED', 'UPCOMING', 'ACTIVE', 'ONGOING'].includes(event.status ?? '');
 
   const handleShare = async () => {
-    const url = `${window.location.origin}/#/public/events/${id}`;
+    const url = `${window.location.origin}/#/public/events/${shareToken}`;
     if (navigator.share) {
       try {
         await navigator.share({ title: event?.title || 'Event', url });
@@ -52,7 +51,7 @@ export default function PublicEventDetail() {
         </section>
         <div className="mt-6 grid grid-cols-1 gap-5 lg:grid-cols-[1fr_360px]">
           <article className="rounded-2xl border border-[#2b3038] bg-[#181d25] p-5 sm:p-7"><h2 className="text-lg font-semibold text-white">About this event</h2><p className="mt-3 whitespace-pre-line text-sm leading-7 text-[#aeb6c3]">{event.description || 'The organizer has not added a description yet.'}</p></article>
-          <aside className="rounded-2xl border border-[#2b3038] bg-[#181d25] p-5"><div className="flex items-center justify-between"><h2 className="text-lg font-semibold text-white">Tickets</h2><span className="text-xs text-[#4ec9b0]">{available.length} available</span></div><QueryState isLoading={ticketsQuery.isLoading} error={ticketsQuery.error as Error | null} isEmpty={!tickets.length} onRetry={() => void ticketsQuery.refetch()} emptyTitle="No ticket inventory" emptyDescription="Ticket options have not been published for this event yet."><div className="mt-4 space-y-3">{Object.entries(byType).map(([type, typeTickets]) => { const open = typeTickets.filter((ticket) => ticket.ticketStatus === 'AVAILABLE'); const price = typeTickets[0]?.price ?? null; return <div key={type} className="rounded-xl border border-[#303844] bg-[#141920] p-4"><div className="flex items-center justify-between"><div><p className="text-sm font-semibold text-white">{type}</p><p className="mt-1 text-xs text-[#868a91]">{open.length} of {typeTickets.length} available</p></div><p className="text-sm font-semibold text-[#ffc66d]">{money(price)}</p></div><div className="mt-3 flex items-center gap-2 text-xs">{open.length ? <><CheckCircle2 className="h-4 w-4 text-[#4ec9b0]" /><span className="text-[#aeb6c3]">Available to reserve</span></> : <><Clock3 className="h-4 w-4 text-[#868a91]" /><span className="text-[#868a91]">Currently unavailable</span></>}</div></div>; })}</div></QueryState><button type="button" disabled={Boolean(unavailable || !available.length)} onClick={() => window.location.hash = `#/public/events/${id}/checkout`} className="mt-5 flex w-full items-center justify-center gap-2 rounded-xl bg-[#3574f0] px-4 py-3 text-sm font-semibold text-white transition-colors hover:bg-[#4c83f5] disabled:cursor-not-allowed disabled:bg-[#303844] disabled:text-[#7d8490]"><TicketIcon className="h-4 w-4" />{unavailable ? 'Event unavailable' : available.length ? 'Reserve tickets' : 'No seats available'}</button><p className="mt-3 text-center text-[11px] leading-5 text-[#737b88]">Seat reservation and payment checkout will be enabled in the next Phase 2 step.</p></aside>
+          <aside className="rounded-2xl border border-[#2b3038] bg-[#181d25] p-5"><div className="flex items-center justify-between"><h2 className="text-lg font-semibold text-white">Tickets</h2><span className="text-xs text-[#4ec9b0]">{available.length} available</span></div><QueryState isLoading={ticketsQuery.isLoading} error={ticketsQuery.error as Error | null} isEmpty={!tickets.length} onRetry={() => void ticketsQuery.refetch()} emptyTitle="No ticket inventory" emptyDescription="Ticket options have not been published for this event yet."><div className="mt-4 space-y-3">{Object.entries(byType).map(([type, typeTickets]) => { const open = typeTickets.filter((ticket) => ticket.ticketStatus === 'AVAILABLE'); const price = typeTickets[0]?.price ?? null; return <div key={type} className="rounded-xl border border-[#303844] bg-[#141920] p-4"><div className="flex items-center justify-between"><div><p className="text-sm font-semibold text-white">{type}</p><p className="mt-1 text-xs text-[#868a91]">{open.length} of {typeTickets.length} available</p></div><p className="text-sm font-semibold text-[#ffc66d]">{money(price)}</p></div><div className="mt-3 flex items-center gap-2 text-xs">{open.length ? <><CheckCircle2 className="h-4 w-4 text-[#4ec9b0]" /><span className="text-[#aeb6c3]">Available to reserve</span></> : <><Clock3 className="h-4 w-4 text-[#868a91]" /><span className="text-[#868a91]">Currently unavailable</span></>}</div></div>; })}</div></QueryState><button type="button" disabled={Boolean(unavailable || !available.length)} onClick={() => window.location.hash = `#/public/events/${shareToken}/checkout`} className="mt-5 flex w-full items-center justify-center gap-2 rounded-xl bg-[#3574f0] px-4 py-3 text-sm font-semibold text-white transition-colors hover:bg-[#4c83f5] disabled:cursor-not-allowed disabled:bg-[#303844] disabled:text-[#7d8490]"><TicketIcon className="h-4 w-4" />{unavailable ? 'Event unavailable' : available.length ? 'Reserve tickets' : 'No seats available'}</button><p className="mt-3 text-center text-[11px] leading-5 text-[#737b88]">Seat reservation and payment checkout will be enabled in the next Phase 2 step.</p></aside>
         </div>
       </>}
     </QueryState>

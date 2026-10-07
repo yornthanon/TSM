@@ -487,4 +487,14 @@ public class TicketServiceImpl implements TicketService {
         return new ResponseErrorTemplate(ApiConstant.SUCCESS.getDescription(), ApiConstant.SUCCESS.getKey(),
                 tickets.stream().map(ticketMapper::toResponse).toList(), false);
     }
+
+    @Override
+    public ResponseErrorTemplate findPublicTicketsByShareToken(String shareToken) {
+        if (shareToken == null || !shareToken.matches("[0-9a-fA-F]{64}")) {
+            return new ResponseErrorTemplate("Event not found", "EVENT_NOT_FOUND", null, true);
+        }
+        List<Ticket> tickets = ticketRepository.findPublicByShareToken(shareToken);
+        return new ResponseErrorTemplate(ApiConstant.SUCCESS.getDescription(), ApiConstant.SUCCESS.getKey(),
+                tickets.stream().map(ticketMapper::toResponse).toList(), false);
+    }
 }

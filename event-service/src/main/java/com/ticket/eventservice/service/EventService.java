@@ -25,4 +25,8 @@ public interface EventService {
     EventResponse getPublicEventById(Long id);
 
     EventResponse getPublicEventById(Long id, Long tenantId);
+    EventResponse getPublicEventByShareToken(String shareToken);
+    ResponseErrorTemplate getShareLink(Long id);
+    ResponseErrorTemplate regenerateShareLink(Long id);
+    ResponseErrorTemplate revokeShareLink(Long id);
 }

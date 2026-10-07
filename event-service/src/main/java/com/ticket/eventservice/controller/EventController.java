@@ -45,6 +45,21 @@ public class EventController {
         return ApiResponse.from(eventService.update(id, request));
     }
 
+    @GetMapping("/{id}/share-link")
+    public ResponseEntity<ResponseErrorTemplate> getShareLink(@PathVariable Long id) {
+        return ApiResponse.from(eventService.getShareLink(id));
+    }
+
+    @PostMapping("/{id}/share-link/regenerate")
+    public ResponseEntity<ResponseErrorTemplate> regenerateShareLink(@PathVariable Long id) {
+        return ApiResponse.from(eventService.regenerateShareLink(id));
+    }
+
+    @DeleteMapping("/{id}/share-link")
+    public ResponseEntity<ResponseErrorTemplate> revokeShareLink(@PathVariable Long id) {
+        return ApiResponse.from(eventService.revokeShareLink(id));
+    }
+
     @GetMapping("/{id}")
     public ResponseEntity<ResponseErrorTemplate> getById(@PathVariable Long id) {
         return ApiResponse.from(eventService.getById(id));

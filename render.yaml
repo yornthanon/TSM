@@ -23,20 +23,41 @@ services:
       - key: GOOGLE_CLIENT_SECRET
         sync: false
       - key: APP_FRONTEND_URL
-        value: https://tsm-frontend-1pxf.onrender.com
+        value: https://tsm-admin-frontend.onrender.com
       - key: PLATFORM_ADMIN_EMAILS
         sync: false
       - key: INTERNAL_AUTH_TOKEN
         sync: false
 
   - type: web
-    name: TSM-frontend
+    name: TSM-admin-frontend
     env: static
     region: oregon
     plan: free
-    rootDir: frontend-admindashboard
-    buildCommand: npm ci && npm run build
-    staticPublishPath: dist
+    rootDir: .
+    buildCommand: npm ci && npm run build --workspace=frontend-admin
+    staticPublishPath: frontend-admin/dist
+    envVars:
+      - key: VITE_API_BASE_URL
+        value: https://tsm-7hu8.onrender.com/api/v1
+      - key: VITE_CUSTOMER_APP_URL
+        value: https://tsm-customer-frontend.onrender.com
+    headers:
+      - path: /*
+        name: X-Frame-Options
+        value: DENY
+      - path: /*
+        name: X-Content-Type-Options
+        value: nosniff
+
+  - type: web
+    name: TSM-customer-frontend
+    env: static
+    region: oregon
+    plan: free
+    rootDir: .
+    buildCommand: npm ci && npm run build --workspace=frontend-customer
+    staticPublishPath: frontend-customer/dist
     envVars:
       - key: VITE_API_BASE_URL
         value: https://tsm-7hu8.onrender.com/api/v1
