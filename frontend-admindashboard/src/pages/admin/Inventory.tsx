@@ -172,6 +172,8 @@ const Inventory: React.FC = () => {
               <Th>Status</Th>
               <Th>Locked by</Th>
               <Th>Locked until</Th>
+              <Th>Created</Th>
+              <Th>Updated</Th>
               <Th className="text-right">Actions</Th>
             </tr>
           </thead>
@@ -190,6 +192,12 @@ const Inventory: React.FC = () => {
                 <Td className="text-[#9da0a8]">{ticket.lockedBy ?? '-'}</Td>
                 <Td className="whitespace-nowrap text-[#9da0a8]">
                   {ticket.lockedUntil ? formatDateTime(ticket.lockedUntil) : '-'}
+                </Td>
+                <Td className="whitespace-nowrap text-[#9da0a8]">
+                  {formatDateTime(ticket.createdAt)}
+                </Td>
+                <Td className="whitespace-nowrap text-[#9da0a8]">
+                  {formatDateTime(ticket.updatedAt)}
                 </Td>
                 <Td>
                   <div className="flex items-center justify-end gap-1">

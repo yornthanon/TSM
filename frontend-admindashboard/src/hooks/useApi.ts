@@ -16,6 +16,7 @@ import type {
   Notification,
   NotificationStats,
   Order,
+  OrderPayload,
   OrderStats,
   Payment,
   Permission,
@@ -38,6 +39,7 @@ export const queryKeys = {
   ticketStats: ['tickets', 'stats'] as const,
   orders: ['orders'] as const,
   orderStats: ['orders', 'stats'] as const,
+  userOrders: ['orders', 'user', 'me'] as const,
   payments: ['payments'] as const,
   revenue: ['payments', 'revenue'] as const,
   notifications: ['notifications'] as const,
@@ -231,6 +233,14 @@ export function useOrders(options?: UseQueryOptions<Order[]>) {
   });
 }
 
+export function useUserOrders(options?: UseQueryOptions<Order[]>) {
+  return useQuery({
+    queryKey: queryKeys.userOrders,
+    queryFn: async () => toArray<Order>(await api.get<Order[]>('/orders/user/me')),
+    ...options,
+  });
+}
+
 export function useOrderStats(options?: UseQueryOptions<OrderStats>) {
   return useQuery({
     queryKey: queryKeys.orderStats,
@@ -250,6 +260,19 @@ export function useCancelOrder() {
       void qc.invalidateQueries({ queryKey: queryKeys.ticketStats });
       void qc.invalidateQueries({ queryKey: queryKeys.payments });
       void qc.invalidateQueries({ queryKey: queryKeys.revenue });
+    },
+  });
+}
+
+export function useCreateOrder() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (payload: OrderPayload) => api.post<Order>('/orders', payload),
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: queryKeys.orders });
+      void qc.invalidateQueries({ queryKey: queryKeys.orderStats });
+      void qc.invalidateQueries({ queryKey: queryKeys.tickets });
+      void qc.invalidateQueries({ queryKey: queryKeys.ticketStats });
     },
   });
 }

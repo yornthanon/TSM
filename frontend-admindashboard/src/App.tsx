@@ -25,6 +25,9 @@ const Workspaces = lazy(() => import('./pages/admin/Workspaces'));
 const CustomerEvents = lazy(() => import('./pages/customer/Events'));
 const CustomerEventDetail = lazy(() => import('./pages/customer/EventDetail'));
 const CustomerOrders = lazy(() => import('./pages/customer/Orders'));
+const PublicEvents = lazy(() => import('./pages/public/PublicEvents'));
+const PublicEventDetail = lazy(() => import('./pages/public/PublicEventDetail'));
+const CustomerCheckout = lazy(() => import('./pages/public/CustomerCheckout'));
 
 const PlatformAdminOnly: React.FC<{ children: React.ReactNode }> = ({ children }) => (
   auth.getUser()?.role === 'ADMIN' ? <>{children}</> : <Navigate to="/admin" replace />
@@ -52,6 +55,9 @@ const App: React.FC = () => {
             <Routes>
               <Route path="/login" element={<Login />} />
               <Route path="/oauth/callback" element={<OAuthCallback />} />
+              <Route path="/public/events" element={<PublicEvents />} />
+              <Route path="/public/events/:id" element={<PublicEventDetail />} />
+              <Route path="/public/events/:id/checkout" element={<CustomerCheckout />} />
               <Route
                 path="/events"
                 element={

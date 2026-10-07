@@ -303,6 +303,18 @@ public class OrderServiceImpl implements OrderService{
         return cancelExistingOrder(order.get(), "admin");
     }
 
+    @Override
+    public ResponseErrorTemplate findByUsername(String username) {
+        List<OrderResponse> orders = orderRepository.findByUsername(username).stream()
+                .map(orderMapper::toResponse)
+                .toList();
+        return new ResponseErrorTemplate(
+                ApiConstant.SUCCESS.getDescription(),
+                ApiConstant.SUCCESS.getKey(),
+                orders,
+                false);
+    }
+
     private ResponseErrorTemplate cancelExistingOrder(Order order, String actor) {
         ResponseErrorTemplate statusCheck = validateCancellable(order);
         if (statusCheck != null) return statusCheck;

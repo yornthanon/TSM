@@ -12,5 +12,6 @@ public interface OrderService {
     ResponseErrorTemplate findAll();
     ResponseErrorTemplate getStats();
     ResponseErrorTemplate forceCancelOrder(Long orderId);
+    ResponseErrorTemplate findByUsername(String username);
 
 }

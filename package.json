@@ -1,15 +1,10 @@
 {
-  "name": "ticket-management",
+  "name": "tsm-frontend-monorepo",
+  "version": "0.0.0",
   "private": true,
-  "version": "1.0.0",
-  "description": "Event ticketing platform. This root package only orchestrates the admin dashboard build; all frontend dependencies live in frontend-admindashboard/.",
-  "scripts": {
-    "setup": "npm --prefix frontend-admindashboard install",
-    "predev": "node scripts/ensure-frontend-deps.mjs",
-    "dev": "npm --prefix frontend-admindashboard run dev",
-    "prebuild": "node scripts/ensure-frontend-deps.mjs",
-    "build": "npm --prefix frontend-admindashboard run build && node scripts/publish-dist.mjs",
-    "lint": "npm --prefix frontend-admindashboard run lint",
-    "preview": "npm --prefix frontend-admindashboard run preview"
-  }
+  "workspaces": [
+    "frontend-shared",
+    "frontend-admin",
+    "frontend-customer"
+  ]
 }

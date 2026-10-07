@@ -191,4 +191,20 @@ public class EventServiceImpl implements EventService {
                 null,
                 false);
     }
+
+    @Override
+    public List<EventResponse> findPublicEvents() {
+        return eventRepository.findByStatus(EventStatus.APPROVED)
+                .stream()
+                .map(eventMapper::toResponse)
+                .toList();
+    }
+
+    @Override
+    public EventResponse getPublicEventById(Long id) {
+        return eventRepository.findById(id)
+                .filter(event -> event.getStatus() == EventStatus.APPROVED)
+                .map(eventMapper::toResponse)
+                .orElse(null);
+    }
 }

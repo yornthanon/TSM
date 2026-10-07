@@ -48,3 +48,4 @@ build/
 
 # Secrets
 *.pem
+frontend-admindashboard/src/pages/public/

@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link, useParams } from 'react-router-dom';
-import { ArrowLeft, Check, MapPin, X } from 'lucide-react';
+import { ArrowLeft, Check, MapPin, Share2, X } from 'lucide-react';
 import { toast } from 'sonner';
 import {
   useApproveEvent,
@@ -31,6 +31,30 @@ const EventDetail: React.FC = () => {
   const orders = useOrders();
   const approveEvent = useApproveEvent();
   const rejectEvent = useRejectEvent();
+
+  const [shareUrl, setShareUrl] = React.useState('');
+  const [copied, setCopied] = React.useState(false);
+
+  React.useEffect(() => {
+    if (event.data?.id) {
+      setShareUrl(`${window.location.origin}/#/public/events/${event.data.id}`);
+    }
+  }, [event.data?.id]);
+
+  const handleShare = async () => {
+    if (!shareUrl) return;
+    if (navigator.share) {
+      try {
+        await navigator.share({ title: event.data?.title || 'Event', url: shareUrl });
+      } catch {
+        // User cancelled or share failed
+      }
+    } else {
+      await navigator.clipboard.writeText(shareUrl);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    }
+  };
 
   /**
    * Only the ticket and order list endpoints exist, and neither is filterable
@@ -89,6 +113,13 @@ const EventDetail: React.FC = () => {
         description={data.description ?? 'No description provided.'}
         actions={canManageEvents ? (
           <>
+            <Button
+              variant="secondary"
+              leftIcon={<Share2 className="h-3.5 w-3.5" />}
+              onClick={handleShare}
+            >
+              {copied ? 'Copied!' : 'Share event'}
+            </Button>
             <Button
               variant="secondary"
               leftIcon={<Check className="h-3.5 w-3.5" />}

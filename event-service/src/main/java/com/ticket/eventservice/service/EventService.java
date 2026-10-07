@@ -1,8 +1,11 @@
 package com.ticket.eventservice.service;
 
 import com.ticket.eventservice.dto.EventRequest;
+import com.ticket.eventservice.dto.EventResponse;
 import com.ticket.common.exception.ResponseErrorTemplate;
 import com.ticket.eventservice.Enum.EventStatus;
+
+import java.util.List;
 
 public interface EventService {
 
@@ -14,4 +17,8 @@ public interface EventService {
     ResponseErrorTemplate delete(Long id);
 
     ResponseErrorTemplate updateStatus(Long id, EventStatus status);
+
+    List<EventResponse> findPublicEvents();
+
+    EventResponse getPublicEventById(Long id);
 }
