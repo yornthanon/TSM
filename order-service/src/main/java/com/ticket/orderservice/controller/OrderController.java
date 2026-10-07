@@ -1,5 +1,7 @@
 package com.ticket.orderservice.controller;
 
+import com.ticket.common.constant.ApiConstant;
+import com.ticket.common.dto.EmptyObject;
 import com.ticket.common.exception.ResponseErrorTemplate;
 import com.ticket.common.exception.ApiResponse;
 import com.ticket.orderservice.client.UserClient;
@@ -43,11 +45,11 @@ public class OrderController {
     public ResponseEntity<ResponseErrorTemplate> getMyOrders(HttpServletRequest httpServletRequest) {
         String username = handleUnauthorized(httpServletRequest);
         if (!StringUtils.hasText(username)) {
-            return new ResponseErrorTemplate(
+            return ApiResponse.from(new ResponseErrorTemplate(
                     ApiConstant.UN_AUTHORIZATION.getDescription(),
                     ApiConstant.UN_AUTHORIZATION.getKey(),
                     new EmptyObject(),
-                    true);
+                    true));
         }
         return ApiResponse.from(orderService.findByUsername(username));
     }
