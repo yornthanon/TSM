@@ -20,5 +20,9 @@ public interface EventService {
 
     List<EventResponse> findPublicEvents();
 
+    List<EventResponse> findPublicEvents(Long tenantId);
+
     EventResponse getPublicEventById(Long id);
+
+    EventResponse getPublicEventById(Long id, Long tenantId);
 }

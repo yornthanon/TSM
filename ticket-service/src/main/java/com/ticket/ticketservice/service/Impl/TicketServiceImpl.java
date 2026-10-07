@@ -478,4 +478,13 @@ public class TicketServiceImpl implements TicketService {
         });
         if (!expired.isEmpty()) ticketRepository.saveAll(expired);
     }
+
+    @Override
+    public ResponseErrorTemplate findPublicTickets(Long eventId, Long tenantId) {
+        List<Ticket> tickets = tenantId == null
+                ? ticketRepository.findAllByEventId(eventId)
+                : ticketRepository.findByEventIdAndTenantId(eventId, tenantId);
+        return new ResponseErrorTemplate(ApiConstant.SUCCESS.getDescription(), ApiConstant.SUCCESS.getKey(),
+                tickets.stream().map(ticketMapper::toResponse).toList(), false);
+    }
 }

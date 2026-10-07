@@ -33,9 +33,12 @@ import type {
 
 export const queryKeys = {
   events: ['events'] as const,
+  publicEvents: ['public', 'events'] as const,
   eventStats: ['events', 'stats'] as const,
   event: (id: number | string) => ['events', 'detail', id] as const,
+  publicEvent: (id: number | string) => ['public', 'events', 'detail', id] as const,
   tickets: ['tickets'] as const,
+  publicTickets: (eventId: number | string) => ['public', 'tickets', eventId] as const,
   ticketStats: ['tickets', 'stats'] as const,
   orders: ['orders'] as const,
   orderStats: ['orders', 'stats'] as const,
@@ -77,6 +80,14 @@ export function useEvents(options?: UseQueryOptions<Event[]>) {
   });
 }
 
+export function usePublicEvents(options?: UseQueryOptions<Event[]>) {
+  return useQuery({
+    queryKey: queryKeys.publicEvents,
+    queryFn: async () => toArray<Event>(await api.get<Event[]>('/api/public/events')),
+    ...options,
+  });
+}
+
 export function useEventStats(options?: UseQueryOptions<EventStats>) {
   return useQuery({
     queryKey: queryKeys.eventStats,
@@ -89,6 +100,15 @@ export function useEvent(id: number | string, options?: UseQueryOptions<Event>) 
   return useQuery({
     queryKey: queryKeys.event(id),
     queryFn: () => api.get<Event>(`/events/${id}`),
+    enabled: id !== undefined && id !== '',
+    ...options,
+  });
+}
+
+export function usePublicEvent(id: number | string, options?: UseQueryOptions<Event>) {
+  return useQuery({
+    queryKey: queryKeys.publicEvent(id),
+    queryFn: () => api.get<Event>(`/api/public/events/${id}`),
     enabled: id !== undefined && id !== '',
     ...options,
   });
@@ -153,6 +173,18 @@ export function useTickets(options?: UseQueryOptions<Ticket[]>) {
   return useQuery({
     queryKey: queryKeys.tickets,
     queryFn: async () => toArray<Ticket>(await api.get<Ticket[]>('/tickets')),
+    ...options,
+  });
+}
+
+export function usePublicTickets(eventId: number | string, tenantId: number | string | null | undefined, options?: UseQueryOptions<Ticket[]>) {
+  return useQuery({
+    queryKey: queryKeys.publicTickets(eventId),
+    queryFn: async () => {
+      const query = tenantId ? `?tenantId=${encodeURIComponent(String(tenantId))}` : '';
+      return toArray<Ticket>(await api.get<Ticket[]>(`/api/public/events/${eventId}/tickets${query}`));
+    },
+    enabled: eventId !== undefined && eventId !== '',
     ...options,
   });
 }

@@ -33,4 +33,5 @@ public interface TicketService {
 
     ResponseErrorTemplate releaseReservation(Long ticketId, String username);
 
+    ResponseErrorTemplate findPublicTickets(Long eventId, Long tenantId);
 }

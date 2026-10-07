@@ -20,4 +20,8 @@ public interface EventRepository extends JpaRepository<Event, Long> {
     boolean hasLinkedOrders(@Param("eventId") Long eventId);
 
     List<Event> findByStatus(com.ticket.eventservice.Enum.EventStatus status);
+
+    List<Event> findByStatusAndTenantId(com.ticket.eventservice.Enum.EventStatus status, Long tenantId);
+
+    Optional<Event> findByIdAndTenantId(Long id, Long tenantId);
 }

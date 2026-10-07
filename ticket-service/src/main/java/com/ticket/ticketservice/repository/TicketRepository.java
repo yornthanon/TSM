@@ -38,4 +38,6 @@ public interface TicketRepository extends JpaRepository<Ticket, Long> {
                                                 @Param("now") LocalDateTime now);
 
     Optional<Ticket> findFirstBySeatNumberAndEventId(String seatNumber, Long eventId);
+
+    List<Ticket> findByEventIdAndTenantId(Long eventId, Long tenantId);
 }

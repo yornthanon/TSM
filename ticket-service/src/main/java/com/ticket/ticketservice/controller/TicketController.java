@@ -119,6 +119,12 @@ public class TicketController {
         return ApiResponse.from(ticketService.releaseReservation(id, username));
     }
 
+    @GetMapping("/public/events/{eventId}/tickets")
+    public ResponseEntity<ResponseErrorTemplate> findPublicTickets(@PathVariable Long eventId,
+                                                                   @RequestParam(required = false) Long tenantId) {
+        return ApiResponse.from(ticketService.findPublicTickets(eventId, tenantId));
+    }
+
     private ResponseEntity<ResponseErrorTemplate> unauthorized() {
         return ApiResponse.from(new ResponseErrorTemplate(ApiConstant.UN_AUTHORIZATION.getDescription(),
                 ApiConstant.UN_AUTHORIZATION.getKey(), null, true));

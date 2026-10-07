@@ -1,8 +1,7 @@
-import { useMemo } from 'react';
 import { ArrowLeft, CalendarDays, CheckCircle2, Clock3, MapPin, Ticket as TicketIcon, Share2 } from 'lucide-react';
 import { Link, useParams } from 'react-router-dom';
 import { QueryState } from 'frontend-shared/components/QueryState';
-import { useEvent, useTickets } from 'frontend-shared/hooks/useApi';
+import { usePublicEvent, usePublicTickets } from 'frontend-shared/hooks/useApi';
 import type { Ticket } from 'frontend-shared/types/api';
 
 const dateLabel = (value: string | null) => value ? new Intl.DateTimeFormat('en-US', { dateStyle: 'full', timeStyle: 'short' }).format(new Date(value)) : 'Date to be announced';
@@ -10,10 +9,11 @@ const money = (value: number | null) => value == null ? 'Price to be announced' 
 
 export default function PublicEventDetail() {
   const { id = '' } = useParams();
-  const eventQuery = useEvent(id);
-  const ticketsQuery = useTickets();
+  const eventQuery = usePublicEvent(id);
   const event = eventQuery.data;
-  const tickets = useMemo(() => (ticketsQuery.data ?? []).filter((ticket) => String(ticket.eventId) === String(id)), [ticketsQuery.data, id]);
+  const tenantId = event?.tenantId ?? null;
+  const ticketsQuery = usePublicTickets(id, tenantId);
+  const tickets = ticketsQuery.data ?? [];
   const available = tickets.filter((ticket) => ticket.ticketStatus === 'AVAILABLE');
   const byType = tickets.reduce<Record<string, Ticket[]>>((groups, ticket) => { const type = ticket.ticketType ?? 'STANDARD'; (groups[type] ??= []).push(ticket); return groups; }, {});
   const unavailable = event && !['APPROVED', 'UPCOMING', 'ACTIVE', 'ONGOING'].includes(event.status ?? '');

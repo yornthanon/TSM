@@ -89,6 +89,7 @@ export interface Event {
   eventType: EventType | null;
   /** Null until an admin sets one - the backend does not default it. */
   status: EventStatus | null;
+  tenantId: number | null;
   createdAt: string | null;
   createdBy: string | null;
   updatedAt: string | null;

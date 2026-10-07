@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
 import { CalendarDays, MapPin, Search, Ticket, ArrowRight, Share2 } from 'lucide-react';
 import { QueryState } from 'frontend-shared/components/QueryState';
-import { useEvents } from 'frontend-shared/hooks/useApi';
+import { usePublicEvents } from 'frontend-shared/hooks/useApi';
 import type { Event } from 'frontend-shared/types/api';
 
 const dateLabel = (value: string | null) => value ? new Intl.DateTimeFormat('en-US', { dateStyle: 'medium', timeStyle: 'short' }).format(new Date(value)) : 'Date to be announced';
@@ -10,7 +10,7 @@ const browseable = (event: Event) => ['APPROVED', 'UPCOMING', 'ACTIVE', 'ONGOING
 
 export default function PublicEvents() {
   const [search, setSearch] = useState('');
-  const { data = [], isLoading, error, refetch } = useEvents();
+  const { data = [], isLoading, error, refetch } = usePublicEvents();
   const events = useMemo(() => data
     .filter(browseable)
     .filter((event) => {
