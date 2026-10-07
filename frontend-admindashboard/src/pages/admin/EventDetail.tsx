@@ -22,6 +22,7 @@ import {
 import { Badge, Button, Card, ErrorState, Skeleton } from '../../components/ui';
 import { formatCurrency, formatDateTime } from '../../utils';
 import { auth } from '../../lib/auth';
+import { api } from '../../lib/api';
 
 const EventDetail: React.FC = () => {
   const canManageEvents = auth.getUser()?.role === 'TENANT_ADMIN';
