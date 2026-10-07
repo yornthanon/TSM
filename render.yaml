@@ -1,62 +1,45 @@
 services:
   - type: web
-    name: tsm-backend
-    env: java
-    region: singapore
+    name: TSM
+    env: docker
+    region: oregon
     plan: free
-    buildCommand: ./mvnw -pl app-monolith -am package -DskipTests
-    startCommand: java -jar app-monolith/target/app-monolith-0.0.1-SNAPSHOT.jar
+    dockerfilePath: ./app-monolith/Dockerfile
+    dockerContext: .
+    healthCheckPath: /actuator/health
     envVars:
       - key: PORT
         value: 8080
       - key: SPRING_DATASOURCE_URL
-        value: jdbc:postgresql://localhost:5432/ticket_db
+        sync: false
       - key: SPRING_DATASOURCE_USERNAME
-        value: ticket
+        sync: false
       - key: SPRING_DATASOURCE_PASSWORD
-        value: ${SPRING_DATASOURCE_PASSWORD}
+        sync: false
       - key: JWT_SECRET
-        value: ${JWT_SECRET}
+        sync: false
       - key: GOOGLE_CLIENT_ID
-        value: ${GOOGLE_CLIENT_ID}
+        sync: false
       - key: GOOGLE_CLIENT_SECRET
-        value: ${GOOGLE_CLIENT_SECRET}
+        sync: false
       - key: APP_FRONTEND_URL
-        value: https://tsm-customer.onrender.com
+        value: https://tsm-frontend-1pxf.onrender.com
       - key: PLATFORM_ADMIN_EMAILS
-        value: ${PLATFORM_ADMIN_EMAILS}
+        sync: false
       - key: INTERNAL_AUTH_TOKEN
-        value: ${INTERNAL_AUTH_TOKEN}
-    healthCheckPath: /actuator/health
+        sync: false
 
   - type: web
-    name: tsm-frontend-admin
+    name: TSM-frontend
     env: static
-    region: singapore
+    region: oregon
     plan: free
-    buildCommand: npm install --prefix frontend-admin && npm run build --prefix frontend-admin
-    staticPublishPath: frontend-admin/dist
+    rootDir: frontend-admindashboard
+    buildCommand: npm ci && npm run build
+    staticPublishPath: dist
     envVars:
       - key: VITE_API_BASE_URL
-        value: https://tsm-backend.onrender.com/api/v1
-    headers:
-      - path: /*
-        name: X-Frame-Options
-        value: DENY
-      - path: /*
-        name: X-Content-Type-Options
-        value: nosniff
-
-  - type: web
-    name: tsm-frontend-customer
-    env: static
-    region: singapore
-    plan: free
-    buildCommand: npm install --prefix frontend-customer && npm run build --prefix frontend-customer
-    staticPublishPath: frontend-customer/dist
-    envVars:
-      - key: VITE_API_BASE_URL
-        value: https://tsm-backend.onrender.com/api/v1
+        value: https://tsm-7hu8.onrender.com/api/v1
     headers:
       - path: /*
         name: X-Frame-Options
