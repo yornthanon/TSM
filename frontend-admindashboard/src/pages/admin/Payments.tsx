@@ -35,7 +35,7 @@ const refundDisabledReason = (payment: Payment) => {
 const Payments: React.FC = () => {
   const activeRole = auth.getUser()?.role;
   const isActingAs = auth.isActingAs();
-  const canRefundInCurrentSession = activeRole === 'TENANT_ADMIN' && !isActingAs;
+  const canRefundInCurrentSession = (activeRole === 'USER' || activeRole === 'TENANT_ADMIN' || activeRole === 'ADMIN') && !isActingAs;
   const payments = usePayments();
   const revenue = useRevenueSummary();
   const refundPayment = useRefundPayment();

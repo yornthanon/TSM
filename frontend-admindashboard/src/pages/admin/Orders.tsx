@@ -21,7 +21,7 @@ const CANCELLABLE_ORDER_STATUSES = new Set(['PENDING', 'PROCESSING']);
 
 const Orders: React.FC = () => {
   const activeRole = auth.getUser()?.role;
-  const canCancelOrders = activeRole === 'TENANT_ADMIN';
+  const canCancelOrders = activeRole === 'USER' || activeRole === 'TENANT_ADMIN' || activeRole === 'ADMIN';
   const orders = useOrders();
   const orderStats = useOrderStats();
   const events = useEvents();

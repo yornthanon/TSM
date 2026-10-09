@@ -25,6 +25,7 @@ import {
 import { cn } from '../utils';
 import { auth } from '../lib/auth';
 import { api } from '../lib/api';
+import { useAdminWorkspaces } from '../hooks/useApi';
 import type { User as AppUser } from '../types/api';
 
 const navItems = [
@@ -62,6 +63,9 @@ export const AdminLayout: React.FC = () => {
   const actAsExpiry = auth.getActAsExpiry();
   const isAdmin = user?.role === 'ADMIN' && !isActingAs;
   const isTenantAdmin = user?.role === 'TENANT_ADMIN';
+  const isWorkspaceManager = isTenantAdmin || user?.role === 'USER' || isAdmin;
+  const [adminWorkspaceId, setAdminWorkspaceId] = useState<number | null>(() => auth.getAdminWorkspaceId());
+  const adminWorkspaces = useAdminWorkspaces({ queryKey: ['admin', 'workspaces'], enabled: isAdmin });
   const initials = (user?.email || user?.username || 'A').slice(0, 2).toUpperCase();
   const currentWorkspace = useQuery({
     queryKey: ['current-workspace', user?.tenantId],
@@ -71,6 +75,14 @@ export const AdminLayout: React.FC = () => {
   });
   const workspaceName = currentWorkspace.data?.name
     ?? (currentWorkspace.isError ? 'Workspace unavailable' : 'Workspace');
+
+  useEffect(() => {
+    if (!isAdmin || !adminWorkspaceId) return;
+    if (!(adminWorkspaces.data ?? []).some((workspace) => workspace.id === adminWorkspaceId)) {
+      setAdminWorkspaceId(null);
+      auth.setAdminWorkspaceId(null);
+    }
+  }, [isAdmin, adminWorkspaceId, adminWorkspaces.data]);
 
   const visibleItems = useMemo(
     () => navItems.filter((item) => (!item.adminOnly || isAdmin)
@@ -292,7 +304,25 @@ export const AdminLayout: React.FC = () => {
           </button>
 
           <div className="flex items-center gap-2">
-            {isTenantAdmin && <Link
+            {isAdmin && (
+              <select
+                aria-label="Workspace for admin CRUD"
+                value={adminWorkspaceId ?? ''}
+                onChange={(event) => {
+                  const value = event.target.value ? Number(event.target.value) : null;
+                  setAdminWorkspaceId(value);
+                  auth.setAdminWorkspaceId(value);
+                  queryClient.clear();
+                }}
+                className="max-w-[170px] rounded-lg border border-[#2b2d30] bg-[#141416] px-2 py-1.5 text-[11px] text-[#dfe1e5]"
+              >
+                <option value="">CRUD workspace…</option>
+                {(adminWorkspaces.data ?? []).filter((workspace) => workspace.status === 'ACTIVE').map((workspace) => (
+                  <option key={workspace.id} value={workspace.id}>{workspace.name}</option>
+                ))}
+              </select>
+            )}
+            {isWorkspaceManager && <Link
               to="/admin/events"
               className="inline-flex items-center gap-1.5 rounded-lg bg-[#3574f0] px-3 py-1.5 text-xs font-semibold text-white shadow-sm transition-colors hover:bg-[#3062d4]"
             >

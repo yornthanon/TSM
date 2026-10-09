@@ -78,6 +78,11 @@ class ApiClient {
         if (token && config.headers) {
           config.headers.Authorization = `Bearer ${token}`;
         }
+        const adminWorkspaceId = localStorage.getItem('admin_workspace_id');
+        const method = (config.method ?? 'get').toUpperCase();
+        if (adminWorkspaceId && !['GET', 'HEAD', 'OPTIONS'].includes(method) && config.headers) {
+          config.headers['X-Tenant-Id'] = adminWorkspaceId;
+        }
         return config;
       },
       (error: AxiosError) => Promise.reject(error)
@@ -111,6 +116,7 @@ class ApiClient {
             localStorage.removeItem('user');
             window.location.hash = '#/login';
           }
+          window.dispatchEvent(new CustomEvent('ticketdesk-auth-changed'));
           return Promise.reject(error);
         }
 

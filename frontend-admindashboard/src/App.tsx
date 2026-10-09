@@ -1,4 +1,4 @@
-import React, { lazy, Suspense } from 'react';
+import React, { lazy, Suspense, useEffect } from 'react';
 import { HashRouter, Routes, Route } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Toaster } from 'sonner';
@@ -7,7 +7,7 @@ import { AdminLayout } from './layouts/AdminLayout';
 import { CustomerLayout } from './layouts/CustomerLayout';
 import { RequireAuth } from './components/RequireAuth';
 import { Navigate } from 'react-router-dom';
-import { auth } from './lib/auth';
+import { auth, AUTH_CHANGED_EVENT } from './lib/auth';
 
 const Login = lazy(() => import('./pages/Login').then((module) => ({ default: module.Login })));
 const OAuthCallback = lazy(() => import('./pages/OAuthCallback').then((module) => ({ default: module.OAuthCallback })));
@@ -44,6 +44,20 @@ const queryClient = new QueryClient({
 });
 
 const App: React.FC = () => {
+  useEffect(() => {
+    const clearSessionCache = () => {
+      // Resource-only query keys must never expose a previous account's data
+      // while a new account or audited workspace is active.
+      queryClient.clear();
+    };
+    window.addEventListener(AUTH_CHANGED_EVENT, clearSessionCache);
+    window.addEventListener('ticketdesk-workspace-changed', clearSessionCache);
+    return () => {
+      window.removeEventListener(AUTH_CHANGED_EVENT, clearSessionCache);
+      window.removeEventListener('ticketdesk-workspace-changed', clearSessionCache);
+    };
+  }, []);
+
   return (
     <ErrorBoundary>
       <QueryClientProvider client={queryClient}>

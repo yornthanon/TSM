@@ -25,7 +25,8 @@ import { auth } from '../../lib/auth';
 import { api } from '../../lib/api';
 
 const EventDetail: React.FC = () => {
-  const canManageEvents = auth.getUser()?.role === 'TENANT_ADMIN';
+  const activeRole = auth.getUser()?.role;
+  const canManageEvents = activeRole === 'USER' || activeRole === 'TENANT_ADMIN' || activeRole === 'ADMIN';
   const { id } = useParams<{ id: string }>();
   const event = useEvent(id ?? '');
   const tickets = useTickets();

@@ -79,7 +79,8 @@ public final class ServiceRoleAuthorizationFilter extends OncePerRequestFilter {
                     .getPayload();
             Set<String> roles = roles(claims);
             boolean authorized = roles.contains(requiredRole)
-                    || ("TENANT_ADMIN".equals(requiredRole) && roles.contains("ADMIN"));
+                    || ("TENANT_ADMIN".equals(requiredRole)
+                    && (roles.contains("ADMIN") || roles.contains("USER")));
             if (!authorized) {
                 response.sendError(HttpServletResponse.SC_FORBIDDEN, "Insufficient role for this operation.");
                 return;

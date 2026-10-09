@@ -7,6 +7,9 @@ const ACT_AS_TOKEN_KEY = 'act_as_token';
 const ACT_AS_USER_KEY = 'act_as_user';
 const ACT_AS_SESSION_KEY = 'act_as_session_id';
 const ACT_AS_EXPIRY_KEY = 'act_as_expires_at';
+const ADMIN_WORKSPACE_KEY = 'admin_workspace_id';
+/** Emitted whenever the identity or workspace used by API queries changes. */
+export const AUTH_CHANGED_EVENT = 'ticketdesk-auth-changed';
 
 function appRole(roles: string[] | null | undefined): User['role'] {
   if (roles?.includes('ADMIN')) return 'ADMIN';
@@ -19,6 +22,10 @@ function clearActAsStorage(): void {
   localStorage.removeItem(ACT_AS_USER_KEY);
   localStorage.removeItem(ACT_AS_SESSION_KEY);
   localStorage.removeItem(ACT_AS_EXPIRY_KEY);
+}
+
+function notifyAuthChanged(): void {
+  window.dispatchEvent(new CustomEvent(AUTH_CHANGED_EVENT));
 }
 
 export const auth = {
@@ -38,6 +45,7 @@ export const auth = {
     }
 
     clearActAsStorage();
+    localStorage.removeItem(ADMIN_WORKSPACE_KEY);
     localStorage.setItem(TOKEN_KEY, response.access_token);
     api.setAuthToken(response.access_token);
 
@@ -48,6 +56,7 @@ export const auth = {
         role: appRole(backendUser.roles),
       };
       localStorage.setItem(USER_KEY, JSON.stringify(user));
+      notifyAuthChanged();
       return user;
     } catch (error) {
       auth.logout();
@@ -74,6 +83,7 @@ export const auth = {
     localStorage.setItem(ACT_AS_USER_KEY, JSON.stringify(target));
     localStorage.setItem(ACT_AS_SESSION_KEY, String(response.sessionId));
     localStorage.setItem(ACT_AS_EXPIRY_KEY, response.expiresAt);
+    notifyAuthChanged();
     return target;
   },
 
@@ -81,13 +91,16 @@ export const auth = {
     clearActAsStorage();
     api.setAuthToken(localStorage.getItem(TOKEN_KEY));
     window.dispatchEvent(new CustomEvent('ticketdesk-act-as-ended'));
+    notifyAuthChanged();
   },
 
   logout: (): void => {
     localStorage.removeItem(TOKEN_KEY);
     localStorage.removeItem(USER_KEY);
     clearActAsStorage();
+    localStorage.removeItem(ADMIN_WORKSPACE_KEY);
     api.setAuthToken(null);
+    notifyAuthChanged();
   },
 
   getUser: (): User | null => {
@@ -107,6 +120,18 @@ export const auth = {
   getActAsExpiry: (): string | null => localStorage.getItem(ACT_AS_EXPIRY_KEY),
   isActingAs: (): boolean => Boolean(localStorage.getItem(ACT_AS_TOKEN_KEY) && localStorage.getItem(ACT_AS_SESSION_KEY)),
   isAuthenticated: (): boolean => Boolean(localStorage.getItem(TOKEN_KEY)),
+  getAdminWorkspaceId: (): number | null => {
+    const value = Number(localStorage.getItem(ADMIN_WORKSPACE_KEY));
+    return Number.isInteger(value) && value > 0 ? value : null;
+  },
+  setAdminWorkspaceId: (tenantId: number | null): void => {
+    if (tenantId && Number.isInteger(tenantId) && tenantId > 0) {
+      localStorage.setItem(ADMIN_WORKSPACE_KEY, String(tenantId));
+    } else {
+      localStorage.removeItem(ADMIN_WORKSPACE_KEY);
+    }
+    window.dispatchEvent(new CustomEvent('ticketdesk-workspace-changed'));
+  },
 
   updateUser: (user: Partial<User>): void => {
     const currentUser = auth.getUser();

@@ -101,7 +101,7 @@ const MAX_PHOTO_SIZE_BYTES = 5 * 1024 * 1024;
 
 const Events: React.FC = () => {
   const activeRole = auth.getUser()?.role;
-  const canManageEvents = activeRole === 'TENANT_ADMIN';
+  const canManageEvents = activeRole === 'USER' || activeRole === 'TENANT_ADMIN' || activeRole === 'ADMIN';
   const events = useEvents();
   const createEvent = useCreateEvent();
   const updateEvent = useUpdateEvent();
