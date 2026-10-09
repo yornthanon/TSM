@@ -3,6 +3,22 @@ SELECT 'http://user-service:8081', '/api/public/users/login', 'POST', 'User logi
 WHERE NOT EXISTS (SELECT 1 FROM api_route WHERE path = '/api/public/users/login' AND method = 'POST');
 
 INSERT INTO api_route (uri, path, method, description, group_code, rate_limited, rate_limit_duration, status, created_at, created_by, updated_at, updated_by)
+SELECT 'http://event-service:8082', '/api/public/events/*', 'GET', 'Public event and share-link lookup', 'event-service', 60, 60, 'ACTIVE', NOW(), 'system', NOW(), 'system'
+WHERE NOT EXISTS (SELECT 1 FROM api_route WHERE path = '/api/public/events/*' AND method = 'GET');
+
+INSERT INTO api_route (uri, path, method, description, group_code, rate_limited, rate_limit_duration, status, created_at, created_by, updated_at, updated_by)
+SELECT 'http://event-service:8082', '/api/public/events', 'GET', 'Public event listing', 'event-service', 60, 60, 'ACTIVE', NOW(), 'system', NOW(), 'system'
+WHERE NOT EXISTS (SELECT 1 FROM api_route WHERE path = '/api/public/events' AND method = 'GET');
+
+INSERT INTO api_route (uri, path, method, description, group_code, rate_limited, rate_limit_duration, status, created_at, created_by, updated_at, updated_by)
+SELECT 'http://ticket-service:8083', '/api/public/events/*/tickets', 'GET', 'Public ticket inventory lookup', 'ticket-service', 60, 60, 'ACTIVE', NOW(), 'system', NOW(), 'system'
+WHERE NOT EXISTS (SELECT 1 FROM api_route WHERE path = '/api/public/events/*/tickets' AND method = 'GET');
+
+INSERT INTO api_route (uri, path, method, description, group_code, rate_limited, rate_limit_duration, status, created_at, created_by, updated_at, updated_by)
+SELECT 'http://order-service:8084', '/api/public/orders', 'POST', 'Guest ticket checkout', 'order-service', 20, 60, 'ACTIVE', NOW(), 'system', NOW(), 'system'
+WHERE NOT EXISTS (SELECT 1 FROM api_route WHERE path = '/api/public/orders' AND method = 'POST');
+
+INSERT INTO api_route (uri, path, method, description, group_code, rate_limited, rate_limit_duration, status, created_at, created_by, updated_at, updated_by)
 SELECT 'http://user-service:8081', '/api/v1/auth/**', 'POST', 'Authentication & tokens (login, register, logout)', 'user-service', 20, 60, 'ACTIVE', NOW(), 'system', NOW(), 'system'
 WHERE NOT EXISTS (SELECT 1 FROM api_route WHERE path = '/api/v1/auth/**' AND method = 'POST');
 

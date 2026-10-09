@@ -13,6 +13,7 @@ import type {
   AdminWorkspaceOverviewResponse,
   Event,
   EventPayload,
+  GuestOrderPayload,
   EventStats,
   Group,
   Notification,
@@ -299,6 +300,19 @@ export function useCreateOrder() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (payload: OrderPayload) => api.post<Order>('/orders', payload),
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: queryKeys.orders });
+      void qc.invalidateQueries({ queryKey: queryKeys.orderStats });
+      void qc.invalidateQueries({ queryKey: queryKeys.tickets });
+      void qc.invalidateQueries({ queryKey: queryKeys.ticketStats });
+    },
+  });
+}
+
+export function useCreateGuestOrder() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (payload: GuestOrderPayload) => api.post<Order>('/api/public/orders', payload),
     onSuccess: () => {
       void qc.invalidateQueries({ queryKey: queryKeys.orders });
       void qc.invalidateQueries({ queryKey: queryKeys.orderStats });

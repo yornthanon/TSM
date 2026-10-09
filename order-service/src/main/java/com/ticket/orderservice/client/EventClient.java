@@ -27,6 +27,9 @@ public class EventClient {
     @Value("${event.service.url:http://localhost:8082/api/v1/events}")
     private String eventServiceUrl;
 
+    @Value("${event.service.public-url:http://localhost:8082/api/public/events}")
+    private String publicEventServiceUrl;
+
     public Mono<Map> getEventById(Long eventId) {
         return webClient.get()
                 .uri(eventServiceUrl + "/{id}", eventId)
@@ -36,6 +39,16 @@ public class EventClient {
                 .retrieve()
                 .bodyToMono(Map.class)
                 .doOnError(e -> log.error("Error calling event service for id {}: {}", eventId, e.getMessage()))
+                .onErrorResume(e -> Mono.empty());
+    }
+
+    public Mono<Map> getPublicEventByShareToken(String shareToken) {
+        return webClient.get()
+                .uri(publicEventServiceUrl + "/{shareToken}", shareToken)
+                .header(HttpHeaders.ACCEPT, MediaType.APPLICATION_JSON_VALUE)
+                .retrieve()
+                .bodyToMono(Map.class)
+                .doOnError(e -> log.warn("Public event lookup failed: {}", e.getMessage()))
                 .onErrorResume(e -> Mono.empty());
     }
 

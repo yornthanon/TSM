@@ -26,11 +26,16 @@ public class Order extends TenantScopedEntity {
     private Long id;
 
     private String username;
+    private String customerName;
+    private String recipientEmail;
+    private String phoneNumber;
     private Long ticketId;
     private Long eventId;
     private BigDecimal amount;
     private Integer quantity;
     private Long paymentId;
+    @Column(name = "qr_token", length = 128, unique = true)
+    private String qrToken;
     @Column(name = "idempotency_key", length = 100)
     private String idempotencyKey;
     @Enumerated(EnumType.STRING)

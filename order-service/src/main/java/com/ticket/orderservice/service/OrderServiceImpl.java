@@ -13,7 +13,9 @@ import com.ticket.orderservice.client.PaymentClient;
 import com.ticket.orderservice.client.TicketClient;
 import com.ticket.orderservice.client.UserClient;
 import com.ticket.orderservice.dto.OrderRequest;
+import com.ticket.orderservice.dto.GuestOrderRequest;
 import com.ticket.common.dto.request.PaymentRequest;
+import com.ticket.common.tenant.TenantContextHolder;
 import com.ticket.orderservice.repository.OrderRepository;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
@@ -28,6 +30,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.stream.Collectors;
 import java.util.Optional;
+import java.util.UUID;
 
 @Service
 @Slf4j
@@ -62,6 +65,46 @@ public class OrderServiceImpl implements OrderService{
                     new EmptyObject(),
                     true);
         }
+
+        return processOrder(orderRequest, username);
+    }
+
+    @Override
+    public ResponseErrorTemplate createGuestOrder(GuestOrderRequest guestRequest) {
+        if (guestRequest.getShareToken() == null
+                || !guestRequest.getShareToken().matches("[0-9a-fA-F]{64}")) {
+            return error("Invalid or expired event share link.", "EVENT_NOT_FOUND");
+        }
+        Map eventEnvelope = eventClient.getPublicEventByShareToken(guestRequest.getShareToken()).block();
+        Map eventData = eventEnvelope == null ? null : asMap(eventEnvelope.get("data"));
+        Long eventId = asLong(eventData == null ? null : eventData.get("id"));
+        Long tenantId = asLong(eventData == null ? null : eventData.get("tenantId"));
+        if (eventId == null || tenantId == null) {
+            return error("Event not found or no longer available.", "EVENT_NOT_FOUND");
+        }
+
+        OrderRequest orderRequest = new OrderRequest();
+        orderRequest.setEventId(eventId);
+        orderRequest.setTicketId(guestRequest.getTicketId());
+        orderRequest.setQuantity(guestRequest.getQuantity());
+        orderRequest.setPaymentMethod(guestRequest.getPaymentMethod());
+        orderRequest.setCustomerName(guestRequest.getCustomerName());
+        orderRequest.setRecipientEmail(guestRequest.getRecipientEmail());
+        orderRequest.setPhoneNumber(guestRequest.getPhoneNumber());
+        orderRequest.setIdempotencyKey(StringUtils.hasText(guestRequest.getIdempotencyKey())
+                ? guestRequest.getIdempotencyKey().trim() : UUID.randomUUID().toString());
+
+        // The tenant is derived from the server-side event lookup, never from client input.
+        TenantContextHolder.set(tenantId, false);
+        try {
+            return processOrder(orderRequest, "guest:" + guestRequest.getShareToken() + ":"
+                    + orderRequest.getIdempotencyKey());
+        } finally {
+            TenantContextHolder.clear();
+        }
+    }
+
+    private ResponseErrorTemplate processOrder(OrderRequest orderRequest, String username) {
 
         if (orderRequest.getQuantity() == null || orderRequest.getQuantity() != 1) {
             return new ResponseErrorTemplate("Only one seat per checkout is supported.",
@@ -144,6 +187,7 @@ public class OrderServiceImpl implements OrderService{
                     "409", new EmptyObject(), true);
         }
         order.setOrderStatus(OrderStatus.COMPLETED);
+        order.setQrToken(UUID.randomUUID().toString() + UUID.randomUUID().toString());
         orderRepository.save(order);
 
         // Publish Kafka event for notification service
@@ -193,10 +237,13 @@ public class OrderServiceImpl implements OrderService{
             log.error("Failed to prepare notification data for order {}: {}", order.getId(), e.getMessage());
         }
 
+        log.info("Demo ticket email marked as sent to {} for order {}", orderRequest.getRecipientEmail(), order.getId());
+        OrderResponse completedResponse = orderMapper.toResponse(order);
+        completedResponse.setDemoEmailSent(StringUtils.hasText(orderRequest.getRecipientEmail()));
         return new ResponseErrorTemplate(
                 ApiConstant.SUCCESS.getDescription(),
                 ApiConstant.SUCCESS.getKey(),
-                orderMapper.toResponse(order),
+                completedResponse,
                 false);
     }
 
@@ -313,6 +360,21 @@ public class OrderServiceImpl implements OrderService{
                 ApiConstant.SUCCESS.getKey(),
                 orders,
                 false);
+    }
+
+    private ResponseErrorTemplate error(String message, String code) {
+        return new ResponseErrorTemplate(message, code, new EmptyObject(), true);
+    }
+
+    private Map asMap(Object value) {
+        return value instanceof Map<?, ?> map ? (Map) map : null;
+    }
+
+    private Long asLong(Object value) {
+        if (value instanceof Number number) return number.longValue();
+        if (value == null) return null;
+        try { return Long.valueOf(value.toString()); }
+        catch (NumberFormatException ignored) { return null; }
     }
 
     private ResponseErrorTemplate cancelExistingOrder(Order order, String actor) {

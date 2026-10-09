@@ -1,12 +1,13 @@
 import { useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { ArrowLeft, CreditCard, Mail, Phone, Ticket as TicketIcon, User } from 'lucide-react';
+import { QRCodeSVG } from 'qrcode.react';
 import { toast } from 'sonner';
 import { QueryState } from 'frontend-shared/components/QueryState';
-import { useCreateOrder, usePublicEvent, usePublicTickets } from 'frontend-shared/hooks/useApi';
+import { useCreateGuestOrder, usePublicEvent, usePublicTickets } from 'frontend-shared/hooks/useApi';
 import { Button, Card, Input, SelectField } from 'frontend-shared/components/ui';
 import { formatCurrency } from 'frontend-shared/utils';
-import { PAYMENT_METHODS, type PaymentMethod, type Ticket } from 'frontend-shared/types/api';
+import { PAYMENT_METHODS, type Order, type PaymentMethod, type Ticket } from 'frontend-shared/types/api';
 
 const CUSTOMER_ORDER_KEY = 'customer_order_idempotency';
 
@@ -14,7 +15,7 @@ export default function CustomerCheckout() {
   const { id: shareToken = '' } = useParams();
   const eventQuery = usePublicEvent(shareToken);
   const ticketsQuery = usePublicTickets(shareToken);
-  const createOrder = useCreateOrder();
+  const createOrder = useCreateGuestOrder();
 
   const event = eventQuery.data;
   const tickets = ticketsQuery.data ?? [];
@@ -31,6 +32,7 @@ export default function CustomerCheckout() {
   const [phoneNumber, setPhoneNumber] = useState('');
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('CREDIT_CARD');
   const [name, setName] = useState('');
+  const [completedOrder, setCompletedOrder] = useState<Order | null>(null);
 
   const selectedTicket = availableTickets.find((ticket) => String(ticket.id) === selectedTicketId);
 
@@ -41,16 +43,17 @@ export default function CustomerCheckout() {
       return;
     }
     try {
-      await createOrder.mutateAsync({
-        eventId: event.id,
+      const order = await createOrder.mutateAsync({
+        shareToken,
         ticketId: selectedTicket.id,
         quantity: 1,
-        amount: selectedTicket.price,
+        customerName: name,
         paymentMethod,
         recipientEmail,
         phoneNumber,
         idempotencyKey: `${CUSTOMER_ORDER_KEY}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
       });
+      setCompletedOrder(order);
       toast.success('Order placed successfully! Check your email for confirmation.');
       setSelectedTicketId('');
       setRecipientEmail('');
@@ -66,6 +69,28 @@ export default function CustomerCheckout() {
       <Link to={`/public/events/${shareToken}`} className="mb-6 inline-flex items-center gap-2 text-xs text-[#9da0a8] hover:text-white">
         <ArrowLeft className="h-4 w-4" /> Back to event
       </Link>
+      {completedOrder && (
+        <section className="mb-6 rounded-2xl border border-[#3b806d] bg-[#14251f] p-5 shadow-sm">
+          <div className="flex flex-col gap-5 sm:flex-row sm:items-center">
+            <div className="rounded-xl bg-white p-3">
+              <QRCodeSVG
+                value={`TSM-TICKET:${completedOrder.id}:${completedOrder.qrToken ?? ''}`}
+                size={180}
+                level="H"
+                includeMargin
+                aria-label="Demo ticket QR code"
+              />
+            </div>
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-widest text-[#68d8b6]">Purchase confirmed</p>
+              <h2 className="mt-2 text-2xl font-semibold text-white">Your demo ticket is ready</h2>
+              <p className="mt-2 text-sm leading-6 text-[#b4c9c0]">Order #{completedOrder.id} · Payment completed in demo mode.</p>
+              <p className="mt-1 text-sm text-[#b4c9c0]">Show this QR code at check-in. A demo confirmation email was marked as sent.</p>
+              <button type="button" onClick={() => window.print()} className="mt-4 rounded-lg bg-[#3574f0] px-4 py-2 text-xs font-semibold text-white hover:bg-[#4c83f5]">Print / Save ticket</button>
+            </div>
+          </div>
+        </section>
+      )}
       <QueryState isLoading={eventQuery.isLoading} error={eventQuery.error as Error | null} isEmpty={!event} onRetry={() => void eventQuery.refetch()} emptyTitle="Event not found" emptyDescription="This event may have been removed or is not available.">
         {event && (
           <div className="grid grid-cols-1 gap-6 lg:grid-cols-[1fr_400px]">

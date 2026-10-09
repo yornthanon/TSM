@@ -19,6 +19,7 @@ public interface EventMapper {
     @Mapping(target = "tenantId", ignore = true)
     Event toEntity(EventRequest request);
 
+    @Mapping(target = "tenantId", source = "tenantId")
     EventResponse toResponse(Event event);
 
     List<EventResponse> toResponseList(List<Event> events);

@@ -120,6 +120,8 @@ export interface Order {
   orderStatus: OrderStatus | null;
   /** Serialised as a string even though the column is numeric. */
   paymentId: string | number | null;
+  qrToken?: string | null;
+  demoEmailSent?: boolean;
   orderDate: string | null;
   username?: string | null;
 }
@@ -346,6 +348,17 @@ export interface OrderPayload {
   paymentMethod: PaymentMethod;
   recipientEmail?: string;
   phoneNumber?: string;
+  idempotencyKey?: string;
+}
+
+export interface GuestOrderPayload {
+  shareToken: string;
+  ticketId: number;
+  quantity: number;
+  customerName: string;
+  recipientEmail: string;
+  phoneNumber: string;
+  paymentMethod: PaymentMethod;
   idempotencyKey?: string;
 }
 

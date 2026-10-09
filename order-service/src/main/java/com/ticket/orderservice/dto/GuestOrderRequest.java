@@ -1,26 +1,29 @@
 package com.ticket.orderservice.dto;
 
-import lombok.Data;
 import com.ticket.common.enums.PaymentMethod;
+import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
+import lombok.Data;
 
-import java.math.BigDecimal;
-
+/** Payload accepted by the public, guest checkout endpoint. */
 @Data
-public class OrderRequest {
-
-    @NotNull
-    private Long eventId;
+public class GuestOrderRequest {
+    @NotBlank
+    private String shareToken;
     @NotNull
     private Long ticketId;
     @NotNull
     @Min(1)
     private Integer quantity;
-    private BigDecimal amount;
-    private PaymentMethod paymentMethod;
+    @NotBlank
     private String customerName;
+    @NotBlank
+    @Email
     private String recipientEmail;
+    @NotBlank
     private String phoneNumber;
+    private PaymentMethod paymentMethod;
     private String idempotencyKey;
 }
