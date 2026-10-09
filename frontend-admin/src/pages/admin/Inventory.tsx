@@ -46,7 +46,7 @@ type TicketFormValues = z.infer<typeof ticketSchema>;
 
 const Inventory: React.FC = () => {
   const activeRole = auth.getUser()?.role;
-  const canManageInventory = activeRole === 'TENANT_ADMIN';
+  const canManageInventory = activeRole === 'USER' || activeRole === 'TENANT_ADMIN';
   const tickets = useTickets();
   const ticketStats = useTicketStats();
   const events = useEvents();

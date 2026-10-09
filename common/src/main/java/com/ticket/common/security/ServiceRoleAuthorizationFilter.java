@@ -78,9 +78,13 @@ public final class ServiceRoleAuthorizationFilter extends OncePerRequestFilter {
                     .parseSignedClaims(authorization.substring("Bearer ".length()).trim())
                     .getPayload();
             Set<String> roles = roles(claims);
+            boolean userMayManageTenantResources = roles.contains("USER")
+                    && "TENANT_ADMIN".equals(requiredRole)
+                    && isTenantEventOrTicketMutation(request.getMethod(), path);
             boolean authorized = roles.contains(requiredRole)
                     || ("TENANT_ADMIN".equals(requiredRole)
-                    && (roles.contains("ADMIN") || roles.contains("USER")));
+                    && roles.contains("ADMIN"))
+                    || userMayManageTenantResources;
             if (!authorized) {
                 response.sendError(HttpServletResponse.SC_FORBIDDEN, "Insufficient role for this operation.");
                 return;
@@ -117,6 +121,12 @@ public final class ServiceRoleAuthorizationFilter extends OncePerRequestFilter {
         } else if (claim instanceof String value) {
             roles.add(value);
         }
+    }
+
+    private boolean isTenantEventOrTicketMutation(String method, String path) {
+        boolean mutating = List.of("POST", "PUT", "PATCH", "DELETE").contains(method.toUpperCase());
+        return mutating && (path.equals("/api/v1/events") || path.startsWith("/api/v1/events/")
+                || path.equals("/api/v1/tickets") || path.startsWith("/api/v1/tickets/"));
     }
 
     private String requiredRole(String method, String path) {

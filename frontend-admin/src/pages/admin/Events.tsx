@@ -101,7 +101,8 @@ const MAX_PHOTO_SIZE_BYTES = 5 * 1024 * 1024;
 
 const Events: React.FC = () => {
   const activeRole = auth.getUser()?.role;
-  const canManageEvents = activeRole === 'TENANT_ADMIN';
+  const canManageEvents = activeRole === 'USER' || activeRole === 'TENANT_ADMIN';
+  const canModerateEvents = activeRole === 'TENANT_ADMIN';
   const events = useEvents();
   const createEvent = useCreateEvent();
   const updateEvent = useUpdateEvent();
@@ -256,7 +257,7 @@ const Events: React.FC = () => {
                     >
                       <Pencil className="h-3.5 w-3.5" />
                     </button>}
-                    {canManageEvents && (event.status === 'DRAFT' || event.status === 'REJECTED') && <button
+                    {canModerateEvents && (event.status === 'DRAFT' || event.status === 'REJECTED') && <button
                       type="button"
                       title="Approve"
                       aria-label={`Approve ${event.title}`}
@@ -271,7 +272,7 @@ const Events: React.FC = () => {
                     >
                       <Check className="h-3.5 w-3.5" />
                     </button>}
-                    {canManageEvents && (event.status === 'DRAFT' || event.status === 'APPROVED') && <button
+                    {canModerateEvents && (event.status === 'DRAFT' || event.status === 'APPROVED') && <button
                       type="button"
                       title="Reject"
                       aria-label={`Reject ${event.title}`}

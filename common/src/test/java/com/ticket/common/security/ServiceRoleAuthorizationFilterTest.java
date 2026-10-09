@@ -95,6 +95,38 @@ class ServiceRoleAuthorizationFilterTest {
     }
 
     @Test
+    void allowsRegularUsersToManageTenantEventsAndTicketsOnly() throws Exception {
+        List<MockHttpServletRequest> allowedRequests = List.of(
+                authenticated("POST", "/api/v1/events", "USER"),
+                authenticated("PUT", "/api/v1/events/12", "USER"),
+                authenticated("DELETE", "/api/v1/events/12", "USER"),
+                authenticated("POST", "/api/v1/tickets", "USER"),
+                authenticated("PUT", "/api/v1/tickets/34", "USER"),
+                authenticated("DELETE", "/api/v1/tickets/34", "USER"));
+
+        for (MockHttpServletRequest request : allowedRequests) {
+            MockHttpServletResponse response = new MockHttpServletResponse();
+            FilterChain chain = mock(FilterChain.class);
+            filter.doFilter(request, response, chain);
+            assertThat(response.getStatus()).as("%s %s", request.getMethod(), request.getRequestURI()).isEqualTo(200);
+            verify(chain).doFilter(request, response);
+        }
+
+        List<MockHttpServletRequest> deniedRequests = List.of(
+                authenticated("PUT", "/api/v1/admin/events/12", "USER"),
+                authenticated("PUT", "/api/v1/admin/orders/12/cancel", "USER"),
+                authenticated("POST", "/api/v1/payments/12/refund", "USER"));
+
+        for (MockHttpServletRequest request : deniedRequests) {
+            MockHttpServletResponse response = new MockHttpServletResponse();
+            FilterChain chain = mock(FilterChain.class);
+            filter.doFilter(request, response, chain);
+            assertThat(response.getStatus()).as("%s %s", request.getMethod(), request.getRequestURI()).isEqualTo(403);
+            verifyNoInteractions(chain);
+        }
+    }
+
+    @Test
     void restrictsOrderCancellationToTenantAdmin() throws Exception {
         MockHttpServletRequest tenantRequest = authenticated("PUT", "/api/v1/orders/12/cancel", "TENANT_ADMIN");
         MockHttpServletResponse tenantResponse = new MockHttpServletResponse();

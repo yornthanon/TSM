@@ -25,7 +25,9 @@ import { auth } from 'frontend-shared/lib/auth';
 import { api } from 'frontend-shared/lib/api';
 
 const EventDetail: React.FC = () => {
-  const canManageEvents = auth.getUser()?.role === 'TENANT_ADMIN';
+  const activeRole = auth.getUser()?.role;
+  const canManageEvents = activeRole === 'USER' || activeRole === 'TENANT_ADMIN';
+  const canModerateEvents = activeRole === 'TENANT_ADMIN';
   const { id } = useParams<{ id: string }>();
   const event = useEvent(id ?? '');
   const tickets = useTickets();
@@ -134,7 +136,7 @@ const EventDetail: React.FC = () => {
             <Button variant="secondary" onClick={() => void regenerateShareLink()}>
               Regenerate link
             </Button>
-            <Button
+            {canModerateEvents && <Button
               variant="secondary"
               leftIcon={<Check className="h-3.5 w-3.5" />}
               loading={approveEvent.isPending}
@@ -146,8 +148,8 @@ const EventDetail: React.FC = () => {
               }
             >
               Approve
-            </Button>
-            <Button
+            </Button>}
+            {canModerateEvents && <Button
               variant="secondary"
               leftIcon={<X className="h-3.5 w-3.5" />}
               loading={rejectEvent.isPending}
@@ -159,7 +161,7 @@ const EventDetail: React.FC = () => {
               }
             >
               Reject
-            </Button>
+            </Button>}
           </>
         ) : undefined}
       />
