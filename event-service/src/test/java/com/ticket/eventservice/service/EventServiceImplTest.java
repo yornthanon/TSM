@@ -1,6 +1,7 @@
 package com.ticket.eventservice.service;
 
 import com.ticket.common.exception.ResponseErrorTemplate;
+import com.ticket.common.tenant.TenantContextHolder;
 import com.ticket.eventservice.Enum.EventStatus;
 import com.ticket.eventservice.Enum.EventType;
 import com.ticket.eventservice.dto.EventRequest;
@@ -9,6 +10,8 @@ import com.ticket.eventservice.entity.Event;
 import com.ticket.eventservice.mapper.EventMapper;
 import com.ticket.eventservice.repository.EventRepository;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
@@ -17,6 +20,7 @@ import org.springframework.dao.DataAccessResourceFailureException;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -38,6 +42,16 @@ class EventServiceImplTest {
 
     @InjectMocks
     private EventServiceImpl service;
+
+    @BeforeEach
+    void setTenantContext() {
+        TenantContextHolder.set(1L, false);
+    }
+
+    @AfterEach
+    void clearTenantContext() {
+        TenantContextHolder.clear();
+    }
 
     @Test
     void createsEventAndReturnsMappedResponse() {
@@ -105,7 +119,7 @@ class EventServiceImplTest {
     void approvesEventWithSupportedStatus() {
         Event event = new Event();
         EventResponse response = new EventResponse();
-        when(eventRepository.findById(17L)).thenReturn(Optional.of(event));
+        when(eventRepository.findByIdAndTenantId(17L, 1L)).thenReturn(Optional.of(event));
         when(eventRepository.save(event)).thenReturn(event);
         when(eventMapper.toResponse(event)).thenReturn(response);
 
@@ -121,7 +135,7 @@ class EventServiceImplTest {
     void rejectsEventWithSupportedStatus() {
         Event event = new Event();
         EventResponse response = new EventResponse();
-        when(eventRepository.findById(18L)).thenReturn(Optional.of(event));
+        when(eventRepository.findByIdAndTenantId(18L, 1L)).thenReturn(Optional.of(event));
         when(eventRepository.save(event)).thenReturn(event);
         when(eventMapper.toResponse(event)).thenReturn(response);
 
@@ -142,7 +156,7 @@ class EventServiceImplTest {
                 "Phnom Penh", LocalDateTime.of(2026, 12, 22, 18, 0),
                 new BigDecimal("30.00"), 250, EventType.CONCERT, EventStatus.DRAFT);
         EventResponse response = new EventResponse();
-        when(eventRepository.findById(21L)).thenReturn(Optional.of(event));
+        when(eventRepository.findByIdAndTenantId(21L, 1L)).thenReturn(Optional.of(event));
         when(eventRepository.save(event)).thenReturn(event);
         when(eventMapper.toResponse(event)).thenReturn(response);
 
@@ -159,7 +173,7 @@ class EventServiceImplTest {
     @Test
     void rejectsEventDeleteWhenSeatsRemain() {
         Event event = new Event();
-        when(eventRepository.findById(22L)).thenReturn(Optional.of(event));
+        when(eventRepository.findByIdAndTenantId(22L, 1L)).thenReturn(Optional.of(event));
         when(eventRepository.hasLinkedSeats(22L)).thenReturn(true);
         when(eventRepository.hasLinkedOrders(22L)).thenReturn(false);
 
@@ -173,7 +187,7 @@ class EventServiceImplTest {
     @Test
     void rejectsEventDeleteWhenOrderHistoryExists() {
         Event event = new Event();
-        when(eventRepository.findById(23L)).thenReturn(Optional.of(event));
+        when(eventRepository.findByIdAndTenantId(23L, 1L)).thenReturn(Optional.of(event));
         when(eventRepository.hasLinkedSeats(23L)).thenReturn(false);
         when(eventRepository.hasLinkedOrders(23L)).thenReturn(true);
 
@@ -186,7 +200,7 @@ class EventServiceImplTest {
 
     @Test
     void returnsNotFoundBeforeCheckingDependencies() {
-        when(eventRepository.findById(24L)).thenReturn(Optional.empty());
+        when(eventRepository.findByIdAndTenantId(24L, 1L)).thenReturn(Optional.empty());
 
         ResponseErrorTemplate result = service.delete(24L);
 
@@ -200,7 +214,7 @@ class EventServiceImplTest {
     @Test
     void failsClosedWhenDependencyCheckCannotBeCompleted() {
         Event event = new Event();
-        when(eventRepository.findById(25L)).thenReturn(Optional.of(event));
+        when(eventRepository.findByIdAndTenantId(25L, 1L)).thenReturn(Optional.of(event));
         when(eventRepository.hasLinkedSeats(25L))
                 .thenThrow(new DataAccessResourceFailureException("database unavailable"));
 
@@ -214,7 +228,7 @@ class EventServiceImplTest {
     @Test
     void deletesEventOnlyWhenNoSeatsOrOrdersAreLinked() {
         Event event = new Event();
-        when(eventRepository.findById(26L)).thenReturn(Optional.of(event));
+        when(eventRepository.findByIdAndTenantId(26L, 1L)).thenReturn(Optional.of(event));
         when(eventRepository.hasLinkedSeats(26L)).thenReturn(false);
         when(eventRepository.hasLinkedOrders(26L)).thenReturn(false);
 
@@ -223,5 +237,60 @@ class EventServiceImplTest {
         assertFalse(result.isError());
         assertEquals("200", result.code());
         verify(eventRepository).delete(event);
+    }
+
+    @Test
+    void listsOnlyEventsFromTheAuthenticatedTenant() {
+        Event ownEvent = new Event();
+        EventResponse response = new EventResponse();
+        when(eventRepository.findAllByTenantId(1L)).thenReturn(List.of(ownEvent));
+        when(eventMapper.toResponseList(List.of(ownEvent))).thenReturn(List.of(response));
+
+        ResponseErrorTemplate result = service.findAll();
+
+        assertFalse(result.isError());
+        assertEquals(List.of(response), result.data());
+        verify(eventRepository).findAllByTenantId(1L);
+        verify(eventRepository, never()).findAll();
+    }
+
+    @Test
+    void doesNotReadEventsWhenTenantContextIsMissing() {
+        TenantContextHolder.clear();
+        when(eventMapper.toResponseList(List.of())).thenReturn(List.of());
+
+        ResponseErrorTemplate result = service.findAll();
+
+        assertFalse(result.isError());
+        assertEquals(List.of(), result.data());
+        verify(eventRepository, never()).findAll();
+        verify(eventRepository, never()).findAllByTenantId(any());
+    }
+
+    @Test
+    void keepsGlobalVisibilityForPlatformAdminWithoutSelectedWorkspace() {
+        TenantContextHolder.set(null, true);
+        Event event = new Event();
+        EventResponse response = new EventResponse();
+        when(eventRepository.findAll()).thenReturn(List.of(event));
+        when(eventMapper.toResponseList(List.of(event))).thenReturn(List.of(response));
+
+        ResponseErrorTemplate result = service.findAll();
+
+        assertFalse(result.isError());
+        assertEquals(List.of(response), result.data());
+        verify(eventRepository).findAll();
+        verify(eventRepository, never()).findAllByTenantId(any());
+    }
+
+    @Test
+    void cannotReadAnEventOwnedByAnotherTenantById() {
+        when(eventRepository.findByIdAndTenantId(99L, 1L)).thenReturn(Optional.empty());
+
+        ResponseErrorTemplate result = service.getById(99L);
+
+        assertTrue(result.isError());
+        assertEquals("404", result.code());
+        verify(eventRepository, never()).findById(99L);
     }
 }

@@ -20,6 +20,8 @@ public interface EventRepository extends JpaRepository<Event, Long> {
             + "OR o.ticket_id IN (SELECT t.id FROM tt_ticket t WHERE t.event_id = :eventId))", nativeQuery = true)
     boolean hasLinkedOrders(@Param("eventId") Long eventId);
 
+    List<Event> findAllByTenantId(Long tenantId);
+
     List<Event> findByStatus(com.ticket.eventservice.Enum.EventStatus status);
 
     List<Event> findByStatusAndTenantId(com.ticket.eventservice.Enum.EventStatus status, Long tenantId);

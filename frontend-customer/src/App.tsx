@@ -1,10 +1,11 @@
-import React, { lazy, Suspense } from 'react';
+import React, { lazy, Suspense, useEffect } from 'react';
 import { HashRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Toaster } from 'sonner';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { CustomerLayout } from './layouts/CustomerLayout';
 import { RequireAuth } from './components/RequireAuth';
+import { AUTH_CHANGED_EVENT } from 'frontend-shared/lib/auth';
 
 const Login = lazy(() => import('./pages/Login').then((module) => ({ default: module.Login })));
 const OAuthCallback = lazy(() => import('./pages/OAuthCallback').then((module) => ({ default: module.OAuthCallback })));
@@ -24,7 +25,24 @@ const queryClient = new QueryClient({
   },
 });
 
+const AUTH_STORAGE_KEYS = new Set([
+  'auth_token', 'user', 'act_as_token', 'act_as_user', 'act_as_session_id', 'act_as_expires_at',
+]);
+
 const App: React.FC = () => {
+  useEffect(() => {
+    const clearPrivateCache = () => queryClient.clear();
+    const clearOnStorageChange = (event: StorageEvent) => {
+      if (event.key === null || AUTH_STORAGE_KEYS.has(event.key)) clearPrivateCache();
+    };
+    window.addEventListener(AUTH_CHANGED_EVENT, clearPrivateCache);
+    window.addEventListener('storage', clearOnStorageChange);
+    return () => {
+      window.removeEventListener(AUTH_CHANGED_EVENT, clearPrivateCache);
+      window.removeEventListener('storage', clearOnStorageChange);
+    };
+  }, []);
+
   return (
     <ErrorBoundary>
       <QueryClientProvider client={queryClient}>

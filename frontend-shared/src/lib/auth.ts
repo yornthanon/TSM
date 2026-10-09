@@ -7,6 +7,11 @@ const ACT_AS_TOKEN_KEY = 'act_as_token';
 const ACT_AS_USER_KEY = 'act_as_user';
 const ACT_AS_SESSION_KEY = 'act_as_session_id';
 const ACT_AS_EXPIRY_KEY = 'act_as_expires_at';
+export const AUTH_CHANGED_EVENT = 'ticketdesk-auth-changed';
+
+function notifyAuthChanged(): void {
+  window.dispatchEvent(new Event(AUTH_CHANGED_EVENT));
+}
 
 function appRole(roles: string[] | null | undefined): User['role'] {
   if (roles?.includes('ADMIN')) return 'ADMIN';
@@ -48,6 +53,7 @@ export const auth = {
         role: appRole(backendUser.roles),
       };
       localStorage.setItem(USER_KEY, JSON.stringify(user));
+      notifyAuthChanged();
       return user;
     } catch (error) {
       auth.logout();
@@ -74,12 +80,14 @@ export const auth = {
     localStorage.setItem(ACT_AS_USER_KEY, JSON.stringify(target));
     localStorage.setItem(ACT_AS_SESSION_KEY, String(response.sessionId));
     localStorage.setItem(ACT_AS_EXPIRY_KEY, response.expiresAt);
+    notifyAuthChanged();
     return target;
   },
 
   endActAs: (): void => {
     clearActAsStorage();
     api.setAuthToken(localStorage.getItem(TOKEN_KEY));
+    notifyAuthChanged();
     window.dispatchEvent(new CustomEvent('ticketdesk-act-as-ended'));
   },
 
@@ -88,6 +96,7 @@ export const auth = {
     localStorage.removeItem(USER_KEY);
     clearActAsStorage();
     api.setAuthToken(null);
+    notifyAuthChanged();
   },
 
   getUser: (): User | null => {
@@ -114,6 +123,7 @@ export const auth = {
       const updatedUser = { ...currentUser, ...user };
       const key = auth.isActingAs() ? ACT_AS_USER_KEY : USER_KEY;
       localStorage.setItem(key, JSON.stringify(updatedUser));
+      notifyAuthChanged();
     }
   },
 };

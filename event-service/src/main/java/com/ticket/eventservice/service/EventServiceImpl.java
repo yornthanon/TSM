@@ -2,6 +2,7 @@ package com.ticket.eventservice.service;
 
 import com.ticket.common.constant.ApiConstant;
 import com.ticket.common.dto.EmptyObject;
+import com.ticket.common.tenant.TenantContextHolder;
 import com.ticket.eventservice.Enum.EventStatus;
 import com.ticket.eventservice.dto.EventRequest;
 import com.ticket.eventservice.dto.EventResponse;
@@ -41,6 +42,20 @@ public class EventServiceImpl implements EventService {
         this.eventRepository = eventRepository;
     }
 
+    private List<Event> findAccessibleEvents() {
+        Long tenantId = TenantContextHolder.getTenantId();
+        if (tenantId != null) return eventRepository.findAllByTenantId(tenantId);
+        if (TenantContextHolder.isPlatformAdmin()) return eventRepository.findAll();
+        return List.of();
+    }
+
+    private Optional<Event> findAccessibleEvent(Long id) {
+        Long tenantId = TenantContextHolder.getTenantId();
+        if (tenantId != null) return eventRepository.findByIdAndTenantId(id, tenantId);
+        if (TenantContextHolder.isPlatformAdmin()) return eventRepository.findById(id);
+        return Optional.empty();
+    }
+
     @Override
     public ResponseErrorTemplate create(EventRequest request) {
         Event event = eventMapper.toEntity(request);
@@ -56,7 +71,7 @@ public class EventServiceImpl implements EventService {
 
     @Override
     public ResponseErrorTemplate update(Long id, EventRequest request) {
-        Optional<Event> event = eventRepository.findById(id);
+        Optional<Event> event = findAccessibleEvent(id);
         if (event.isEmpty()) {
             return new ResponseErrorTemplate(
                     ApiConstant.EVENT_NOT_FOUND.getFormattedDescription(id),
@@ -85,7 +100,7 @@ public class EventServiceImpl implements EventService {
 
     @Override
     public ResponseErrorTemplate getById(Long id) {
-        Optional<Event> event = eventRepository.findById(id);
+        Optional<Event> event = findAccessibleEvent(id);
         if (event.isEmpty()) {
             return new ResponseErrorTemplate(
                     ApiConstant.EVENT_NOT_FOUND.getFormattedDescription(id),
@@ -102,7 +117,7 @@ public class EventServiceImpl implements EventService {
 
     @Override
     public ResponseErrorTemplate findAll() {
-        List<EventResponse> events = eventMapper.toResponseList(eventRepository.findAll());
+        List<EventResponse> events = eventMapper.toResponseList(findAccessibleEvents());
         return new ResponseErrorTemplate(
                 ApiConstant.SUCCESS.getDescription(),
                 ApiConstant.SUCCESS.getKey(),
@@ -112,7 +127,7 @@ public class EventServiceImpl implements EventService {
 
     @Override
     public ResponseErrorTemplate getStats() {
-        List<Event> events = eventRepository.findAll();
+        List<Event> events = findAccessibleEvents();
         // status is nullable: the create endpoint never defaults it, so grouping
         // on it unguarded NPEs and turns the whole stats call into a 500.
         Map<String, Long> byStatus = events.stream()
@@ -140,7 +155,7 @@ public class EventServiceImpl implements EventService {
 
     @Override
     public ResponseErrorTemplate updateStatus(Long id, EventStatus status) {
-        Optional<Event> event = eventRepository.findById(id);
+        Optional<Event> event = findAccessibleEvent(id);
         if (event.isEmpty()) {
             return new ResponseErrorTemplate(
                     ApiConstant.EVENT_NOT_FOUND.getFormattedDescription(id),
@@ -162,7 +177,7 @@ public class EventServiceImpl implements EventService {
 
     @Override
     public ResponseErrorTemplate delete(Long id) {
-        Optional<Event> event = eventRepository.findById(id);
+        Optional<Event> event = findAccessibleEvent(id);
         if (event.isEmpty()) {
             return new ResponseErrorTemplate(
                     ApiConstant.EVENT_NOT_FOUND.getFormattedDescription(id),
@@ -239,14 +254,14 @@ public class EventServiceImpl implements EventService {
 
     @Override
     public ResponseErrorTemplate getShareLink(Long id) {
-        return eventRepository.findById(id)
+        return findAccessibleEvent(id)
                 .map(event -> new ResponseErrorTemplate("Share link retrieved", "SHARE_LINK_FOUND", event.getShareToken(), false))
                 .orElseGet(() -> new ResponseErrorTemplate("Event not found", "EVENT_NOT_FOUND", new EmptyObject(), true));
     }
 
     @Override
     public ResponseErrorTemplate regenerateShareLink(Long id) {
-        return eventRepository.findById(id).map(event -> {
+        return findAccessibleEvent(id).map(event -> {
             event.setShareToken(newShareToken());
             eventRepository.save(event);
             return new ResponseErrorTemplate("Share link regenerated", "SHARE_LINK_REGENERATED", event.getShareToken(), false);
@@ -255,7 +270,7 @@ public class EventServiceImpl implements EventService {
 
     @Override
     public ResponseErrorTemplate revokeShareLink(Long id) {
-        return eventRepository.findById(id).map(event -> {
+        return findAccessibleEvent(id).map(event -> {
             event.setShareToken(newShareToken());
             eventRepository.save(event);
             return new ResponseErrorTemplate("Share link revoked; a new token is ready to share", "SHARE_LINK_REVOKED", null, false);
