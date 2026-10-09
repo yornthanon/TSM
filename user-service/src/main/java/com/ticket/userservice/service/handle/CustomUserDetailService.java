@@ -6,6 +6,7 @@ import com.ticket.common.exception.CustomMessageException;
 import com.ticket.userservice.entity.CustomUserDetail;
 import com.ticket.userservice.entity.User;
 import com.ticket.userservice.repository.UserRepository;
+import com.ticket.userservice.repository.TenantAccessGrantRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
@@ -30,6 +31,7 @@ import java.util.stream.Collectors;
 public class CustomUserDetailService implements UserDetailsService {
 
     private final UserRepository userRepository;
+    private final TenantAccessGrantRepository tenantAccessGrantRepository;
 
     @Value("${app.auth.platform-admin-emails:}")
     private String platformAdminEmails;
@@ -79,10 +81,15 @@ public class CustomUserDetailService implements UserDetailsService {
             if (!roles.contains("ADMIN")) roles.add("ADMIN");
         } else {
             roles.removeIf("ADMIN"::equals);
-            if (user.getTenantId() != null && !roles.contains("TENANT_ADMIN")) roles.add("TENANT_ADMIN");
+            roles.removeIf("TENANT_ADMIN"::equals);
+            if (!roles.contains("USER")) roles.add("USER");
         }
+        java.util.Set<Long> accessibleTenantIds = new java.util.LinkedHashSet<>();
+        if (user.getTenantId() != null) accessibleTenantIds.add(user.getTenantId());
+        accessibleTenantIds.addAll(tenantAccessGrantRepository.findTenantIdsByGranteeUserId(user.getId()));
         return new CustomUserDetail(user.getUsername(), user.getPassword(),
-                roles.stream().map(SimpleGrantedAuthority::new).collect(Collectors.toList()), user.getTenantId());
+                roles.stream().map(SimpleGrantedAuthority::new).collect(Collectors.toList()),
+                user.getTenantId(), accessibleTenantIds);
     }
 
     private boolean isPlatformAdminEmail(String email) {

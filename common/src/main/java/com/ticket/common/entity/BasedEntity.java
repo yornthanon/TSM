@@ -8,7 +8,10 @@ import org.hibernate.annotations.ParamDef;
 
 import java.time.LocalDateTime;
 @MappedSuperclass
-@FilterDef(name = "tenantFilter", parameters = @ParamDef(name = "tenantId", type = Long.class))
+@FilterDef(name = "tenantFilter", parameters = {
+        @ParamDef(name = "tenantIds", type = Long.class),
+        @ParamDef(name = "tenantId", type = Long.class)
+})
 @Setter
 @Getter
 public class BasedEntity {

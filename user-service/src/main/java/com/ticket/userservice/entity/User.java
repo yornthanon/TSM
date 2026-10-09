@@ -15,7 +15,7 @@ import java.util.Set;
 
 @Entity
 @Table(name = "users")
-@Filter(name = "tenantFilter", condition = "tenant_id = :tenantId")
+@Filter(name = "tenantFilter", condition = "tenant_id in (:tenantIds)")
 @Getter
 @Setter
 @AllArgsConstructor

@@ -18,7 +18,7 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 @Entity
 @Table(name = "tt_order", uniqueConstraints = @UniqueConstraint(name = "uk_order_idempotency", columnNames = {"username", "idempotency_key"}))
-@Filter(name = "tenantFilter", condition = "tenant_id = :tenantId")
+@Filter(name = "tenantFilter", condition = "tenant_id in (:tenantIds)")
 public class Order extends TenantScopedEntity {
 
     @Id

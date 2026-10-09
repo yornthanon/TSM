@@ -19,6 +19,8 @@ import org.springframework.util.StringUtils;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
+import java.util.LinkedHashSet;
+import java.util.Set;
 
 /** Applies the authenticated workspace to Hibernate for the lifetime of a request. */
 public class TenantScopeFilter extends OncePerRequestFilter {
@@ -78,11 +80,18 @@ public class TenantScopeFilter extends OncePerRequestFilter {
             return;
         }
 
+        Set<Long> allowedTenantIds = new LinkedHashSet<>();
+        if (tenantId != null) allowedTenantIds.add(tenantId);
+        if (!platformAdmin && !internalService && authentication.getPrincipal() instanceof CustomUserDetail details) {
+            allowedTenantIds.addAll(details.getAccessibleTenantIds());
+        }
         TenantContextHolder.set(tenantId, platformAdmin);
         try {
-            if (tenantId != null) {
+            if (!allowedTenantIds.isEmpty()) {
                 Session session = entityManager.unwrap(Session.class);
-                session.enableFilter("tenantFilter").setParameter("tenantId", tenantId);
+                var tenantFilter = session.enableFilter("tenantFilter");
+                tenantFilter.setParameterList("tenantIds", allowedTenantIds);
+                tenantFilter.setParameter("tenantId", allowedTenantIds.iterator().next());
             }
             filterChain.doFilter(request, response);
         } finally {

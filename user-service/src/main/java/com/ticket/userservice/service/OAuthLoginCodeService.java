@@ -160,7 +160,7 @@ public class OAuthLoginCodeService {
 
         userDetailService.updateAttempt(user.getUsername());
         consume(storedCode, now);
-        CustomUserDetail principal = toPrincipal(user);
+        CustomUserDetail principal = userDetailService.customUserDetail(user.getUsername());
         OAuthCodeExchangeResponse tokens = new OAuthCodeExchangeResponse(
                 jwtService.generateToken(principal),
                 jwtService.refreshToken(principal),
@@ -181,7 +181,7 @@ public class OAuthLoginCodeService {
         user.setMaxAttempts(5);
         user.setCreatedBy("GOOGLE_OAUTH");
         user.addRole(requiredRole(USER_ROLE));
-        user.addRole(requiredRole(platformAdmin ? ADMIN_ROLE : TENANT_ADMIN_ROLE));
+        user.addRole(requiredRole(platformAdmin ? ADMIN_ROLE : USER_ROLE));
 
         TenantWorkspace workspace = null;
         if (!platformAdmin) {
@@ -208,7 +208,6 @@ public class OAuthLoginCodeService {
         workspace.setCreatedBy("GOOGLE_OAUTH");
         workspace = workspaceRepository.saveAndFlush(workspace);
         user.setTenantId(workspace.getId());
-        user.addRole(requiredRole(TENANT_ADMIN_ROLE));
         user.setCreatedBy(user.getCreatedBy() == null ? "GOOGLE_OAUTH" : user.getCreatedBy());
         userRepository.saveAndFlush(user);
         workspace.setOwnerUserId(user.getId());
@@ -226,9 +225,10 @@ public class OAuthLoginCodeService {
         Set<Role> roles = user.getRoles();
         roles.removeIf(role -> ADMIN_ROLE.equals(role.getName()));
         user.addRole(requiredRole(USER_ROLE));
-        if (user.getTenantId() != null) {
-            user.addRole(requiredRole(TENANT_ADMIN_ROLE));
-        }
+        // Ordinary Google users are intentionally not Tenant Admins.
+        // They only receive USER and see their own workspace unless the platform
+        // admin grants additional workspace visibility.
+        roles.removeIf(TENANT_ADMIN_ROLE::equals);
     }
 
     private Role requiredRole(String name) {

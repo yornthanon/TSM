@@ -21,6 +21,7 @@ import java.io.IOException;
 import java.util.Collection;
 import java.util.Set;
 import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.Base64;
 
 /**
@@ -92,12 +93,19 @@ public final class TenantScopeSecurityFilter extends OncePerRequestFilter {
             return;
         }
 
+        Set<Long> allowedTenantIds = new LinkedHashSet<>();
+        if (tenantId != null) allowedTenantIds.add(tenantId);
+        if (!platformAdmin && claims != null) allowedTenantIds.addAll(numberClaims(claims, "tenant_ids"));
+        if (!platformAdmin && allowedTenantIds.isEmpty()) {
+            response.sendError(HttpServletResponse.SC_FORBIDDEN, "This account has no workspace access.");
+            return;
+        }
         TenantContextHolder.set(tenantId, platformAdmin && !internal);
         try {
-            if (tenantId != null) {
-                entityManager.unwrap(Session.class)
-                        .enableFilter("tenantFilter")
-                        .setParameter("tenantId", tenantId);
+            if (!allowedTenantIds.isEmpty()) {
+                var tenantFilter = entityManager.unwrap(Session.class).enableFilter("tenantFilter");
+                tenantFilter.setParameterList("tenantIds", allowedTenantIds);
+                tenantFilter.setParameter("tenantId", allowedTenantIds.iterator().next());
             }
             chain.doFilter(request, response);
         } finally {
@@ -137,6 +145,19 @@ public final class TenantScopeSecurityFilter extends OncePerRequestFilter {
             try { return Long.parseLong(text); } catch (NumberFormatException ignored) { return null; }
         }
         return null;
+    }
+    private Set<Long> numberClaims(Claims claims, String name) {
+        Set<Long> values = new LinkedHashSet<>();
+        Object value = claims.get(name);
+        if (value instanceof Collection<?> collection) {
+            for (Object item : collection) {
+                if (item instanceof Number number) values.add(number.longValue());
+                else if (item instanceof String text) {
+                    try { values.add(Long.parseLong(text)); } catch (NumberFormatException ignored) { }
+                }
+            }
+        }
+        return values;
     }
 
     private Long readTenantHeader(HttpServletRequest request) {

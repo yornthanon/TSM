@@ -14,7 +14,7 @@ import org.hibernate.annotations.Filter;
 @AllArgsConstructor
 @Entity
 @Table(name = "tt_notification")
-@Filter(name = "tenantFilter", condition = "tenant_id = :tenantId")
+@Filter(name = "tenantFilter", condition = "tenant_id in (:tenantIds)")
 public class Notification extends TenantScopedEntity {
 
     @Id

@@ -75,6 +75,7 @@ public class JwtServiceImpl extends JwtConfigProperties implements JwtService {
         if (customUserDetail.getTenantId() != null) {
             tokenBuilder.claim("tenant_id", customUserDetail.getTenantId());
         }
+        tokenBuilder.claim("tenant_ids", customUserDetail.getAccessibleTenantIds());
         return tokenBuilder.signWith(getKey(), SignatureAlgorithm.HS256).compact();
     }
 
@@ -95,6 +96,7 @@ public class JwtServiceImpl extends JwtConfigProperties implements JwtService {
         if (targetUser.getTenantId() != null) {
             tokenBuilder.claim("tenant_id", targetUser.getTenantId());
         }
+        tokenBuilder.claim("tenant_ids", targetUser.getAccessibleTenantIds());
         return tokenBuilder.signWith(getKey(), SignatureAlgorithm.HS256).compact();
     }
 
