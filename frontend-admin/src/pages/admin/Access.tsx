@@ -1,7 +1,18 @@
 import React from 'react';
-import { Plus } from 'lucide-react';
+import { Building2, KeyRound, Plus, ShieldCheck, UserRound, X } from 'lucide-react';
 import { toast } from 'sonner';
-import { useCreateGroup, useCreateRole, useGroups, usePermissions, useRoles } from 'frontend-shared/hooks/useApi';
+import {
+  useAdminWorkspaces,
+  useCreateGroup,
+  useCreateRole,
+  useGrantWorkspaceAccess,
+  useGroups,
+  usePermissions,
+  useRevokeWorkspaceAccess,
+  useRoles,
+  useUserAccessGrants,
+  useUsers,
+} from 'frontend-shared/hooks/useApi';
 import { PageHeader, QueryState, StatCard } from 'frontend-shared/components/QueryState';
 import { Badge, Button, Card, Input, Modal } from 'frontend-shared/components/ui';
 import { formatDate } from 'frontend-shared/utils';
@@ -42,6 +53,7 @@ const Access: React.FC = () => {
         <StatCard label="Groups" value={groups.data?.length ?? 0} />
         <StatCard label="Permissions" value={permissions.data?.length ?? 0} />
       </div>
+      <WorkspaceAccessPanel />
 
       <QueryState
         isLoading={loading}
@@ -143,6 +155,122 @@ const Access: React.FC = () => {
         />
       )}
     </>
+  );
+};
+
+const WorkspaceAccessPanel: React.FC = () => {
+  const users = useUsers({ pageNumber: 0, pageSize: 1000, status: 'ACTIVE' });
+  const workspaces = useAdminWorkspaces();
+  const grant = useGrantWorkspaceAccess();
+  const revoke = useRevokeWorkspaceAccess();
+  const normalUsers = (users.data?.content ?? []).filter((user) => !(user.roles ?? []).includes('ADMIN'));
+  const [selectedUserId, setSelectedUserId] = React.useState<number | null>(null);
+  const [selectedTenantId, setSelectedTenantId] = React.useState<number | null>(null);
+  const grants = useUserAccessGrants(selectedUserId);
+  const grantedIds = new Set(grants.data ?? []);
+  const selectedUser = normalUsers.find((user) => user.id === selectedUserId);
+  const availableWorkspaces = (workspaces.data ?? []).filter((workspace) => workspace.status === 'ACTIVE');
+
+  React.useEffect(() => {
+    if (selectedUserId === null && normalUsers.length > 0) setSelectedUserId(normalUsers[0].id);
+    if (selectedUserId !== null && !normalUsers.some((user) => user.id === selectedUserId)) {
+      setSelectedUserId(normalUsers[0]?.id ?? null);
+    }
+  }, [normalUsers, selectedUserId]);
+  React.useEffect(() => {
+    if (selectedTenantId === null && availableWorkspaces.length > 0) setSelectedTenantId(availableWorkspaces[0].id);
+    if (selectedTenantId !== null && !availableWorkspaces.some((workspace) => workspace.id === selectedTenantId)) {
+      setSelectedTenantId(availableWorkspaces[0]?.id ?? null);
+    }
+  }, [availableWorkspaces, selectedTenantId]);
+
+  const handleGrant = () => {
+    if (!selectedUserId || !selectedTenantId || grantedIds.has(selectedTenantId)) return;
+    grant.mutate({ userId: selectedUserId, tenantId: selectedTenantId }, {
+      onSuccess: () => toast.success('Workspace access granted. The user must sign in again.'),
+      onError: (error) => toast.error(error.message),
+    });
+  };
+  const handleRevoke = (tenantId: number) => {
+    if (!selectedUserId) return;
+    revoke.mutate({ userId: selectedUserId, tenantId }, {
+      onSuccess: () => toast.success('Workspace access revoked. The user must sign in again.'),
+      onError: (error) => toast.error(error.message),
+    });
+  };
+
+  return (
+    <Card className="mb-4 overflow-hidden border-[#3b4657] shadow-sm">
+      <div className="flex items-start gap-3 border-b border-[#3c3f41] bg-[#20252d] px-4 py-3">
+        <KeyRound className="mt-0.5 h-4 w-4 shrink-0 text-[#6fa6ff]" />
+        <div>
+          <h2 className="text-[13px] font-semibold text-[#d7dae0]">Workspace access grants</h2>
+          <p className="mt-0.5 text-[11px] leading-5 text-[#9da0a8]">
+            Only the platform administrator can grant a normal user read access to another workspace. Changes apply after the user signs in again.
+          </p>
+        </div>
+      </div>
+      <div className="grid gap-4 p-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto] lg:items-end">
+        <label className="block text-[11px] font-medium uppercase tracking-wide text-[#8d95a2]">
+          <span className="mb-1.5 flex items-center gap-1.5"><UserRound className="h-3.5 w-3.5" /> User</span>
+          <select
+            value={selectedUserId ?? ''}
+            onChange={(event) => setSelectedUserId(event.target.value ? Number(event.target.value) : null)}
+            className="w-full rounded-md border border-[#454a52] bg-[#181a1d] px-3 py-2 text-[13px] normal-case tracking-normal text-[#dfe1e5] outline-none focus:border-[#6fa6ff]"
+            disabled={users.isLoading || normalUsers.length === 0}
+          >
+            {normalUsers.length === 0 && <option value="">No active normal users</option>}
+            {normalUsers.map((user) => <option key={user.id} value={user.id}>{user.email ?? user.username}</option>)}
+          </select>
+        </label>
+        <label className="block text-[11px] font-medium uppercase tracking-wide text-[#8d95a2]">
+          <span className="mb-1.5 flex items-center gap-1.5"><Building2 className="h-3.5 w-3.5" /> Workspace to grant</span>
+          <select
+            value={selectedTenantId ?? ''}
+            onChange={(event) => setSelectedTenantId(event.target.value ? Number(event.target.value) : null)}
+            className="w-full rounded-md border border-[#454a52] bg-[#181a1d] px-3 py-2 text-[13px] normal-case tracking-normal text-[#dfe1e5] outline-none focus:border-[#6fa6ff]"
+            disabled={workspaces.isLoading || availableWorkspaces.length === 0}
+          >
+            {availableWorkspaces.length === 0 && <option value="">No active workspaces</option>}
+            {availableWorkspaces.map((workspace) => <option key={workspace.id} value={workspace.id}>{workspace.name} · #{workspace.id}</option>)}
+          </select>
+        </label>
+        <Button
+          onClick={handleGrant}
+          disabled={!selectedUser || !selectedTenantId || grantedIds.has(selectedTenantId) || grant.isPending}
+          loading={grant.isPending}
+          leftIcon={<ShieldCheck className="h-3.5 w-3.5" />}
+        >
+          {grantedIds.has(selectedTenantId ?? -1) ? 'Already granted' : 'Grant access'}
+        </Button>
+      </div>
+      <div className="border-t border-[#3c3f41] px-4 py-3">
+        <div className="mb-2 flex items-center justify-between gap-3">
+          <div>
+            <p className="text-[12px] font-semibold text-[#d7dae0]">Current visibility for {selectedUser?.email ?? selectedUser?.username ?? 'selected user'}</p>
+            <p className="mt-0.5 text-[11px] text-[#7f8793]">The user's own workspace is always included and is not listed as a grant.</p>
+          </div>
+          {grants.isFetching && <span className="text-[11px] text-[#8d95a2]">Refreshing…</span>}
+        </div>
+        {grantedIds.size === 0 ? (
+          <p className="rounded-md border border-dashed border-[#454a52] px-3 py-3 text-[12px] text-[#8d95a2]">No additional workspace access has been granted.</p>
+        ) : (
+          <div className="flex flex-wrap gap-2">
+            {[...grantedIds].map((tenantId) => {
+              const workspace = (workspaces.data ?? []).find((item) => item.id === tenantId);
+              return (
+                <span key={tenantId} className="inline-flex items-center gap-1.5 rounded-md border border-[#3d5b7d] bg-[#1d2b3a] px-2.5 py-1.5 text-[11px] text-[#c8ddf7]">
+                  <Building2 className="h-3 w-3" /> {workspace?.name ?? `Workspace #${tenantId}`}
+                  <button type="button" aria-label={`Revoke workspace ${tenantId}`} className="ml-1 rounded p-0.5 text-[#8fb4df] hover:bg-[#29415a] hover:text-white" onClick={() => handleRevoke(tenantId)} disabled={revoke.isPending}>
+                    <X className="h-3 w-3" />
+                  </button>
+                </span>
+              );
+            })}
+          </div>
+        )}
+      </div>
+    </Card>
   );
 };
 

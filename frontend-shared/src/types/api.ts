@@ -169,6 +169,16 @@ export interface User {
   role?: AppRole;
 }
 
+export interface AdminWorkspace {
+  id: number;
+  name: string;
+  status: 'ACTIVE' | 'SUSPENDED' | string;
+  ownerUserId: number | null;
+  createdAt: string | null;
+}
+export interface AccessGrantResult {
+  tenantIds: number[];
+}
 export interface Role {
   id: number;
   name: string;

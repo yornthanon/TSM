@@ -7,6 +7,8 @@ import {
 import { api } from '../lib/api';
 import type {
   ActAsAuditResponse,
+  AccessGrantResult,
+  AdminWorkspace,
   ActAsResponse,
   AdminWorkspaceOverviewResponse,
   Event,
@@ -457,6 +459,41 @@ export function useActAsAudit(options?: UseQueryOptions<ActAsAuditResponse[]>) {
 // ---------------------------------------------------------------------------
 // Access control
 // ---------------------------------------------------------------------------
+export function useAdminWorkspaces(options?: UseQueryOptions<AdminWorkspace[]>) {
+  return useQuery({
+    queryKey: ['admin', 'workspaces'],
+    queryFn: async () => toArray<AdminWorkspace>(await api.get<AdminWorkspace[]>('/admin/workspaces')),
+    ...options,
+  });
+}
+export function useUserAccessGrants(userId: number | null, options?: UseQueryOptions<number[]>) {
+  return useQuery({
+    queryKey: ['admin', 'access-grants', userId],
+    queryFn: () => api.get<number[]>(`/admin/access-grants/users/${userId}`),
+    enabled: userId !== null && userId > 0,
+    ...options,
+  });
+}
+export function useGrantWorkspaceAccess() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ userId, tenantId }: { userId: number; tenantId: number }) =>
+      api.post<AccessGrantResult>(`/admin/access-grants/users/${userId}/workspaces/${tenantId}`),
+    onSuccess: (_data, variables) => {
+      void qc.invalidateQueries({ queryKey: ['admin', 'access-grants', variables.userId] });
+    },
+  });
+}
+export function useRevokeWorkspaceAccess() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ userId, tenantId }: { userId: number; tenantId: number }) =>
+      api.delete<AccessGrantResult>(`/admin/access-grants/users/${userId}/workspaces/${tenantId}`),
+    onSuccess: (_data, variables) => {
+      void qc.invalidateQueries({ queryKey: ['admin', 'access-grants', variables.userId] });
+    },
+  });
+}
 
 export function useRoles(options?: UseQueryOptions<Role[]>) {
   return useQuery({
