@@ -2,7 +2,7 @@ import React from 'react';
 import { Controller, useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { FileUp, Lock, Pencil, Plus, Search, Trash2, Unlock } from 'lucide-react';
+import { FileUp, Lock, Pencil, Plus, Search, Ticket as TicketIcon, Trash2, Unlock } from 'lucide-react';
 import { toast } from 'sonner';
 import {
   useCreateTicket,
@@ -376,6 +376,7 @@ const TicketFormModal: React.FC<{
       open
       onClose={onClose}
       title={ticket ? `Edit ticket ${ticket.seatNumber}` : 'Create Ticket'}
+      className="ticket-form-modal"
       footer={
         <>
           <Button variant="secondary" onClick={onClose} disabled={pending}>
@@ -390,8 +391,18 @@ const TicketFormModal: React.FC<{
       {eventOptions.length === 0 ? (
         <p className="text-[13px] text-[#9da0a8]">Create an event first - a ticket must belong to one.</p>
       ) : (
-        <form id="ticket-form" onSubmit={handleSubmit((values) => onSubmit(values))} className="space-y-3">
-          <div>
+        <form id="ticket-form" onSubmit={handleSubmit((values) => onSubmit(values))} className="space-y-5">
+          {!ticket && (
+            <div className="ticket-form-hero">
+              <div className="ticket-form-hero-icon"><TicketIcon className="h-5 w-5" /></div>
+              <div>
+                <p className="text-sm font-semibold text-[#f1ede5]">Set up a sellable ticket</p>
+                <p className="mt-1 text-xs leading-5 text-[#a9a59d]">Choose an event, give the seat a unique label, then set its tier and price.</p>
+              </div>
+            </div>
+          )}
+          <div className="grid gap-4 sm:grid-cols-2">
+          <div className="sm:col-span-2">
             <label htmlFor="ticket-event" className="mb-1.5 block text-xs font-medium text-[#c4c7ce]">
               Event
             </label>
@@ -417,8 +428,8 @@ const TicketFormModal: React.FC<{
             {ticket && <p className="mt-1 text-[11px] text-[#7d8188]">Event assignment cannot be changed after creation.</p>}
           </div>
           <Input
-            label="Ticket number"
-            placeholder="A-12"
+            label="Ticket label"
+            placeholder="GA-01"
             error={errors.seatNumber?.message}
             {...register('seatNumber')}
           />
@@ -448,6 +459,8 @@ const TicketFormModal: React.FC<{
               )}
             />
           </div>
+          </div>
+          <p className="ticket-form-note">Use a unique label such as <strong>GA-01</strong>, <strong>VIP-02</strong>, or <strong>B-14</strong>. The label is saved exactly as entered and is not auto-generated.</p>
         </form>
       )}
     </Modal>
