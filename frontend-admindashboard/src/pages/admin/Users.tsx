@@ -69,10 +69,6 @@ const Users: React.FC = () => {
   const totalElements = users.data?.totalElements ?? rows.length;
   const totalPages = Math.max(1, users.data?.totalPages ?? Math.ceil(totalElements / 10));
   const byStatus = userStats.data?.byStatus ?? {};
-  React.useEffect(() => {
-    if (page >= totalPages) setPage(Math.max(0, totalPages - 1));
-  }, [page, totalPages]);
-
   const handlePageContextMenu = (event: React.MouseEvent<HTMLDivElement>) => {
     if (!isPlatformAdmin) return;
     const target = event.target as HTMLElement;
@@ -262,7 +258,7 @@ const Users: React.FC = () => {
           </tbody>
         </Table>
         <Pager
-          page={page + 1}
+          page={Math.min(page + 1, totalPages)}
           totalPages={totalPages}
           total={totalElements}
           onChange={(nextPage) => setPage(nextPage - 1)}

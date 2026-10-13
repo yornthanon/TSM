@@ -1,5 +1,6 @@
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
+import { TICKET_TYPES, type TicketPayload } from 'frontend-shared/types/api';
 
 export function cn(...inputs: ClassValue[]): string {
   return twMerge(clsx(inputs));
@@ -161,4 +162,61 @@ export function formatBytes(bytes: number): string {
   const sizes = ['Bytes', 'KB', 'MB', 'GB'];
   const i = Math.floor(Math.log(bytes) / Math.log(k));
   return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+}
+
+export interface TicketCsvImportResult {
+  payloads: TicketPayload[];
+  errors: string[];
+}
+
+/** Parse the documented CSV shape: eventId,ticketNumber,price,ticketType. */
+export function parseTicketCsv(csv: string): TicketCsvImportResult {
+  const rows = csv.trim().split(/\r?\n/).filter(Boolean);
+  if (rows.length < 2) return { payloads: [], errors: ['CSV must include a header row and at least one ticket row.'] };
+
+  const parseRow = (line: string): string[] => {
+    const values: string[] = [];
+    let value = '';
+    let quoted = false;
+    for (let index = 0; index < line.length; index += 1) {
+      const char = line[index];
+      if (char === '"') {
+        if (quoted && line[index + 1] === '"') { value += '"'; index += 1; }
+        else quoted = !quoted;
+      } else if (char === ',' && !quoted) {
+        values.push(value.trim()); value = '';
+      } else value += char;
+    }
+    values.push(value.trim());
+    return values;
+  };
+
+  const headers = parseRow(rows[0]).map((header) => header.toLowerCase().replace(/[_ -]/g, ''));
+  const indexOf = (...names: string[]) => names.map((name) => headers.indexOf(name)).find((index) => index >= 0) ?? -1;
+  const eventIndex = indexOf('eventid');
+  const numberIndex = indexOf('ticketnumber', 'seatnumber', 'number');
+  const priceIndex = indexOf('price');
+  const typeIndex = indexOf('tickettype', 'type');
+  const errors: string[] = [];
+  if (eventIndex < 0 || numberIndex < 0 || priceIndex < 0) {
+    return { payloads: [], errors: ['CSV headers must include eventId, ticketNumber, and price. ticketType is optional.'] };
+  }
+
+  const payloads: TicketPayload[] = [];
+  rows.slice(1).forEach((row, offset) => {
+    const line = offset + 2;
+    const values = parseRow(row);
+    const eventId = Number(values[eventIndex]);
+    const seatNumber = values[numberIndex] ?? '';
+    const price = Number(values[priceIndex]);
+    const ticketType = (values[typeIndex] || 'STANDARD').toUpperCase() as TicketPayload['ticketType'];
+    if (!Number.isInteger(eventId) || eventId < 1) errors.push(`Row ${line}: eventId must be a positive integer.`);
+    if (!seatNumber) errors.push(`Row ${line}: ticketNumber is required.`);
+    if (!Number.isFinite(price) || price <= 0) errors.push(`Row ${line}: price must be greater than zero.`);
+    if (!TICKET_TYPES.includes(ticketType as (typeof TICKET_TYPES)[number])) errors.push(`Row ${line}: ticketType must be STANDARD, VIP, or PREMIUM.`);
+    if (Number.isInteger(eventId) && eventId > 0 && seatNumber && Number.isFinite(price) && price > 0 && TICKET_TYPES.includes(ticketType as (typeof TICKET_TYPES)[number])) {
+      payloads.push({ eventId, seatNumber, price, ticketType });
+    }
+  });
+  return { payloads, errors };
 }

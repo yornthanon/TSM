@@ -30,7 +30,7 @@ import type { User as AppUser } from 'frontend-shared/types/api';
 const navItems = [
   { to: '/admin', icon: LayoutDashboard, label: 'Dashboard', shortcut: '⌘1', badge: 'Overview', end: true },
   { to: '/admin/events', icon: CalendarDays, label: 'Events', shortcut: '⌘2', badge: 'Calendar' },
-  { to: '/admin/inventory', icon: Ticket, label: 'Inventory', shortcut: '⌘3', badge: 'Seats' },
+  { to: '/admin/inventory', icon: Ticket, label: 'Inventory', shortcut: '⌘3', badge: 'Tickets' },
   { to: '/admin/orders', icon: ShoppingCart, label: 'Orders', shortcut: '⌘4', badge: 'Live' },
   { to: '/admin/payments', icon: CreditCard, label: 'Payments', shortcut: '⌘5', badge: 'Mock' },
   { to: '/admin/notifications', icon: Bell, label: 'Notifications', shortcut: '⌘6', badge: 'Queue', adminOnly: true },

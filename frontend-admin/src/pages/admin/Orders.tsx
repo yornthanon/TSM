@@ -109,7 +109,7 @@ const Orders: React.FC = () => {
             <tr>
               <Th>Order</Th>
               <Th>Event</Th>
-              <Th>Seat</Th>
+              <Th>Ticket</Th>
               <Th>Qty</Th>
               <Th>Amount</Th>
               <Th>Status</Th>
@@ -186,7 +186,7 @@ const Orders: React.FC = () => {
         }}
         title={`Cancel order #${cancelTarget?.id ?? ''}?`}
         description={cancelTarget
-          ? `This will cancel the ${formatStatusLabel(cancelTarget.orderStatus)} order for ${formatCurrency(cancelTarget.amount)}. Any completed payment is refunded and the reserved seat is released; cancellation is blocked if either compensation step fails.`
+          ? `This will cancel the ${formatStatusLabel(cancelTarget.orderStatus)} order for ${formatCurrency(cancelTarget.amount)}. Any completed payment is refunded and the reserved ticket is released; cancellation is blocked if either compensation step fails.`
           : 'Review the order before cancelling it.'}
         confirmLabel="Yes, cancel order"
         loading={cancelOrder.isPending}

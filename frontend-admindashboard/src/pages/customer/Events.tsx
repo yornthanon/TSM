@@ -26,7 +26,7 @@ export default function CustomerEvents() {
         <div className="max-w-2xl">
           <p className="mb-3 text-[11px] font-semibold uppercase tracking-[0.2em] text-[#6ea0ff]">Find your next experience</p>
           <h1 className="text-3xl font-semibold tracking-[-0.04em] text-white sm:text-4xl">Discover events worth showing up for.</h1>
-          <p className="mt-3 max-w-xl text-sm leading-6 text-[#b8c7df]">Browse approved events in your workspace, compare ticket options, and reserve your seat when checkout is ready.</p>
+          <p className="mt-3 max-w-xl text-sm leading-6 text-[#b8c7df]">Browse approved events in your workspace, compare ticket options, and reserve your ticket when checkout is ready.</p>
         </div>
         <label className="mt-6 flex max-w-xl items-center gap-3 rounded-xl border border-[#415b84] bg-[#101a2a]/80 px-4 py-3 text-sm text-[#9da0a8] focus-within:border-[#6ea0ff]">
           <Search className="h-4 w-4 shrink-0" />

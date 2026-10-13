@@ -178,6 +178,22 @@ export function useCreateTicket() {
   });
 }
 
+/** Create tickets sequentially so the backend receives one validated payload at a time. */
+export function useCreateTickets() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (payloads: TicketPayload[]) => {
+      const created: Ticket[] = [];
+      for (const payload of payloads) created.push(await api.post<Ticket>('/tickets', payload));
+      return created;
+    },
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: queryKeys.tickets });
+      void qc.invalidateQueries({ queryKey: queryKeys.ticketStats });
+    },
+  });
+}
+
 export function useUpdateTicket() {
   const qc = useQueryClient();
   return useMutation({

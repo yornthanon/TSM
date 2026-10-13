@@ -31,7 +31,7 @@ import type { User as AppUser } from '../types/api';
 const navItems = [
   { to: '/admin', icon: LayoutDashboard, label: 'Dashboard', shortcut: '⌘1', badge: 'Overview', end: true },
   { to: '/admin/events', icon: CalendarDays, label: 'Events', shortcut: '⌘2', badge: 'Calendar' },
-  { to: '/admin/inventory', icon: Ticket, label: 'Inventory', shortcut: '⌘3', badge: 'Seats' },
+  { to: '/admin/inventory', icon: Ticket, label: 'Inventory', shortcut: '⌘3', badge: 'Tickets' },
   { to: '/admin/orders', icon: ShoppingCart, label: 'Orders', shortcut: '⌘4', badge: 'Live' },
   { to: '/admin/payments', icon: CreditCard, label: 'Payments', shortcut: '⌘5', badge: 'Mock' },
   { to: '/admin/notifications', icon: Bell, label: 'Notifications', shortcut: '⌘6', badge: 'Queue', adminOnly: true },
@@ -76,13 +76,13 @@ export const AdminLayout: React.FC = () => {
   const workspaceName = currentWorkspace.data?.name
     ?? (currentWorkspace.isError ? 'Workspace unavailable' : 'Workspace');
 
+  const adminWorkspaceSelectionValid = !isAdmin || !adminWorkspaceId || !adminWorkspaces.data
+    || adminWorkspaces.data.some((workspace) => workspace.id === adminWorkspaceId);
+  const effectiveAdminWorkspaceId = adminWorkspaceSelectionValid ? adminWorkspaceId : null;
+
   useEffect(() => {
-    if (!isAdmin || !adminWorkspaceId) return;
-    if (!(adminWorkspaces.data ?? []).some((workspace) => workspace.id === adminWorkspaceId)) {
-      setAdminWorkspaceId(null);
-      auth.setAdminWorkspaceId(null);
-    }
-  }, [isAdmin, adminWorkspaceId, adminWorkspaces.data]);
+    if (!adminWorkspaceSelectionValid) auth.setAdminWorkspaceId(null);
+  }, [adminWorkspaceSelectionValid]);
 
   const visibleItems = useMemo(
     () => navItems.filter((item) => (!item.adminOnly || isAdmin)
@@ -307,7 +307,7 @@ export const AdminLayout: React.FC = () => {
             {isAdmin && (
               <select
                 aria-label="Workspace for admin CRUD"
-                value={adminWorkspaceId ?? ''}
+                value={effectiveAdminWorkspaceId ?? ''}
                 onChange={(event) => {
                   const value = event.target.value ? Number(event.target.value) : null;
                   setAdminWorkspaceId(value);

@@ -21,7 +21,7 @@ const statusClass = (status: string | null | undefined) => {
 
 export default function CustomerOrders() {
   const ordersQuery = useUserOrders();
-  const orders = ordersQuery.data ?? [];
+  const orders = useMemo(() => ordersQuery.data ?? [], [ordersQuery.data]);
 
   const total = useMemo(() => orders.reduce((sum: number, order: Order) => sum + (order.amount ?? 0), 0), [orders]);
 

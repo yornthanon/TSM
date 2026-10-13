@@ -2,10 +2,11 @@ import React from 'react';
 import { Controller, useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { Lock, Pencil, Plus, Search, Trash2, Unlock } from 'lucide-react';
+import { FileUp, Lock, Pencil, Plus, Search, Trash2, Unlock } from 'lucide-react';
 import { toast } from 'sonner';
 import {
   useCreateTicket,
+  useCreateTickets,
   useDeleteTicket,
   useEvents,
   useLockTicket,
@@ -25,7 +26,7 @@ import {
   Th,
 } from '../../components/QueryState';
 import { Badge, Button, Card, ConfirmDialog, Input, Modal, SelectField } from '../../components/ui';
-import { formatCurrency, formatDateTime, formatStatusLabel } from '../../utils';
+import { formatCurrency, formatDateTime, formatStatusLabel, parseTicketCsv } from '../../utils';
 import { auth } from '../../lib/auth';
 import {
   TICKET_STATUSES,
@@ -37,7 +38,7 @@ import {
 /** Mirrors `TicketRequest`: eventId and seatNumber are @NotNull, price > 0. */
 const ticketSchema = z.object({
   eventId: z.coerce.number({ invalid_type_error: 'Select an event' }).min(1, 'Select an event'),
-  seatNumber: z.string().trim().min(1, 'Seat number is required'),
+  seatNumber: z.string().trim().min(1, 'Ticket number is required'),
   price: z.coerce.number().positive('Price must be greater than zero'),
   ticketType: z.enum(TICKET_TYPES),
 });
@@ -51,6 +52,7 @@ const Inventory: React.FC = () => {
   const ticketStats = useTicketStats();
   const events = useEvents();
   const createTicket = useCreateTicket();
+  const createTickets = useCreateTickets();
   const updateTicket = useUpdateTicket();
   const deleteTicket = useDeleteTicket();
   const lockTicket = useLockTicket();
@@ -60,6 +62,7 @@ const Inventory: React.FC = () => {
   const [statusFilter, setStatusFilter] = React.useState('');
   const [eventFilter, setEventFilter] = React.useState('');
   const [formOpen, setFormOpen] = React.useState(false);
+  const [importOpen, setImportOpen] = React.useState(false);
   const [editingTicket, setEditingTicket] = React.useState<Ticket | null>(null);
   const [deleteTarget, setDeleteTarget] = React.useState<Ticket | null>(null);
 
@@ -95,21 +98,26 @@ const Inventory: React.FC = () => {
       <PageHeader
         title="Ticket inventory"
         description={canManageInventory
-          ? 'Seats are one row each. Locked seats show the holder and expiry.'
+          ? 'Tickets are one row each. Locked tickets show the holder and expiry.'
           : activeRole === 'ADMIN'
             ? 'Platform-wide read-only view. Open a workspace from Users to manage inventory with an audited session.'
             : 'View ticket inventory in your workspace.'}
         actions={
           canManageInventory ? (
-            <Button leftIcon={<Plus className="h-3.5 w-3.5" />} onClick={openCreate}>
-              Add seat
-            </Button>
+            <div className="flex flex-wrap justify-end gap-2">
+              <Button variant="secondary" leftIcon={<FileUp className="h-3.5 w-3.5" />} onClick={() => setImportOpen(true)}>
+                Import Tickets
+              </Button>
+              <Button leftIcon={<Plus className="h-3.5 w-3.5" />} onClick={openCreate}>
+                Create Ticket
+              </Button>
+            </div>
           ) : undefined
         }
       />
 
       <div className="mb-4 grid grid-cols-1 gap-3 min-[380px]:grid-cols-2 lg:grid-cols-4">
-        <StatCard label="Seats" value={ticketStats.data?.total ?? tickets.data?.length ?? 0} />
+        <StatCard label="Tickets" value={ticketStats.data?.total ?? tickets.data?.length ?? 0} />
         <StatCard label="Available" value={byStatus.AVAILABLE ?? 0} tone="good" />
         <StatCard label="Locked" value={byStatus.LOCKED ?? 0} tone="warn" />
         <StatCard label="Sold" value={byStatus.SOLD ?? 0} />
@@ -119,7 +127,7 @@ const Inventory: React.FC = () => {
         <div className="flex flex-col gap-2 lg:flex-row">
           <div className="flex-1">
             <Input
-              placeholder="Search by seat or event"
+              placeholder="Search by ticket or event"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               leftIcon={Search}
@@ -154,18 +162,18 @@ const Inventory: React.FC = () => {
         error={tickets.error}
         isEmpty={filtered.length === 0}
         onRetry={() => void tickets.refetch()}
-        emptyTitle={search || statusFilter || eventFilter ? 'No seats match your filters' : 'No seats yet'}
-        emptyDescription="Add a seat to make it purchasable."
+        emptyTitle={search || statusFilter || eventFilter ? 'No tickets match your filters' : 'No tickets yet'}
+        emptyDescription="Create a ticket to make it purchasable."
         emptyAction={canManageInventory ? (
           <Button leftIcon={<Plus className="h-3.5 w-3.5" />} onClick={openCreate}>
-            Add seat
+            Create Ticket
           </Button>
         ) : undefined}
       >
         <Table>
           <thead>
             <tr>
-              <Th>Seat</Th>
+              <Th>Ticket</Th>
               <Th>Event</Th>
               <Th>Type</Th>
               <Th>Price</Th>
@@ -203,12 +211,12 @@ const Inventory: React.FC = () => {
                   <div className="flex items-center justify-end gap-1">
                     {canManageInventory && ticket.ticketStatus === 'AVAILABLE' && <button
                       type="button"
-                      title="Lock seat"
-                      aria-label={`Lock seat ${ticket.seatNumber}`}
+                      title="Lock ticket"
+                      aria-label={`Lock ticket ${ticket.seatNumber}`}
                       disabled={lockTicket.isPending}
                       onClick={() =>
                         lockTicket.mutate(ticket.id, {
-                          onSuccess: () => toast.success(`Seat ${ticket.seatNumber} locked`),
+                          onSuccess: () => toast.success(`Ticket ${ticket.seatNumber} locked`),
                           onError: (e) => toast.error(e.message),
                         })
                       }
@@ -219,11 +227,11 @@ const Inventory: React.FC = () => {
                     {canManageInventory && ticket.ticketStatus === 'LOCKED' && <button
                       type="button"
                       title="Release lock"
-                      aria-label={`Release lock on seat ${ticket.seatNumber}`}
+                      aria-label={`Release lock on ticket ${ticket.seatNumber}`}
                       disabled={unlockTicket.isPending}
                       onClick={() =>
                         unlockTicket.mutate(ticket.id, {
-                          onSuccess: () => toast.success(`Seat ${ticket.seatNumber} released`),
+                          onSuccess: () => toast.success(`Ticket ${ticket.seatNumber} released`),
                           onError: (e) => toast.error(e.message),
                         })
                       }
@@ -233,8 +241,8 @@ const Inventory: React.FC = () => {
                     </button>}
                     {canManageInventory && ticket.ticketStatus === 'AVAILABLE' && <button
                       type="button"
-                      title="Edit seat"
-                      aria-label={`Edit seat ${ticket.seatNumber}`}
+                      title="Edit ticket"
+                      aria-label={`Edit ticket ${ticket.seatNumber}`}
                       onClick={() => {
                         setEditingTicket(ticket);
                         setFormOpen(true);
@@ -245,8 +253,8 @@ const Inventory: React.FC = () => {
                     </button>}
                     {canManageInventory && <button
                       type="button"
-                      title={ticket.ticketStatus === 'LOCKED' ? 'Release the lock before deleting' : ticket.ticketStatus === 'SOLD' ? 'Sold seats cannot be deleted' : 'Delete seat'}
-                      aria-label={`Delete seat ${ticket.seatNumber}`}
+                      title={ticket.ticketStatus === 'LOCKED' ? 'Release the lock before deleting' : ticket.ticketStatus === 'SOLD' ? 'Sold tickets cannot be deleted' : 'Delete ticket'}
+                      aria-label={`Delete ticket ${ticket.seatNumber}`}
                       disabled={ticket.ticketStatus === 'LOCKED' || ticket.ticketStatus === 'SOLD'}
                       onClick={() => setDeleteTarget(ticket)}
                       className="rounded-md p-1.5 text-rose-600 hover:bg-rose-50 disabled:cursor-not-allowed disabled:opacity-40"
@@ -279,7 +287,7 @@ const Inventory: React.FC = () => {
             if (editingTicket) {
               updateTicket.mutate({ id: editingTicket.id, payload }, {
                 onSuccess: () => {
-                  toast.success('Seat updated');
+                  toast.success('Ticket updated');
                   setFormOpen(false);
                   setEditingTicket(null);
                 },
@@ -289,13 +297,27 @@ const Inventory: React.FC = () => {
             }
             createTicket.mutate(payload, {
               onSuccess: () => {
-                toast.success('Seat added');
+                toast.success('Ticket created');
                 setFormOpen(false);
               },
               onError: (e) => toast.error(e.message),
             });
           }}
           pending={createTicket.isPending || updateTicket.isPending}
+        />
+      )}
+
+      {importOpen && (
+        <TicketImportModal
+          onClose={() => setImportOpen(false)}
+          pending={createTickets.isPending}
+          onSubmit={(payloads) => createTickets.mutate(payloads, {
+            onSuccess: (created) => {
+              toast.success(`${created.length} ticket${created.length === 1 ? '' : 's'} imported`);
+              setImportOpen(false);
+            },
+            onError: (error) => toast.error(error.message),
+          })}
         />
       )}
 
@@ -306,7 +328,7 @@ const Inventory: React.FC = () => {
           if (!deleteTarget) return;
           deleteTicket.mutate(deleteTarget.id, {
             onSuccess: () => {
-              toast.success('Seat deleted');
+              toast.success('Ticket deleted');
               setDeleteTarget(null);
             },
             onError: (e) => {
@@ -315,8 +337,8 @@ const Inventory: React.FC = () => {
             },
           });
         }}
-        title="Delete seat"
-        description={`Seat ${deleteTarget?.seatNumber ?? ''} will be permanently removed.`}
+        title="Delete ticket"
+        description={`Ticket ${deleteTarget?.seatNumber ?? ''} will be permanently removed.`}
         confirmLabel="Delete"
         loading={deleteTicket.isPending}
       />
@@ -353,20 +375,20 @@ const TicketFormModal: React.FC<{
     <Modal
       open
       onClose={onClose}
-      title={ticket ? `Edit seat ${ticket.seatNumber}` : 'Add seat'}
+      title={ticket ? `Edit ticket ${ticket.seatNumber}` : 'Create Ticket'}
       footer={
         <>
           <Button variant="secondary" onClick={onClose} disabled={pending}>
             Cancel
           </Button>
           <Button type="submit" form="ticket-form" loading={pending} disabled={eventOptions.length === 0}>
-            {ticket ? 'Save changes' : 'Add seat'}
+            {ticket ? 'Save changes' : 'Create Ticket'}
           </Button>
         </>
       }
     >
       {eventOptions.length === 0 ? (
-        <p className="text-[13px] text-[#9da0a8]">Create an event first - a seat must belong to one.</p>
+        <p className="text-[13px] text-[#9da0a8]">Create an event first - a ticket must belong to one.</p>
       ) : (
         <form id="ticket-form" onSubmit={handleSubmit((values) => onSubmit(values))} className="space-y-3">
           <div>
@@ -395,7 +417,7 @@ const TicketFormModal: React.FC<{
             {ticket && <p className="mt-1 text-[11px] text-[#7d8188]">Event assignment cannot be changed after creation.</p>}
           </div>
           <Input
-            label="Seat number"
+            label="Ticket number"
             placeholder="A-12"
             error={errors.seatNumber?.message}
             {...register('seatNumber')}
@@ -428,6 +450,41 @@ const TicketFormModal: React.FC<{
           </div>
         </form>
       )}
+    </Modal>
+  );
+};
+
+
+const TicketImportModal: React.FC<{
+  onClose: () => void;
+  onSubmit: (payloads: TicketPayload[]) => void;
+  pending: boolean;
+}> = ({ onClose, onSubmit, pending }) => {
+  const [csv, setCsv] = React.useState('eventId,ticketNumber,price,ticketType\n101,A-01,25,STANDARD');
+  const [errors, setErrors] = React.useState<string[]>([]);
+
+  const submit = () => {
+    const result = parseTicketCsv(csv);
+    if (result.errors.length > 0) { setErrors(result.errors); return; }
+    onSubmit(result.payloads);
+  };
+
+  return (
+    <Modal open onClose={onClose} title="Import Tickets (CSV)" footer={
+      <>
+        <Button variant="secondary" onClick={onClose} disabled={pending}>Cancel</Button>
+        <Button onClick={submit} loading={pending} disabled={!csv.trim()}>Import Tickets</Button>
+      </>
+    }>
+      <div className="space-y-3">
+        <p className="text-[12px] leading-5 text-[#9da0a8]">Use one row per ticket. Required columns: <code>eventId,ticketNumber,price</code>. Optional: <code>ticketType</code>.</p>
+        <input type="file" accept=".csv,text/csv" disabled={pending} onChange={(event) => {
+          const file = event.target.files?.[0];
+          if (file) void file.text().then((value) => { setCsv(value); setErrors([]); });
+        }} className="block w-full text-xs text-[#9da0a8] file:mr-3 file:rounded-md file:border-0 file:bg-[#313335] file:px-3 file:py-2 file:text-xs file:font-medium file:text-[#dfe1e5]" />
+        <textarea value={csv} onChange={(event) => { setCsv(event.target.value); setErrors([]); }} disabled={pending} rows={8} spellCheck={false} className="w-full rounded-lg border border-[#454a52] bg-[#141416] px-3 py-2 font-mono text-xs text-[#dfe1e5] outline-none focus:border-[#6fa6ff]" aria-label="Ticket CSV" />
+        {errors.length > 0 && <div className="rounded-md border border-rose-500/40 bg-rose-500/10 p-3 text-xs text-rose-300"><p className="font-semibold">Fix these rows before importing:</p><ul className="mt-1 list-inside list-disc">{errors.map((error) => <li key={error}>{error}</li>)}</ul></div>}
+      </div>
     </Modal>
   );
 };

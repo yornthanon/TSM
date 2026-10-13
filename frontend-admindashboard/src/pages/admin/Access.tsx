@@ -163,37 +163,36 @@ const WorkspaceAccessPanel: React.FC = () => {
   const workspaces = useAdminWorkspaces();
   const grant = useGrantWorkspaceAccess();
   const revoke = useRevokeWorkspaceAccess();
-  const normalUsers = (users.data?.content ?? []).filter((user) => !(user.roles ?? []).includes('ADMIN'));
+  const normalUsers = React.useMemo(
+    () => (users.data?.content ?? []).filter((user) => !(user.roles ?? []).includes('ADMIN')),
+    [users.data?.content],
+  );
+  const availableWorkspaces = React.useMemo(
+    () => (workspaces.data ?? []).filter((workspace) => workspace.status === 'ACTIVE'),
+    [workspaces.data],
+  );
   const [selectedUserId, setSelectedUserId] = React.useState<number | null>(null);
   const [selectedTenantId, setSelectedTenantId] = React.useState<number | null>(null);
-  const grants = useUserAccessGrants(selectedUserId);
+  const effectiveSelectedUserId = normalUsers.some((user) => user.id === selectedUserId)
+    ? selectedUserId
+    : (normalUsers[0]?.id ?? null);
+  const effectiveSelectedTenantId = availableWorkspaces.some((workspace) => workspace.id === selectedTenantId)
+    ? selectedTenantId
+    : (availableWorkspaces[0]?.id ?? null);
+  const grants = useUserAccessGrants(effectiveSelectedUserId);
   const grantedIds = new Set(grants.data ?? []);
-  const selectedUser = normalUsers.find((user) => user.id === selectedUserId);
-  const availableWorkspaces = (workspaces.data ?? []).filter((workspace) => workspace.status === 'ACTIVE');
-
-  React.useEffect(() => {
-    if (selectedUserId === null && normalUsers.length > 0) setSelectedUserId(normalUsers[0].id);
-    if (selectedUserId !== null && !normalUsers.some((user) => user.id === selectedUserId)) {
-      setSelectedUserId(normalUsers[0]?.id ?? null);
-    }
-  }, [normalUsers, selectedUserId]);
-  React.useEffect(() => {
-    if (selectedTenantId === null && availableWorkspaces.length > 0) setSelectedTenantId(availableWorkspaces[0].id);
-    if (selectedTenantId !== null && !availableWorkspaces.some((workspace) => workspace.id === selectedTenantId)) {
-      setSelectedTenantId(availableWorkspaces[0]?.id ?? null);
-    }
-  }, [availableWorkspaces, selectedTenantId]);
+  const selectedUser = normalUsers.find((user) => user.id === effectiveSelectedUserId);
 
   const handleGrant = () => {
-    if (!selectedUserId || !selectedTenantId || grantedIds.has(selectedTenantId)) return;
-    grant.mutate({ userId: selectedUserId, tenantId: selectedTenantId }, {
+    if (!effectiveSelectedUserId || !effectiveSelectedTenantId || grantedIds.has(effectiveSelectedTenantId)) return;
+    grant.mutate({ userId: effectiveSelectedUserId, tenantId: effectiveSelectedTenantId }, {
       onSuccess: () => toast.success('Workspace access granted. The user must sign in again.'),
       onError: (error) => toast.error(error.message),
     });
   };
   const handleRevoke = (tenantId: number) => {
-    if (!selectedUserId) return;
-    revoke.mutate({ userId: selectedUserId, tenantId }, {
+    if (!effectiveSelectedUserId) return;
+    revoke.mutate({ userId: effectiveSelectedUserId, tenantId }, {
       onSuccess: () => toast.success('Workspace access revoked. The user must sign in again.'),
       onError: (error) => toast.error(error.message),
     });
@@ -214,7 +213,7 @@ const WorkspaceAccessPanel: React.FC = () => {
         <label className="block text-[11px] font-medium uppercase tracking-wide text-[#8d95a2]">
           <span className="mb-1.5 flex items-center gap-1.5"><UserRound className="h-3.5 w-3.5" /> User</span>
           <select
-            value={selectedUserId ?? ''}
+            value={effectiveSelectedUserId ?? ''}
             onChange={(event) => setSelectedUserId(event.target.value ? Number(event.target.value) : null)}
             className="w-full rounded-md border border-[#454a52] bg-[#181a1d] px-3 py-2 text-[13px] normal-case tracking-normal text-[#dfe1e5] outline-none focus:border-[#6fa6ff]"
             disabled={users.isLoading || normalUsers.length === 0}
@@ -226,7 +225,7 @@ const WorkspaceAccessPanel: React.FC = () => {
         <label className="block text-[11px] font-medium uppercase tracking-wide text-[#8d95a2]">
           <span className="mb-1.5 flex items-center gap-1.5"><Building2 className="h-3.5 w-3.5" /> Workspace to grant</span>
           <select
-            value={selectedTenantId ?? ''}
+            value={effectiveSelectedTenantId ?? ''}
             onChange={(event) => setSelectedTenantId(event.target.value ? Number(event.target.value) : null)}
             className="w-full rounded-md border border-[#454a52] bg-[#181a1d] px-3 py-2 text-[13px] normal-case tracking-normal text-[#dfe1e5] outline-none focus:border-[#6fa6ff]"
             disabled={workspaces.isLoading || availableWorkspaces.length === 0}
@@ -237,11 +236,11 @@ const WorkspaceAccessPanel: React.FC = () => {
         </label>
         <Button
           onClick={handleGrant}
-          disabled={!selectedUser || !selectedTenantId || grantedIds.has(selectedTenantId) || grant.isPending}
+          disabled={!effectiveSelectedUserId || !effectiveSelectedTenantId || grantedIds.has(effectiveSelectedTenantId) || grant.isPending}
           loading={grant.isPending}
           leftIcon={<ShieldCheck className="h-3.5 w-3.5" />}
         >
-          {grantedIds.has(selectedTenantId ?? -1) ? 'Already granted' : 'Grant access'}
+          {grantedIds.has(effectiveSelectedTenantId ?? -1) ? 'Already granted' : 'Grant access'}
         </Button>
       </div>
       <div className="border-t border-[#3c3f41] px-4 py-3">

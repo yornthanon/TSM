@@ -168,7 +168,7 @@ const EventDetail: React.FC = () => {
 
       <div className="mb-4 grid grid-cols-1 gap-3 min-[380px]:grid-cols-2 lg:grid-cols-5">
         <StatCard label="Status" value={data.status ?? 'UNSET'} />
-        <StatCard label="Seats created" value={eventTickets.length} />
+        <StatCard label="Tickets created" value={eventTickets.length} />
         <StatCard label="Sold" value={soldCount} tone="good" />
         <StatCard label="Locked" value={lockedCount} tone="warn" />
         <StatCard label="Booked value" value={formatCurrency(revenue)} />
@@ -215,14 +215,14 @@ const EventDetail: React.FC = () => {
               error={tickets.error}
               isEmpty={eventTickets.length === 0}
               onRetry={() => void tickets.refetch()}
-              emptyTitle="No seats for this event"
-              emptyDescription="Add seats from the Inventory screen once the event exists."
+              emptyTitle="No tickets for this event"
+              emptyDescription="Add tickets from the Inventory screen once the event exists."
               rows={4}
             >
               <Table>
                 <thead>
                   <tr>
-                    <Th>Seat</Th>
+                    <Th>Ticket</Th>
                     <Th>Tier</Th>
                     <Th>Price</Th>
                     <Th>Status</Th>
@@ -269,7 +269,7 @@ const EventDetail: React.FC = () => {
                 <thead>
                   <tr>
                     <Th>Order</Th>
-                    <Th>Seat</Th>
+                    <Th>Ticket</Th>
                     <Th>Qty</Th>
                     <Th>Amount</Th>
                     <Th>Status</Th>
