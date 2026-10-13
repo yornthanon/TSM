@@ -39,9 +39,25 @@ JWT_SECRET=<base64-secret-with-at-least-32-decoded-bytes>
 GOOGLE_CLIENT_ID=<google-oauth-client-id>
 GOOGLE_CLIENT_SECRET=<google-oauth-client-secret>
 APP_FRONTEND_URL=https://<frontend-domain>
+CORS_ALLOWED_ORIGINS=https://<admin-frontend-domain>,https://<customer-frontend-domain>
 PLATFORM_ADMIN_EMAILS=<verified-admin-email>
 INTERNAL_AUTH_TOKEN=<long-random-token>
 ```
+
+`CORS_ALLOWED_ORIGINS` must contain the exact browser origins, separated by
+commas and without a trailing slash. If only one frontend exists, set both
+`APP_FRONTEND_URL` and `CORS_ALLOWED_ORIGINS` to that frontend's origin. Do
+not use `*` in production.
+
+`CORS_ALLOWED_ORIGINS` must contain the exact browser origins, separated by
+commas and without a trailing slash. For example:
+
+```text
+CORS_ALLOWED_ORIGINS=https://admin.example.com,https://customer.example.com
+```
+
+If only one frontend exists, set both `APP_FRONTEND_URL` and
+`CORS_ALLOWED_ORIGINS` to that frontend's origin. Do not use `*` in production.
 
 Optional integrations can be added later with `MAIL_*`, `TWILIO_*`, `REDIS_URL`, and `KAFKA_BOOTSTRAP_SERVERS`. The monolith is configured so Redis and Kafka are not required for its health check.
 
