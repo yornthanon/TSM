@@ -37,12 +37,12 @@ export class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoun
             <div className="h-16 w-16 rounded-full bg-red-100 dark:bg-red-900/30 flex items-center justify-center mx-auto mb-6">
               <RefreshCw className="h-8 w-8 text-red-600 dark:text-red-400" />
             </div>
-            <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">Something went wrong</h1>
+            <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">មានបញ្ហាកើតឡើង</h1>
             <p className="text-gray-600 dark:text-gray-400 mb-6">
-              {this.state.error?.message || 'An unexpected error occurred. Please try again.'}
+              សូមព្យាយាមម្ដងទៀត។ ប្រសិនបើបញ្ហានៅតែមាន សូមទាក់ទងអ្នកគ្រប់គ្រង។
             </p>
             <Button onClick={this.handleRetry} leftIcon={<RefreshCw className="h-4 w-4" />}>
-              Try again
+              ព្យាយាមម្ដងទៀត
             </Button>
           </div>
         </div>

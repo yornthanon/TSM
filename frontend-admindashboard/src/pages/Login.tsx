@@ -2,12 +2,12 @@ import React from 'react';
 import { ShieldCheck } from 'lucide-react';
 import { Card } from '../components/ui/Card';
 import { auth } from '../lib/auth';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useSearchParams } from 'react-router-dom';
 
 const OAUTH_ERROR_MESSAGES: Record<string, string> = {
-  account_not_linked: 'Google sign-in could not be linked to a KORA Cambodia account. Please try again or contact the platform administrator.',
-  google_signin_failed: 'Google sign-in could not be completed. Please try again.',
-  missing_code: 'The Google sign-in link was incomplete. Please try again.',
+  account_not_linked: 'មិនអាចភ្ជាប់គណនី Google បានទេ។ សូមព្យាយាមម្ដងទៀត។',
+  google_signin_failed: 'ការចូលតាម Google មិនបានជោគជ័យទេ។ សូមព្យាយាមម្ដងទៀត។',
+  missing_code: 'តំណចូលមិនពេញលេញទេ។ សូមចាប់ផ្ដើមម្ដងទៀត។',
 };
 
 const GoogleMark: React.FC = () => (
@@ -20,34 +20,27 @@ const GoogleMark: React.FC = () => (
 );
 
 export const Login: React.FC = () => {
-  const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const providerError = searchParams.get('oauth_error');
   const error = providerError
-    ? OAUTH_ERROR_MESSAGES[providerError] || 'Google sign-in could not be completed. Please try again.'
+    ? OAUTH_ERROR_MESSAGES[providerError] || 'ការចូលតាម Google មិនបានជោគជ័យទេ។ សូមព្យាយាមម្ដងទៀត។'
     : null;
-
-  React.useEffect(() => {
-    if (!searchParams.get('oauth_error')) return;
-    navigate('/login', { replace: true });
-  }, [navigate, searchParams]);
 
   return (
     <div className="relative flex min-h-screen items-center justify-center overflow-hidden bg-[#101318] px-5 py-10 text-[#d7dae0]">
       <div aria-hidden="true" className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_18%_14%,rgba(67,112,190,0.16),transparent_38%),radial-gradient(ellipse_at_85%_86%,rgba(47,141,151,0.10),transparent_34%)]" />
-      <div className="relative grid w-full max-w-5xl overflow-hidden rounded-2xl border border-[#2b3039] bg-[#171a20] shadow-[0_28px_100px_rgba(0,0,0,0.42)] lg:grid-cols-[1fr_1.02fr]">
+      <div className="relative grid w-full max-w-4xl overflow-hidden rounded-2xl border border-[#2b3039] bg-[#171a20] shadow-[0_28px_100px_rgba(0,0,0,0.42)] lg:grid-cols-[0.86fr_1fr]">
         <section className="hidden flex-col justify-between border-r border-[#2b3039] bg-[#15181e] p-10 lg:flex xl:p-12">
           <div>
             <img src="/kora-cambodia-wordmark.png" alt="KORA Cambodia" className="h-auto w-[176px] rounded-md object-contain" />
             <div className="mt-20 max-w-sm">
-              <p className="font-mono text-xs uppercase tracking-[0.18em] text-[#6fa6ff]">// isolated by design</p>
-              <h1 className="mt-4 text-3xl font-semibold leading-tight tracking-[-0.03em] text-[#edf0f5] xl:text-4xl">Your ticket operations, in one place.</h1>
-              <p className="mt-4 text-sm leading-7 text-[#9aa2ad]">Manage events, inventory, orders, and payments in a focused workspace tied to your verified Google account.</p>
+              <h1 className="mt-4 text-3xl font-semibold leading-tight tracking-[-0.03em] text-[#edf0f5] xl:text-4xl">ប្រព័ន្ធគ្រប់គ្រងសំបុត្រ</h1>
+              <p className="mt-4 text-sm leading-7 text-[#9aa2ad]">គ្រប់គ្រងកម្មវិធី សំបុត្រ ការកម្មង់ និងការទូទាត់នៅកន្លែងតែមួយ។</p>
             </div>
           </div>
           <div className="rounded-xl border border-[#292f39] bg-[#191d24] p-4">
-            <div className="flex items-center gap-2 text-xs font-medium text-[#c4cad3]"><ShieldCheck className="h-4 w-4 text-[#68a5ff]" />Verified Google access</div>
-            <p className="mt-2 pl-6 text-xs leading-5 text-[#818a97]">Each new Google account receives its own isolated workspace. Global administrator access is reserved for explicitly configured platform accounts.</p>
+            <div className="flex items-center gap-2 text-xs font-medium text-[#c4cad3]"><ShieldCheck className="h-4 w-4 text-[#68a5ff]" />ចូលដោយសុវត្ថិភាព</div>
+            <p className="mt-2 pl-6 text-xs leading-5 text-[#818a97]">ប្រើគណនី Google របស់អ្នក ដើម្បីចូលប្រើប្រព័ន្ធ។</p>
           </div>
         </section>
 
@@ -58,9 +51,8 @@ export const Login: React.FC = () => {
             </div>
 
             <div className="mb-7">
-              <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-[#6fa6ff]">Google authentication</p>
-              <h2 className="mt-2 text-2xl font-semibold tracking-[-0.02em] text-[#eef0f3]">Sign in to KORA Cambodia</h2>
-              <p className="mt-2 text-sm leading-6 text-[#9299a4]">Continue with a verified Google account. New accounts are enrolled automatically.</p>
+              <h2 className="text-2xl font-semibold tracking-[-0.02em] text-[#eef0f3]">ចូលប្រើប្រព័ន្ធ</h2>
+              <p className="mt-2 text-sm leading-6 text-[#9299a4]">សូមប្រើគណនី Google ដើម្បីចូល។</p>
             </div>
 
             <Card className="border border-[#2b3039] bg-[#1c2027] p-5 shadow-none sm:p-7">
@@ -75,12 +67,11 @@ export const Login: React.FC = () => {
                 className="flex min-h-11 w-full items-center justify-center gap-3 rounded-lg border border-[#414752] bg-[#f7f8fa] px-4 py-2.5 text-sm font-semibold text-[#24272d] transition hover:bg-white focus:outline-none focus:ring-2 focus:ring-[#6fa6ff] focus:ring-offset-2 focus:ring-offset-[#1c2027]"
               >
                 <GoogleMark />
-                Continue with Google
+                ចូលតាម Google
               </button>
-              <p className="mt-4 text-center text-xs leading-5 text-[#8b929e]">Google will ask which account to use. Check the email shown and choose “Use another account” if it is not the one you intended. Each verified Google account receives its own workspace.</p>
             </Card>
 
-            <p className="mt-5 text-center text-xs leading-5 text-[#777f8b]">Password sign-in is disabled. Authenticator verification may be requested for accounts with MFA enabled.</p>
+            <p className="mt-5 text-center text-xs leading-5 text-[#777f8b]">ប្រសិនបើគណនីរបស់អ្នកមាន MFA ប្រព័ន្ធអាចស្នើលេខកូដបន្ថែម។</p>
           </div>
         </main>
       </div>

@@ -70,17 +70,17 @@ export const OAuthCallback: React.FC = () => {
       <Card className="w-full max-w-md border border-[#2b3039] bg-[#1b1f26] p-7 shadow-[0_24px_80px_rgba(0,0,0,0.36)] sm:p-9">
         <div className="mb-7 flex items-center justify-between gap-3">
           <img src="/kora-cambodia-wordmark.png" alt="KORA Cambodia" className="h-auto w-[152px] rounded-md object-contain" />
-          <p className="text-right text-xs text-[#9298a3]">Secure account sign-in</p>
+          <p className="text-right text-xs text-[#9298a3]">ការចូលមានសុវត្ថិភាព</p>
         </div>
 
         {needsMfa ? (
           <>
-            <h1 className="text-xl font-semibold text-[#eef0f3]">Verify it’s you</h1>
-            <p className="mt-2 text-sm leading-6 text-[#9ba2ad]">Google verified your account. Enter the current authenticator code to finish signing in.</p>
+            <h1 className="text-xl font-semibold text-[#eef0f3]">បញ្ជាក់ថាជាអ្នក</h1>
+            <p className="mt-2 text-sm leading-6 text-[#9ba2ad]">សូមបញ្ចូលលេខកូដពីកម្មវិធី Authenticator ដើម្បីបន្ត។</p>
             <form onSubmit={handleMfaSubmit} className="mt-6 space-y-5">
               {error && <p role="alert" className="rounded-lg border border-[#633c43] bg-[#3a252b] px-3 py-2.5 text-sm text-[#f4a2a8]">{error}</p>}
               <Input
-                label="Authenticator code"
+                label="លេខកូដ Authenticator"
                 inputMode="numeric"
                 autoComplete="one-time-code"
                 maxLength={6}
@@ -90,23 +90,23 @@ export const OAuthCallback: React.FC = () => {
                 onChange={(event) => setTotpCode(event.target.value.replace(/\D/g, '').slice(0, 6))}
               />
               <Button type="submit" loading={isSubmitting} disabled={!oauthCode || totpCode.length !== 6} className="w-full">
-                Verify and continue
+                បញ្ជាក់ និងបន្ត
               </Button>
             </form>
           </>
         ) : error ? (
           <>
-            <h1 className="text-xl font-semibold text-[#eef0f3]">Sign-in didn’t finish</h1>
+            <h1 className="text-xl font-semibold text-[#eef0f3]">ការចូលមិនបានជោគជ័យ</h1>
             <p role="alert" className="mt-3 rounded-lg border border-[#633c43] bg-[#3a252b] px-3 py-2.5 text-sm leading-6 text-[#f4a2a8]">{error}</p>
             <Button type="button" variant="secondary" className="mt-6 w-full" leftIcon={<ArrowLeft className="h-4 w-4" />} onClick={() => navigate('/login', { replace: true })}>
-              Return to sign in
+              ត្រឡប់ទៅទំព័រចូល
             </Button>
           </>
         ) : (
           <div className="py-6 text-center">
             <Loader2 className="mx-auto h-7 w-7 animate-spin text-[#72a7ff]" aria-hidden="true" />
-            <h1 className="mt-4 text-base font-semibold text-[#eef0f3]">Securing your session</h1>
-            <p className="mt-2 text-sm text-[#9298a3]">Verifying your KORA Cambodia account…</p>
+            <h1 className="mt-4 text-base font-semibold text-[#eef0f3]">កំពុងដំណើរការ</h1>
+            <p className="mt-2 text-sm text-[#9298a3]">កំពុងពិនិត្យគណនីរបស់អ្នក…</p>
           </div>
         )}
       </Card>
