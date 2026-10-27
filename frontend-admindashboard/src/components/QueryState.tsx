@@ -39,7 +39,7 @@ export const QueryState: React.FC<QueryStateProps> = ({
   if (isLoading) {
     if (loadingVariant === 'cards') {
       return (
-        <div className="grid grid-cols-1 gap-3 min-[380px]:grid-cols-2 lg:grid-cols-4" aria-busy="true" aria-live="polite">
+        <div className="grid grid-cols-1 gap-2.5 min-[380px]:grid-cols-2 lg:grid-cols-4" aria-busy="true" aria-live="polite">
           {Array.from({ length: rows }).map((_, i) => (
             <Skeleton key={i} className="h-[108px] w-full rounded-xl" />
           ))}
@@ -103,14 +103,14 @@ export const StatCard: React.FC<StatCardProps> = ({
   icon: Icon,
   tone = 'default',
 }) => (
-  <div className="min-w-0 rounded-xl border border-[#27292d] bg-[#18191c] p-4 shadow-sm transition-colors hover:border-[#393b40]">
+  <div className="min-w-0 rounded-xl border border-[#27292d] bg-[#18191c] p-3.5 shadow-sm transition-colors hover:border-[#393b40] sm:p-4">
     <div className="flex items-center justify-between gap-2">
       <p className="min-w-0 break-words text-xs font-medium text-[#868a91]">
         {label}
       </p>
-      {Icon && <span className={cn('flex h-7 w-7 items-center justify-center rounded-lg', ICON_TONES[tone])}><Icon className="h-3.5 w-3.5" strokeWidth={1.8} /></span>}
+      {Icon && <span className={cn('flex h-7 w-7 shrink-0 items-center justify-center rounded-lg', ICON_TONES[tone])}><Icon className="h-3.5 w-3.5" strokeWidth={1.8} /></span>}
     </div>
-    <p className={cn('mt-2 min-w-0 break-words font-jetbrains text-xl font-semibold tracking-[-0.03em] tabular-nums sm:text-2xl', TONES[tone])}>
+    <p className={cn('mt-2 min-w-0 break-words font-jetbrains text-lg font-semibold tracking-[-0.03em] tabular-nums sm:text-2xl', TONES[tone])}>
       {value}
     </p>
     {hint && <p className="mt-1 text-[11px] text-[#868a91]">{hint}</p>}
@@ -154,7 +154,7 @@ export const Table: React.FC<{ children: React.ReactNode; className?: string }> 
   children,
   className,
 }) => (
-  <div className="overflow-x-auto rounded-xl border border-[#3c3f41] bg-white shadow-sm">
+  <div className="max-w-full overflow-x-auto rounded-xl border border-[#3c3f41] bg-white shadow-sm [scrollbar-width:thin]">
     <table className={cn('w-full min-w-[640px] border-collapse', className)}>{children}</table>
   </div>
 );

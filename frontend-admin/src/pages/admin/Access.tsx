@@ -48,7 +48,7 @@ const Access: React.FC = () => {
         }
       />
 
-      <div className="mb-4 grid grid-cols-3 gap-3">
+      <div className="mb-4 grid grid-cols-1 gap-2.5 min-[380px]:grid-cols-2 lg:grid-cols-3">
         <StatCard label="Roles" value={roles.data?.length ?? 0} />
         <StatCard label="Groups" value={groups.data?.length ?? 0} />
         <StatCard label="Permissions" value={permissions.data?.length ?? 0} />

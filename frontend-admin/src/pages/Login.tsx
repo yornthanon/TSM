@@ -4,9 +4,9 @@ import { auth } from 'frontend-shared/lib/auth';
 import { useSearchParams } from 'react-router-dom';
 
 const OAUTH_ERROR_MESSAGES: Record<string, string> = {
-  account_not_linked: 'មិនអាចភ្ជាប់គណនី Google បានទេ។ សូមព្យាយាមម្ដងទៀត។',
-  google_signin_failed: 'ការចូលតាម Google មិនបានជោគជ័យទេ។ សូមព្យាយាមម្ដងទៀត។',
-  missing_code: 'តំណចូលមិនពេញលេញទេ។ សូមចាប់ផ្ដើមម្ដងទៀត។',
+  account_not_linked: 'We could not connect your Google account. Please try again.',
+  google_signin_failed: 'Google sign-in could not be completed. Please try again.',
+  missing_code: 'The sign-in link was incomplete. Please start again.',
 };
 
 const GoogleMark: React.FC = () => (
@@ -22,7 +22,7 @@ export const Login: React.FC = () => {
   const [searchParams] = useSearchParams();
   const providerError = searchParams.get('oauth_error');
   const error = providerError
-    ? OAUTH_ERROR_MESSAGES[providerError] || 'ការចូលតាម Google មិនបានជោគជ័យទេ។ សូមព្យាយាមម្ដងទៀត។'
+    ? OAUTH_ERROR_MESSAGES[providerError] || 'Google sign-in could not be completed. Please try again.'
     : null;
 
   return (
@@ -32,8 +32,8 @@ export const Login: React.FC = () => {
         <Card className="border border-[#2b3039] bg-[#181b21] p-6 shadow-[0_24px_80px_rgba(0,0,0,0.34)] sm:p-9">
           <div className="text-center">
             <img src="/kora-cambodia-wordmark.png" alt="KORA Cambodia" className="mx-auto h-auto w-[156px] rounded-md object-contain" />
-            <h1 className="mt-8 text-[26px] font-semibold tracking-[-0.025em] text-[#eef0f3]">ចូលប្រើប្រព័ន្ធ</h1>
-            <p className="mx-auto mt-2 max-w-xs text-sm leading-6 text-[#9299a4]">សូមប្រើគណនី Google ដើម្បីចូល។</p>
+            <h1 className="mt-8 text-[26px] font-semibold tracking-[-0.025em] text-[#eef0f3]">Sign in to your workspace</h1>
+            <p className="mx-auto mt-2 max-w-xs text-sm leading-6 text-[#9299a4]">Use your verified Google account to continue.</p>
           </div>
 
           <div className="mt-8">
@@ -48,15 +48,15 @@ export const Login: React.FC = () => {
               className="flex min-h-12 w-full items-center justify-center gap-3 rounded-lg border border-[#414752] bg-[#f7f8fa] px-4 py-2.5 text-sm font-semibold text-[#24272d] transition hover:bg-white focus:outline-none focus:ring-2 focus:ring-[#6fa6ff] focus:ring-offset-2 focus:ring-offset-[#181b21]"
             >
               <GoogleMark />
-              ចូលតាម Google
+              Continue with Google
             </button>
           </div>
 
           <div className="mt-7 border-t border-[#2b3039] pt-5 text-center">
-            <p className="text-xs leading-5 text-[#777f8b]">គណនីដែលមាន MFA អាចត្រូវបញ្ចូលលេខកូដបន្ថែម។</p>
+            <p className="text-xs leading-5 text-[#777f8b]">Accounts with MFA may require an additional verification code.</p>
           </div>
         </Card>
-        <p className="mt-5 text-center text-[11px] text-[#68717e]">ការចូលប្រើមានសុវត្ថិភាពតាម Google</p>
+        <p className="mt-5 text-center text-[11px] text-[#68717e]">Secure sign-in powered by Google</p>
       </main>
     </div>
   );
