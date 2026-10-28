@@ -18,7 +18,7 @@ import type { ApiErrorResponse } from '../types/api';
  * without requiring a local backend. A local backend can still be selected with
  * VITE_API_BASE_URL in `.env.local`.
 */
-const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || (import.meta.env.DEV ? 'https://tsm-7hu8.onrender.com/api/v1' : '/api/v1')).replace(/\/+$/, '');
+const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || 'https://tsm-7hu8.onrender.com/api/v1').replace(/\/+$/, '');
 
 /** Prefix every backend route below this root, so hooks never repeat `/api/v1`. */
 export const API_ROOT = '/api/v1';
