@@ -7,6 +7,15 @@ import {
   ShoppingCart,
   Ticket as TicketIcon,
 } from 'lucide-react';
+import {
+  CartesianGrid,
+  Line,
+  LineChart,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis,
+} from 'recharts';
 import { useAdminWorkspaceOverview, useEventStats, useNotificationStats, useOrderStats, usePayments, useRevenueSummary, useTicketStats } from '../../hooks/useApi';
 import { PageHeader, QueryState, StatCard, Table, Td, Th } from '../../components/QueryState';
 import { Badge, Card } from '../../components/ui';
@@ -40,6 +49,36 @@ const Dashboard: React.FC = () => {
     if (typeof value === 'number') return value;
     return orders.data?.totalAmount ?? 0;
   }, [revenue.data, orders.data]);
+
+  const dailySales = React.useMemo(() => {
+    const days = new Map<string, { date: string; revenue: number; orders: number }>();
+    const today = new Date();
+    for (let offset = 13; offset >= 0; offset -= 1) {
+      const date = new Date(today);
+      date.setHours(0, 0, 0, 0);
+      date.setDate(date.getDate() - offset);
+      const key = date.toISOString().slice(0, 10);
+      days.set(key, { date: key, revenue: 0, orders: 0 });
+    }
+    for (const payment of payments.data ?? []) {
+      if (payment.paymentStatus !== 'COMPLETED' || !payment.paymentDate) continue;
+      const day = days.get(payment.paymentDate.slice(0, 10));
+      if (day) {
+        day.revenue += Number(payment.amount ?? 0);
+        day.orders += 1;
+      }
+    }
+    return [...days.values()].map((day) => ({
+      ...day,
+      label: new Date(`${day.date}T00:00:00`).toLocaleDateString(undefined, { month: 'short', day: 'numeric' }),
+    }));
+  }, [payments.data]);
+  const completedPayments = React.useMemo(
+    () => (payments.data ?? []).filter((payment) => payment.paymentStatus === 'COMPLETED'),
+    [payments.data]
+  );
+  const ticketsSold = tickets.data?.byStatus?.SOLD ?? 0;
+  const ticketsRemaining = Math.max((tickets.data?.total ?? 0) - ticketsSold, 0);
 
   const isLoading =
     events.isLoading || tickets.isLoading || orders.isLoading || payments.isLoading || revenue.isLoading || notifications.isLoading;
@@ -88,6 +127,27 @@ const Dashboard: React.FC = () => {
             tone="good"
             icon={CreditCard}
           />
+        </div>
+
+        <div className="mt-3 grid grid-cols-1 gap-2.5 min-[380px]:grid-cols-2 lg:grid-cols-4">
+          <div className="rounded-lg border border-[#27292d] bg-[#18191c] px-3 py-2.5">
+            <p className="text-[11px] text-[#868a91]">Tickets sold</p>
+            <p className="mt-1 font-jetbrains text-lg font-semibold text-[#ffc66d]">{ticketsSold}</p>
+          </div>
+          <div className="rounded-lg border border-[#27292d] bg-[#18191c] px-3 py-2.5">
+            <p className="text-[11px] text-[#868a91]">Tickets remaining</p>
+            <p className="mt-1 font-jetbrains text-lg font-semibold text-[#4ec9b0]">{ticketsRemaining}</p>
+          </div>
+          <div className="rounded-lg border border-[#27292d] bg-[#18191c] px-3 py-2.5">
+            <p className="text-[11px] text-[#868a91]">Paid orders</p>
+            <p className="mt-1 font-jetbrains text-lg font-semibold text-[#dfe1e5]">{completedPayments.length}</p>
+          </div>
+          <div className="rounded-lg border border-[#27292d] bg-[#18191c] px-3 py-2.5">
+            <p className="text-[11px] text-[#868a91]">Average order value</p>
+            <p className="mt-1 font-jetbrains text-lg font-semibold text-[#dfe1e5]">
+              {formatCurrency(completedPayments.length ? revenueTotal / completedPayments.length : 0)}
+            </p>
+          </div>
         </div>
 
         <div className="mt-3 grid max-w-xl grid-cols-1 gap-2.5 sm:grid-cols-2">
@@ -147,6 +207,30 @@ const Dashboard: React.FC = () => {
         )}
 
         <div className="mt-6 grid gap-4 lg:grid-cols-2">
+          <Card className="p-4 shadow-sm lg:col-span-2">
+            <div className="mb-4 flex flex-wrap items-end justify-between gap-2">
+              <div>
+                <h2 className="text-sm font-semibold text-[#d7dae0]">Sales trend</h2>
+                <p className="mt-0.5 text-[11px] text-[#9da0a8]">Completed payment revenue over the last 14 days</p>
+              </div>
+              <span className="text-[11px] text-[#4ec9b0]">{formatCurrency(revenueTotal)} total paid</span>
+            </div>
+            <div className="h-64 w-full">
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart data={dailySales} margin={{ top: 8, right: 12, left: 0, bottom: 0 }}>
+                  <CartesianGrid stroke="#2b2e33" strokeDasharray="3 3" vertical={false} />
+                  <XAxis dataKey="label" tick={{ fill: '#868a91', fontSize: 10 }} axisLine={false} tickLine={false} />
+                  <YAxis tick={{ fill: '#868a91', fontSize: 10 }} axisLine={false} tickLine={false} width={48} tickFormatter={(value: number) => `$${value}`} />
+                  <Tooltip
+                    contentStyle={{ background: '#202328', border: '1px solid #3c4149', borderRadius: 8, color: '#dfe1e5', fontSize: 12 }}
+                    formatter={(value, name) => [name === 'revenue' ? formatCurrency(Number(value)) : value, name === 'revenue' ? 'Revenue' : 'Orders']}
+                    labelStyle={{ color: '#9da0a8' }}
+                  />
+                  <Line type="monotone" dataKey="revenue" stroke="#4ec9b0" strokeWidth={2.5} dot={{ r: 3, fill: '#4ec9b0', strokeWidth: 0 }} activeDot={{ r: 5 }} />
+                </LineChart>
+              </ResponsiveContainer>
+            </div>
+          </Card>
           <Card className="p-4 shadow-sm">
             <h2 className="text-sm font-semibold text-[#d7dae0]">Events by status</h2>
             <p className="mt-0.5 text-[11px] text-[#9da0a8]">
